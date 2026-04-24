@@ -9,7 +9,7 @@ router.use(authMiddleware);
 router.use(requireRole(['owner', 'admin']));
 
 router.get('/:id/stats', async (req: Request, res: Response): Promise<void> => {
-  const eventId = req.params.id;
+  const eventId = req.params.id as string;
 
   // Validate interval param – only fixed allowed values, safe to branch on.
   const rawInterval = typeof req.query.interval === 'string' ? req.query.interval : '1h';
@@ -62,7 +62,7 @@ router.get('/:id/stats', async (req: Request, res: Response): Promise<void> => {
     totalGuests,
     totalScans,
     uniqueTicketsResult,
-    ticketsWithScans,
+    scannedGuests,
     topGuestsRaw,
     userScanRankingRaw,
     duplicateTicketsRaw,
@@ -71,10 +71,7 @@ router.get('/:id/stats', async (req: Request, res: Response): Promise<void> => {
     prisma.ticket.count({ where: { eventId } }),
     prisma.scan.count({ where: { eventId } }),
     prisma.scan.groupBy({ by: ['ticketId'], where: { eventId } }),
-    prisma.ticket.findMany({
-      where: { eventId },
-      include: { _count: { select: { scans: true } } },
-    }),
+    prisma.ticket.count({ where: { eventId, scans: { some: {} } } }),
     // Top 10 guests by scan count (includes not-yet-scanned).
     prisma.$queryRaw<{ ticket_id: string; name: string; scan_count: bigint }[]>`
       SELECT t.id AS ticket_id, t.name, COUNT(s.id) AS scan_count
@@ -140,7 +137,6 @@ router.get('/:id/stats', async (req: Request, res: Response): Promise<void> => {
 
   const uniqueTickets = uniqueTicketsResult.length;
   const duplicates = totalScans - uniqueTickets;
-  const scannedGuests = ticketsWithScans.filter(t => t._count.scans > 0).length;
   const notScannedGuests = totalGuests - scannedGuests;
 
   const scansByInterval = scansByIntervalRaw.map(row => ({
