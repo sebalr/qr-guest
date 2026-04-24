@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { QrCode, Plus, X, Calendar, ChevronRight, AlertCircle, LogOut, Shield } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { QrCode, Plus, X, Calendar, ChevronRight, AlertCircle, LogOut, Shield, Image } from 'lucide-react';
 
 export default function EventsPage() {
 	const { logout, user } = useAuth();
@@ -19,6 +20,8 @@ export default function EventsPage() {
 	const [name, setName] = useState('');
 	const [startsAt, setStartsAt] = useState('');
 	const [endsAt, setEndsAt] = useState('');
+	const [description, setDescription] = useState('');
+	const [imageUrl, setImageUrl] = useState('');
 	const [formError, setFormError] = useState('');
 	const [creating, setCreating] = useState(false);
 
@@ -34,17 +37,35 @@ export default function EventsPage() {
 		setFormError('');
 		setCreating(true);
 		try {
-			const res = await createEventApi({ name, startsAt, endsAt });
+			const res = await createEventApi({
+				name,
+				startsAt: startsAt || undefined,
+				endsAt: endsAt || undefined,
+				description: description || undefined,
+				imageUrl: imageUrl || undefined,
+			});
 			setEvents(prev => [res.data.data, ...prev]);
 			setShowForm(false);
 			setName('');
 			setStartsAt('');
 			setEndsAt('');
+			setDescription('');
+			setImageUrl('');
 		} catch {
 			setFormError('Failed to create event.');
 		} finally {
 			setCreating(false);
 		}
+	}
+
+	function formatDateRange(ev: Event) {
+		if (!ev.startsAt && !ev.endsAt) return null;
+		if (ev.startsAt && ev.endsAt) {
+			return `${new Date(ev.startsAt).toLocaleString()} – ${new Date(ev.endsAt).toLocaleString()}`;
+		}
+		if (ev.startsAt) return `From ${new Date(ev.startsAt).toLocaleString()}`;
+		if (ev.endsAt) return `Until ${new Date(ev.endsAt).toLocaleString()}`;
+		return null;
 	}
 
 	return (
@@ -105,7 +126,9 @@ export default function EventsPage() {
 								onSubmit={handleCreate}
 								className="space-y-4">
 								<div className="space-y-2">
-									<Label htmlFor="event-name">Event Name</Label>
+									<Label htmlFor="event-name">
+										Event Name <span className="text-destructive">*</span>
+									</Label>
 									<Input
 										id="event-name"
 										type="text"
@@ -115,13 +138,22 @@ export default function EventsPage() {
 										onChange={e => setName(e.target.value)}
 									/>
 								</div>
+								<div className="space-y-2">
+									<Label htmlFor="event-description">Description</Label>
+									<Textarea
+										id="event-description"
+										rows={3}
+										placeholder="Optional event description"
+										value={description}
+										onChange={e => setDescription(e.target.value)}
+									/>
+								</div>
 								<div className="grid grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="starts-at">Starts At</Label>
 										<Input
 											id="starts-at"
 											type="datetime-local"
-											required
 											value={startsAt}
 											onChange={e => setStartsAt(e.target.value)}
 										/>
@@ -131,11 +163,23 @@ export default function EventsPage() {
 										<Input
 											id="ends-at"
 											type="datetime-local"
-											required
 											value={endsAt}
 											onChange={e => setEndsAt(e.target.value)}
 										/>
 									</div>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="image-url">
+										<Image className="inline h-3.5 w-3.5 mr-1" />
+										Image URL
+									</Label>
+									<Input
+										id="image-url"
+										type="url"
+										placeholder="https://example.com/event-image.jpg"
+										value={imageUrl}
+										onChange={e => setImageUrl(e.target.value)}
+									/>
 								</div>
 								{formError && (
 									<Alert variant="destructive">
@@ -170,11 +214,20 @@ export default function EventsPage() {
 								className="cursor-pointer hover:shadow-md transition-shadow"
 								onClick={() => navigate(`/events/${ev.id}`)}>
 								<CardContent className="p-5 flex justify-between items-center gap-4">
-									<div className="min-w-0">
-										<p className="font-semibold truncate">{ev.name}</p>
-										<p className="text-sm text-muted-foreground mt-0.5">
-											{new Date(ev.startsAt).toLocaleString()} – {new Date(ev.endsAt).toLocaleString()}
-										</p>
+									<div className="flex items-center gap-4 min-w-0">
+										{ev.imageUrl && (
+											<img
+												src={ev.imageUrl}
+												alt={ev.name}
+												className="h-12 w-12 rounded-lg object-cover shrink-0"
+												onError={e => ((e.target as HTMLImageElement).style.display = 'none')}
+											/>
+										)}
+										<div className="min-w-0">
+											<p className="font-semibold truncate">{ev.name}</p>
+											{ev.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{ev.description}</p>}
+											{formatDateRange(ev) && <p className="text-sm text-muted-foreground mt-0.5">{formatDateRange(ev)}</p>}
+										</div>
 									</div>
 									<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
 								</CardContent>
@@ -183,6 +236,8 @@ export default function EventsPage() {
 					</div>
 				)}
 			</main>
+
+			<Separator className="hidden" />
 		</div>
 	);
 }

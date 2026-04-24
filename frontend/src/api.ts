@@ -13,18 +13,29 @@ api.interceptors.request.use(config => {
 export interface Event {
 	id: string;
 	name: string;
-	startsAt: string;
-	endsAt: string;
+	description?: string | null;
+	imageUrl?: string | null;
+	startsAt?: string | null;
+	endsAt?: string | null;
 	tenantId: string;
 }
 
 export interface Ticket {
 	id: string;
 	eventId: string;
+	guestId?: string | null;
 	name: string;
 	status: string;
 	version: number;
 	scanCount?: number;
+}
+
+export interface Guest {
+	id: string;
+	name: string;
+	tenantId: string;
+	createdAt: string;
+	events: { eventId: string; eventName: string }[];
 }
 
 export interface SyncPayload {
@@ -58,6 +69,21 @@ export interface SyncResponse {
 	scanUpdates: RemoteScan[];
 	newTicketVersion: number;
 	newScanCursor: string;
+}
+
+export interface EventStats {
+	totalGuests: number;
+	scannedGuests: number;
+	notScannedGuests: number;
+	totalScans: number;
+	uniqueTickets: number;
+	duplicates: number;
+	scansByHour: { hour: string; count: number }[];
+	scansByInterval: { bucket: string; count: number }[];
+	topGuests: { ticketId: string; name: string; scanCount: number }[];
+	userScanRanking: { userId: string; email: string; scanCount: number }[];
+	duplicateTickets: { ticketId: string; name: string; scanCount: number }[];
+	firstScansByInterval: { bucket: string; count: number }[];
 }
 
 export interface AdminTenant {
@@ -98,7 +124,8 @@ export const registerApi = (email: string, password: string, name: string, recap
 // Events
 export const getEventsApi = () => api.get<{ data: Event[] }>('/events');
 
-export const createEventApi = (data: { name: string; startsAt: string; endsAt: string }) => api.post<{ data: Event }>('/events', data);
+export const createEventApi = (data: { name: string; startsAt?: string; endsAt?: string; description?: string; imageUrl?: string }) =>
+	api.post<{ data: Event }>('/events', data);
 
 export const getEventApi = (id: string) => api.get<{ data: Event }>(`/events/${id}`);
 
@@ -108,9 +135,19 @@ export const getTicketsApi = (eventId: string) => api.get<{ data: Ticket[] }>(`/
 export const addTicketsApi = (eventId: string, names: string[]) =>
 	api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: names.map(name => ({ name })) });
 
+export const createTicketApi = (eventId: string, data: { name?: string; guestId?: string }) =>
+	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data);
+
 export const cancelTicketApi = (ticketId: string) => api.post<{ data: Ticket }>(`/tickets/${ticketId}/cancel`);
 
+// Guests
+export const searchGuestsApi = (q: string) => api.get<{ data: Guest[] }>('/guests', { params: { q } });
+
 export const getTicketQRApi = (ticketId: string) => api.get<{ data: { qrToken: string } }>(`/tickets/${ticketId}/qr`);
+
+// Stats
+export const getEventStatsApi = (eventId: string, interval?: string) =>
+	api.get<{ data: EventStats }>(`/events/${eventId}/stats`, interval ? { params: { interval } } : {});
 
 // Scan
 export const postScanApi = (ticketId: string, eventId: string, deviceId: string, scannedAt: string) =>
