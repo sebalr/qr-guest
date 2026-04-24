@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma
-RUN npx prisma generate
+COPY prisma.config.ts ./
 
 COPY tsconfig.json ./
 COPY src ./src
@@ -22,7 +22,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY prisma ./prisma
-RUN npx prisma generate
+COPY prisma.config.ts ./
 
 COPY --from=builder /app/dist ./dist
 

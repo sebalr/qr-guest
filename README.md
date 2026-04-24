@@ -42,6 +42,9 @@ npm install
 npx prisma migrate deploy
 npm run dev
 
+# Prisma Client is generated explicitly in Prisma v7.
+# npm run dev and npm run build handle that automatically.
+
 # Frontend
 cd frontend
 cp .env.example .env   # set VITE_API_URL
@@ -51,22 +54,22 @@ npm run dev
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /auth/register | Create tenant + owner account |
-| POST | /auth/login | Login |
-| GET | /events | List events |
-| POST | /events | Create event |
-| POST | /events/:id/tickets/bulk | Bulk create tickets |
-| GET | /events/:id/tickets | List tickets with scan counts |
-| POST | /tickets/:id/cancel | Cancel a ticket |
-| GET | /tickets/:id/qr | Get QR JWT for a ticket |
-| POST | /scan | Record a scan (append-only) |
-| POST | /sync | Delta sync |
-| GET | /events/:id/stats | Event statistics |
-| GET | /admin/tenants | List all tenants (super admin) |
-| POST | /admin/tenants/:id/upgrade | Upgrade tenant to pro |
-| POST | /admin/tenants/:id/downgrade | Downgrade tenant to free |
+| Method | Path                         | Description                    |
+| ------ | ---------------------------- | ------------------------------ |
+| POST   | /auth/register               | Create tenant + owner account  |
+| POST   | /auth/login                  | Login                          |
+| GET    | /events                      | List events                    |
+| POST   | /events                      | Create event                   |
+| POST   | /events/:id/tickets/bulk     | Bulk create tickets            |
+| GET    | /events/:id/tickets          | List tickets with scan counts  |
+| POST   | /tickets/:id/cancel          | Cancel a ticket                |
+| GET    | /tickets/:id/qr              | Get QR JWT for a ticket        |
+| POST   | /scan                        | Record a scan (append-only)    |
+| POST   | /sync                        | Delta sync                     |
+| GET    | /events/:id/stats            | Event statistics               |
+| GET    | /admin/tenants               | List all tenants (super admin) |
+| POST   | /admin/tenants/:id/upgrade   | Upgrade tenant to pro          |
+| POST   | /admin/tenants/:id/downgrade | Downgrade tenant to free       |
 
 ## CI/CD
 
@@ -78,14 +81,16 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 ## Environment Variables
 
 ### Backend
-| Variable | Description |
-|----------|-------------|
+
+| Variable       | Description                  |
+| -------------- | ---------------------------- |
 | `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | Secret for auth JWTs |
-| `QR_SECRET` | Secret for QR ticket JWTs |
-| `PORT` | HTTP port (default: 3000) |
+| `JWT_SECRET`   | Secret for auth JWTs         |
+| `QR_SECRET`    | Secret for QR ticket JWTs    |
+| `PORT`         | HTTP port (default: 3000)    |
 
 ### Frontend
-| Variable | Description |
-|----------|-------------|
+
+| Variable       | Description     |
+| -------------- | --------------- |
 | `VITE_API_URL` | Backend API URL |
