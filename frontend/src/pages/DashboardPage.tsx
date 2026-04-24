@@ -4,7 +4,39 @@ import { getEventApi, getEventStatsApi, Event, EventStats } from '../api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Users, CheckCircle2, XCircle, AlertTriangle, RefreshCw, BarChart2 } from 'lucide-react';
+import { ArrowLeft, Users, CheckCircle2, XCircle, AlertTriangle, RefreshCw, BarChart2, Clock, Shield } from 'lucide-react';
+import {
+	BarChart,
+	Bar,
+	XAxis,
+	YAxis,
+	CartesianGrid,
+	Tooltip,
+	ResponsiveContainer,
+	AreaChart,
+	Area,
+	Cell,
+} from 'recharts';
+
+type Interval = '1h' | '30m' | '5m';
+
+function formatBucket(bucket: string, interval: Interval): string {
+	const d = new Date(bucket);
+	if (interval === '1h') {
+		return d.toLocaleTimeString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+	}
+	return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Compute a gradient colour for the bar fill based on relative height */
+function barFill(count: number, maxCount: number): string {
+	if (maxCount === 0) return '#6366f1';
+	const ratio = count / maxCount;
+	if (ratio > 0.75) return '#4f46e5';
+	if (ratio > 0.5) return '#6366f1';
+	if (ratio > 0.25) return '#818cf8';
+	return '#a5b4fc';
+}
 
 export default function DashboardPage() {
 	const { id } = useParams<{ id: string }>();
@@ -14,11 +46,12 @@ export default function DashboardPage() {
 	const [loading, setLoading] = useState(true);
 	const [autoRefresh, setAutoRefresh] = useState(false);
 	const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+	const [interval, setSelectedInterval] = useState<Interval>('1h');
 
 	const fetchStats = useCallback(async () => {
 		if (!id) return;
 		try {
-			const [evRes, stRes] = await Promise.all([getEventApi(id), getEventStatsApi(id)]);
+			const [evRes, stRes] = await Promise.all([getEventApi(id), getEventStatsApi(id, interval)]);
 			setEvent(evRes.data.data);
 			setStats(stRes.data.data);
 			setLastUpdated(new Date());
@@ -27,7 +60,7 @@ export default function DashboardPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [id]);
+	}, [id, interval]);
 
 	useEffect(() => {
 		fetchStats();
@@ -35,13 +68,32 @@ export default function DashboardPage() {
 
 	useEffect(() => {
 		if (!autoRefresh) return;
-		const interval = setInterval(fetchStats, 30_000);
-		return () => clearInterval(interval);
+		const timer = setInterval(fetchStats, 30_000);
+		return () => clearInterval(timer);
 	}, [autoRefresh, fetchStats]);
 
 	const attendanceRate = stats && stats.totalGuests > 0 ? Math.round((stats.scannedGuests / stats.totalGuests) * 100) : 0;
 
-	const maxBarCount = stats?.scansByHour.length ? Math.max(...stats.scansByHour.map(h => h.count), 1) : 1;
+	const maxScanCount = stats?.scansByInterval?.length
+		? Math.max(...stats.scansByInterval.map(h => h.count), 1)
+		: 1;
+
+	const chartScansByInterval = (stats?.scansByInterval ?? []).map(row => ({
+		label: formatBucket(row.bucket, interval),
+		count: row.count,
+		fill: barFill(row.count, maxScanCount),
+	}));
+
+	const chartCumulative = (stats?.firstScansByInterval ?? []).map(row => ({
+		label: formatBucket(row.bucket, interval),
+		checkedIn: row.count,
+	}));
+
+	const chartUserRanking = (stats?.userScanRanking ?? []).map(row => ({
+		label: row.email.split('@')[0],
+		email: row.email,
+		scans: row.scanCount,
+	}));
 
 	if (loading) {
 		return (
@@ -139,36 +191,223 @@ export default function DashboardPage() {
 					</CardContent>
 				</Card>
 
-				{/* Scan timeline */}
-				{stats && stats.scansByHour.length > 0 && (
+				{/* Scan arrival heat map */}
+				<Card>
+					<CardHeader>
+						<div className="flex items-center justify-between flex-wrap gap-2">
+							<CardTitle className="text-base flex items-center gap-2">
+								<BarChart2 className="h-4 w-4" />
+								Scan Arrivals
+							</CardTitle>
+							<div className="flex items-center gap-1 text-xs">
+								<Clock className="h-3.5 w-3.5 text-muted-foreground" />
+								{(['1h', '30m', '5m'] as Interval[]).map(iv => (
+									<button
+										key={iv}
+										onClick={() => setSelectedInterval(iv)}
+										className={`px-2.5 py-1 rounded-md border font-medium transition-colors ${
+											interval === iv
+												? 'bg-primary text-primary-foreground border-primary'
+												: 'bg-background text-muted-foreground hover:bg-accent border-input'
+										}`}>
+										{iv}
+									</button>
+								))}
+							</div>
+						</div>
+					</CardHeader>
+					<CardContent>
+						{chartScansByInterval.length === 0 ? (
+							<p className="text-sm text-muted-foreground text-center py-8">No scans recorded yet.</p>
+						) : (
+							<ResponsiveContainer
+								width="100%"
+								height={220}>
+								<BarChart
+									data={chartScansByInterval}
+									margin={{ top: 4, right: 4, left: -20, bottom: 48 }}>
+									<CartesianGrid
+										strokeDasharray="3 3"
+										stroke="#f1f5f9"
+									/>
+									<XAxis
+										dataKey="label"
+										tick={{ fontSize: 10 }}
+										angle={-40}
+										textAnchor="end"
+										interval="preserveStartEnd"
+									/>
+									<YAxis
+										tick={{ fontSize: 10 }}
+										allowDecimals={false}
+									/>
+									<Tooltip
+										formatter={(v) => [v, 'Scans']}
+										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+									/>
+									<Bar
+										dataKey="count"
+										radius={[4, 4, 0, 0]}>
+										{chartScansByInterval.map((entry, i) => (
+											<Cell
+												key={i}
+												fill={entry.fill}
+											/>
+										))}
+									</Bar>
+								</BarChart>
+							</ResponsiveContainer>
+						)}
+					</CardContent>
+				</Card>
+
+				{/* Cumulative check-ins */}
+				{chartCumulative.length > 0 && (
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-base flex items-center gap-2">
-								<BarChart2 className="h-4 w-4" />
-								Scans by Hour (last 48 h)
+								<CheckCircle2 className="h-4 w-4 text-green-600" />
+								Cumulative Check-ins
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="flex items-end gap-1 h-32 overflow-x-auto">
-								{stats.scansByHour.map(point => {
-									const barHeight = Math.max(4, Math.round((point.count / maxBarCount) * 120));
-									const hour = new Date(point.hour);
-									const label = hour.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-									return (
-										<div
-											key={point.hour}
-											className="flex flex-col items-center gap-1 shrink-0"
-											title={`${label}: ${point.count} scan${point.count !== 1 ? 's' : ''}`}>
-											<span className="text-xs text-muted-foreground">{point.count}</span>
-											<div
-												className="w-7 bg-primary rounded-t"
-												style={{ height: `${barHeight}px` }}
+							<ResponsiveContainer
+								width="100%"
+								height={200}>
+								<AreaChart
+									data={chartCumulative}
+									margin={{ top: 4, right: 4, left: -20, bottom: 48 }}>
+									<defs>
+										<linearGradient
+											id="checkinGrad"
+											x1="0"
+											y1="0"
+											x2="0"
+											y2="1">
+											<stop
+												offset="5%"
+												stopColor="#22c55e"
+												stopOpacity={0.3}
 											/>
-											<span className="text-xs text-muted-foreground rotate-45 origin-left w-8 truncate">{label}</span>
-										</div>
-									);
-								})}
-							</div>
+											<stop
+												offset="95%"
+												stopColor="#22c55e"
+												stopOpacity={0}
+											/>
+										</linearGradient>
+									</defs>
+									<CartesianGrid
+										strokeDasharray="3 3"
+										stroke="#f1f5f9"
+									/>
+									<XAxis
+										dataKey="label"
+										tick={{ fontSize: 10 }}
+										angle={-40}
+										textAnchor="end"
+										interval="preserveStartEnd"
+									/>
+									<YAxis
+										tick={{ fontSize: 10 }}
+										allowDecimals={false}
+									/>
+									<Tooltip
+										formatter={(v) => [v, 'Checked in']}
+										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+									/>
+									<Area
+										type="monotone"
+										dataKey="checkedIn"
+										stroke="#22c55e"
+										strokeWidth={2}
+										fill="url(#checkinGrad)"
+									/>
+								</AreaChart>
+							</ResponsiveContainer>
+						</CardContent>
+					</Card>
+				)}
+
+				{/* User scan ranking */}
+				{chartUserRanking.length > 0 && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base flex items-center gap-2">
+								<Shield className="h-4 w-4 text-indigo-500" />
+								Scanner Ranking
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<ResponsiveContainer
+								width="100%"
+								height={Math.max(120, chartUserRanking.length * 36)}>
+								<BarChart
+									layout="vertical"
+									data={chartUserRanking}
+									margin={{ top: 4, right: 20, left: 0, bottom: 4 }}>
+									<CartesianGrid
+										strokeDasharray="3 3"
+										stroke="#f1f5f9"
+										horizontal={false}
+									/>
+									<XAxis
+										type="number"
+										tick={{ fontSize: 10 }}
+										allowDecimals={false}
+									/>
+									<YAxis
+										type="category"
+										dataKey="label"
+										tick={{ fontSize: 11 }}
+										width={90}
+									/>
+									<Tooltip
+										formatter={(v) => [v, 'Scans']}
+										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+									/>
+									<Bar
+										dataKey="scans"
+										fill="#6366f1"
+										radius={[0, 4, 4, 0]}
+									/>
+								</BarChart>
+							</ResponsiveContainer>
+						</CardContent>
+					</Card>
+				)}
+
+				{/* Duplicate scans table */}
+				{stats && stats.duplicateTickets && stats.duplicateTickets.length > 0 && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base flex items-center gap-2">
+								<AlertTriangle className="h-4 w-4 text-red-500" />
+								QR Codes Scanned Multiple Times
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="p-0">
+							<table className="w-full text-sm">
+								<thead>
+									<tr className="border-b bg-slate-50">
+										<th className="text-left px-4 py-2 font-medium text-muted-foreground">#</th>
+										<th className="text-left px-4 py-2 font-medium text-muted-foreground">Guest</th>
+										<th className="text-right px-4 py-2 font-medium text-muted-foreground">Times Scanned</th>
+									</tr>
+								</thead>
+								<tbody>
+									{stats.duplicateTickets.map((t, idx) => (
+										<tr
+											key={t.ticketId}
+											className="border-b last:border-0">
+											<td className="px-4 py-2 text-muted-foreground">{idx + 1}</td>
+											<td className="px-4 py-2 font-medium">{t.name}</td>
+											<td className="px-4 py-2 text-right">
+												<Badge variant="warning">{t.scanCount}×</Badge>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
 						</CardContent>
 					</Card>
 				)}

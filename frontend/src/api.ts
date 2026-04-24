@@ -79,7 +79,11 @@ export interface EventStats {
 	uniqueTickets: number;
 	duplicates: number;
 	scansByHour: { hour: string; count: number }[];
+	scansByInterval: { bucket: string; count: number }[];
 	topGuests: { ticketId: string; name: string; scanCount: number }[];
+	userScanRanking: { userId: string; email: string; scanCount: number }[];
+	duplicateTickets: { ticketId: string; name: string; scanCount: number }[];
+	firstScansByInterval: { bucket: string; count: number }[];
 }
 
 export interface AdminTenant {
@@ -142,7 +146,8 @@ export const searchGuestsApi = (q: string) => api.get<{ data: Guest[] }>('/guest
 export const getTicketQRApi = (ticketId: string) => api.get<{ data: { qrToken: string } }>(`/tickets/${ticketId}/qr`);
 
 // Stats
-export const getEventStatsApi = (eventId: string) => api.get<{ data: EventStats }>(`/events/${eventId}/stats`);
+export const getEventStatsApi = (eventId: string, interval?: string) =>
+	api.get<{ data: EventStats }>(`/events/${eventId}/stats`, interval ? { params: { interval } } : {});
 
 // Scan
 export const postScanApi = (ticketId: string, eventId: string, deviceId: string, scannedAt: string) =>
