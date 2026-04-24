@@ -14,7 +14,9 @@ router.use(requireRole(['owner', 'admin']));
  * Returns up to 20 matches, each decorated with the events they have attended.
  */
 router.get('/', async (req: Request, res: Response): Promise<void> => {
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  const rawQ = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  // Limit query length to prevent overly expensive LIKE queries
+  const q = rawQ.slice(0, 100);
 
   const guests = await prisma.guest.findMany({
     where: {

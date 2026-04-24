@@ -69,15 +69,13 @@ export function downloadBlob(blob: Blob, filename: string): void {
  * Returns true if shared via native share, false if downloaded.
  */
 export async function sharePdfOrDownload(blob: Blob, filename: string, title: string): Promise<boolean> {
+	const file = new File([blob], filename, { type: 'application/pdf' });
 	if (
 		typeof navigator.share === 'function' &&
 		typeof navigator.canShare === 'function' &&
-		navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })
+		navigator.canShare({ files: [file] })
 	) {
-		await navigator.share({
-			files: [new File([blob], filename, { type: 'application/pdf' })],
-			title,
-		});
+		await navigator.share({ files: [file], title });
 		return true;
 	}
 	downloadBlob(blob, filename);
