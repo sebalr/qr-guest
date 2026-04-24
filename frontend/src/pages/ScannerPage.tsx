@@ -15,27 +15,42 @@ function getDeviceId(): string {
   return id;
 }
 
+/** Safe meta reader — returns sensible defaults on any corruption. */
 async function getMeta() {
-  const [ver, cursor, lastSync] = await Promise.all([
-    db.meta.get('last_ticket_version'),
-    db.meta.get('last_scan_cursor'),
-    db.meta.get('last_sync_at'),
-  ]);
-  return {
-    last_ticket_version: (ver?.value as number) ?? 0,
-    last_scan_cursor: (cursor?.value as string) ?? new Date(0).toISOString(),
-    last_sync_at: (lastSync?.value as string) ?? null,
-  };
+  try {
+    const [ver, cursor, lastSync] = await Promise.all([
+      db.meta.get('last_ticket_version'),
+      db.meta.get('last_scan_cursor'),
+      db.meta.get('last_sync_at'),
+    ]);
+    return {
+      last_ticket_version: typeof ver?.value === 'number' ? ver.value : 0,
+      last_scan_cursor:
+        typeof cursor?.value === 'string' ? cursor.value : new Date(0).toISOString(),
+      last_sync_at: typeof lastSync?.value === 'string' ? lastSync.value : null,
+    };
+  } catch {
+    // If IndexedDB meta is corrupted, return safe defaults
+    return {
+      last_ticket_version: 0,
+      last_scan_cursor: new Date(0).toISOString(),
+      last_sync_at: null,
+    };
+  }
 }
 
 async function updateMeta(data: { newTicketVersion?: number; newScanCursor?: string }) {
-  if (data.newTicketVersion != null) {
-    await db.meta.put({ key: 'last_ticket_version', value: data.newTicketVersion });
+  try {
+    if (data.newTicketVersion != null) {
+      await db.meta.put({ key: 'last_ticket_version', value: data.newTicketVersion });
+    }
+    if (data.newScanCursor) {
+      await db.meta.put({ key: 'last_scan_cursor', value: data.newScanCursor });
+    }
+    await db.meta.put({ key: 'last_sync_at', value: new Date().toISOString() });
+  } catch {
+    // Meta write failure is non-critical — data is already saved
   }
-  if (data.newScanCursor) {
-    await db.meta.put({ key: 'last_scan_cursor', value: data.newScanCursor });
-  }
-  await db.meta.put({ key: 'last_sync_at', value: new Date().toISOString() });
 }
 
 type ScanState = 'idle' | 'success' | 'error';
@@ -48,14 +63,18 @@ export default function ScannerPage() {
   const controlsRef = useRef<IScannerControls | null>(null);
   const lastScannedRef = useRef<string>('');
   const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Prevents concurrent syncs — if a sync takes longer than the interval, we skip
+  const syncInProgressRef = useRef(false);
 
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [message, setMessage] = useState('');
   const [cameraError, setCameraError] = useState('');
   const [online, setOnline] = useState(navigator.onLine);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [scannedCount, setScannedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [duplicateInfo, setDuplicateInfo] = useState<{
     ticket: LocalTicket;
     lastScan: LocalScan;
@@ -65,14 +84,20 @@ export default function ScannerPage() {
   // Load counts
   const refreshCounts = useCallback(async () => {
     if (!eventId) return;
-    const [scanned, total, meta] = await Promise.all([
-      db.scans.where('event_id').equals(eventId).count(),
-      db.tickets.where('event_id').equals(eventId).count(),
-      getMeta(),
-    ]);
-    setScannedCount(scanned);
-    setTotalCount(total);
-    setLastSync(meta.last_sync_at);
+    try {
+      const [scanned, total, unsynced, meta] = await Promise.all([
+        db.scans.where('event_id').equals(eventId).count(),
+        db.tickets.where('event_id').equals(eventId).count(),
+        db.scans.where('synced').equals(0).count(),
+        getMeta(),
+      ]);
+      setScannedCount(scanned);
+      setTotalCount(total);
+      setUnsyncedCount(unsynced);
+      setLastSync(meta.last_sync_at);
+    } catch {
+      // Non-critical — UI will show stale counts
+    }
   }, [eventId]);
 
   // Online/offline tracking
@@ -87,16 +112,35 @@ export default function ScannerPage() {
     };
   }, []);
 
-  // Auto-sync every 30s when online
-  useEffect(() => {
-    if (!eventId) return;
-    const doSync = async () => {
+  /**
+   * Core sync function.
+   * - fullResync: resets cursors so all data is re-fetched from the server.
+   * - Scans are only marked as synced AFTER the server confirms receipt.
+   * - Only the specific scans that were sent are marked synced (not newly added ones).
+   * - A sync lock prevents concurrent executions.
+   */
+  const doSync = useCallback(
+    async (fullResync = false) => {
+      if (syncInProgressRef.current) return; // Skip if a sync is already running
       if (!navigator.onLine) return;
+
+      syncInProgressRef.current = true;
+      setSyncError(null);
+
       try {
-        const meta = await getMeta();
+        let meta = await getMeta();
+
+        if (fullResync) {
+          // Reset cursors — server will return all tickets + scans
+          meta = { last_ticket_version: 0, last_scan_cursor: new Date(0).toISOString(), last_sync_at: null };
+        }
+
+        // Collect the IDs of unsynced scans BEFORE sending
         const unsynced = await db.scans.where('synced').equals(0).toArray();
+        const unsyncedIds = unsynced.map((s) => s.id);
+
         const res = await syncApi({
-          eventId,
+          eventId: eventId!,
           lastTicketVersion: meta.last_ticket_version,
           lastScanCursor: meta.last_scan_cursor,
           localScans: unsynced.map((s) => ({
@@ -106,7 +150,9 @@ export default function ScannerPage() {
             deviceId: getDeviceId(),
           })),
         });
+
         const { ticketUpdates, newTicketVersion, newScanCursor } = res.data.data;
+
         if (ticketUpdates?.length) {
           await db.tickets.bulkPut(
             ticketUpdates.map((t) => ({
@@ -118,22 +164,48 @@ export default function ScannerPage() {
             })),
           );
         }
-        if (unsynced.length) {
-          await db.scans
-            .where('synced')
-            .equals(0)
-            .modify({ synced: true });
+
+        // Only mark the exact scans we sent as synced — not any newly added ones
+        if (unsyncedIds.length) {
+          await db.scans.where('id').anyOf(unsyncedIds).modify({ synced: true });
         }
+
         await updateMeta({ newTicketVersion, newScanCursor });
         await refreshCounts();
-      } catch {
-        // Sync failed silently
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Sync failed';
+        setSyncError(msg);
+        // Scans remain unsynced — no data loss
+      } finally {
+        syncInProgressRef.current = false;
       }
-    };
+    },
+    [eventId, refreshCounts],
+  );
+
+  /** Full resync: resets all cursors and marks all local scans as unsynced so they are re-sent. */
+  const triggerFullResync = useCallback(async () => {
+    try {
+      // Mark all scans for this event as unsynced so they are re-sent
+      await db.scans.where('event_id').equals(eventId!).modify({ synced: false });
+      // Clear cursor meta
+      await db.meta.delete('last_ticket_version');
+      await db.meta.delete('last_scan_cursor');
+      setSyncError(null);
+      await doSync(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Full resync failed';
+      setSyncError(msg);
+    }
+  }, [eventId, doSync]);
+
+  // Auto-sync every 60s when online; skip if a sync is already running
+  useEffect(() => {
+    if (!eventId) return;
     doSync();
-    const interval = setInterval(doSync, 30_000);
+    const interval = setInterval(() => doSync(), 60_000);
     return () => clearInterval(interval);
-  }, [eventId, refreshCounts]);
+  }, [eventId, doSync]);
 
   useEffect(() => {
     refreshCounts();
@@ -235,6 +307,7 @@ export default function ScannerPage() {
   async function registerScan(ticketId: string, eid: string) {
     const scanId = crypto.randomUUID();
     const scannedAt = new Date().toISOString();
+    // Always write to local DB first — data is never lost until server confirms
     await db.scans.add({
       id: scanId,
       ticket_id: ticketId,
@@ -245,7 +318,7 @@ export default function ScannerPage() {
     await refreshCounts();
     showSuccess('✓ Ticket scanned successfully!');
 
-    // Best-effort online sync
+    // Best-effort immediate online push — does NOT affect local record
     if (navigator.onLine) {
       postScanApi(ticketId, eid, getDeviceId()).catch(() => {});
     }
@@ -275,8 +348,28 @@ export default function ScannerPage() {
           lastSync={lastSync}
           scannedCount={scannedCount}
           totalCount={totalCount}
+          unsyncedCount={unsyncedCount}
         />
       </header>
+
+      {/* Sync error banner */}
+      {syncError && (
+        <div className="bg-yellow-900/80 border-b border-yellow-600 px-4 py-2 flex items-center gap-3 text-sm">
+          <span className="text-yellow-300 flex-1">⚠ Sync error: {syncError}. Local scans are safe.</span>
+          <button
+            onClick={() => doSync()}
+            className="bg-yellow-700 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-xs font-medium"
+          >
+            Retry Sync
+          </button>
+          <button
+            onClick={triggerFullResync}
+            className="bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-medium"
+          >
+            Full Resync
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         {cameraError ? (
@@ -317,6 +410,14 @@ export default function ScannerPage() {
         )}
 
         <p className="text-gray-400 text-sm mt-4">Point camera at a QR code</p>
+
+        {/* Manual Full Resync button — always accessible */}
+        <button
+          onClick={triggerFullResync}
+          className="mt-6 bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm"
+        >
+          🔄 Full Resync
+        </button>
       </div>
 
       {duplicateInfo && pendingTicket && (

@@ -139,8 +139,9 @@ router.get(
       return;
     }
 
+    // Use noTimestamp to strip iat/exp — keeps the QR payload minimal for easy scanning
     const qrToken = jwt.sign({ tid: ticket.id, eid: ticket.eventId }, secret, {
-      expiresIn: '365d',
+      noTimestamp: true,
     });
 
     res.json({ data: { qrToken } });

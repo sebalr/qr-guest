@@ -52,11 +52,11 @@ export interface SyncResponse {
 }
 
 // Auth
-export const loginApi = (email: string, password: string) =>
-  api.post<{ token: string }>('/auth/login', { email, password });
+export const loginApi = (email: string, password: string, recaptchaToken?: string) =>
+  api.post<{ token: string }>('/auth/login', { email, password, recaptchaToken });
 
-export const registerApi = (email: string, password: string, name: string) =>
-  api.post<{ token: string }>('/auth/register', { email, password, name });
+export const registerApi = (email: string, password: string, name: string, recaptchaToken?: string) =>
+  api.post<{ token: string }>('/auth/register', { tenantName: name, email, password, recaptchaToken });
 
 // Events
 export const getEventsApi = () => api.get<{ data: Event[] }>('/events');

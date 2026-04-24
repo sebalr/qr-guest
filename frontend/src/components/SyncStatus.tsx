@@ -3,6 +3,7 @@ interface Props {
   lastSync: string | null;
   scannedCount: number;
   totalCount: number;
+  unsyncedCount?: number;
 }
 
 function timeAgo(iso: string): string {
@@ -12,7 +13,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(diff / 3600)}h ago`;
 }
 
-export default function SyncStatus({ online, lastSync, scannedCount, totalCount }: Props) {
+export default function SyncStatus({ online, lastSync, scannedCount, totalCount, unsyncedCount = 0 }: Props) {
   return (
     <div className="text-right text-xs text-gray-300 leading-snug">
       <div className="flex items-center justify-end gap-1 font-medium">
@@ -23,6 +24,9 @@ export default function SyncStatus({ online, lastSync, scannedCount, totalCount 
       <div>
         {scannedCount}/{totalCount} scanned
       </div>
+      {unsyncedCount > 0 && (
+        <div className="text-yellow-400">{unsyncedCount} pending</div>
+      )}
     </div>
   );
 }

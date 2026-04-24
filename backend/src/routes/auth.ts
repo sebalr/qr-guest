@@ -5,10 +5,36 @@ import prisma from '../prisma';
 
 const router = Router();
 
+/** Verifies a reCAPTCHA token with Google's API.
+ *  Returns true if verification passes or RECAPTCHA_SECRET is not configured (dev mode). */
+async function verifyRecaptcha(token: string | undefined): Promise<boolean> {
+  const secret = process.env.RECAPTCHA_SECRET;
+  if (!secret) return true; // Skip verification if not configured
+  if (!token) return false;
+
+  try {
+    const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ secret, response: token }).toString(),
+    });
+    const data = (await res.json()) as { success: boolean };
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { tenantName, email, password } = req.body;
+  const { tenantName, email, password, recaptchaToken } = req.body;
   if (!tenantName || !email || !password) {
     res.status(400).json({ error: 'tenantName, email, and password are required' });
+    return;
+  }
+
+  const captchaOk = await verifyRecaptcha(recaptchaToken as string | undefined);
+  if (!captchaOk) {
+    res.status(400).json({ error: 'reCAPTCHA verification failed. Please try again.' });
     return;
   }
 
@@ -41,9 +67,15 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
+  const { email, password, recaptchaToken } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: 'email and password are required' });
+    return;
+  }
+
+  const captchaOk = await verifyRecaptcha(recaptchaToken as string | undefined);
+  if (!captchaOk) {
+    res.status(400).json({ error: 'reCAPTCHA verification failed. Please try again.' });
     return;
   }
 
