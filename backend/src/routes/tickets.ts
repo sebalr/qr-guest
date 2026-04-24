@@ -16,9 +16,9 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 		return;
 	}
 
-	const { name } = req.body as { name?: string };
-	if (!name || !name.trim()) {
-		res.status(400).json({ error: 'name is required' });
+	const { name, guestId } = req.body as { name?: string; guestId?: string };
+	if (!guestId && (!name || !name.trim())) {
+		res.status(400).json({ error: 'name or guestId is required' });
 		return;
 	}
 
@@ -39,7 +39,38 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 		}
 	}
 
-	const ticket = await prisma.ticket.create({ data: { eventId, name: name.trim() } });
+	let resolvedGuestId: string;
+	let resolvedName: string;
+
+	if (guestId) {
+		// Use existing guest — verify it belongs to the same tenant
+		const guest = await prisma.guest.findFirst({
+			where: { id: guestId, tenantId: req.user!.tenantId },
+		});
+		if (!guest) {
+			res.status(404).json({ error: 'Guest not found' });
+			return;
+		}
+		resolvedGuestId = guest.id;
+		resolvedName = guest.name;
+	} else {
+		// Find or create a guest by name within this tenant
+		const trimmedName = name!.trim();
+		let guest = await prisma.guest.findFirst({
+			where: { tenantId: req.user!.tenantId, name: { equals: trimmedName, mode: 'insensitive' } },
+		});
+		if (!guest) {
+			guest = await prisma.guest.create({
+				data: { tenantId: req.user!.tenantId, name: trimmedName },
+			});
+		}
+		resolvedGuestId = guest.id;
+		resolvedName = guest.name;
+	}
+
+	const ticket = await prisma.ticket.create({
+		data: { eventId, guestId: resolvedGuestId, name: resolvedName },
+	});
 	await prisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
 
 	res.status(201).json({ data: ticket });
@@ -79,7 +110,25 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		}
 	}
 
-	const created = await prisma.$transaction(tickets.map(t => prisma.ticket.create({ data: { eventId, name: t.name } })));
+	const created = await prisma.$transaction(async (tx) => {
+		const results = [];
+		for (const t of tickets) {
+			const trimmedName = t.name.trim();
+			let guest = await tx.guest.findFirst({
+				where: { tenantId: req.user!.tenantId, name: { equals: trimmedName, mode: 'insensitive' } },
+			});
+			if (!guest) {
+				guest = await tx.guest.create({
+					data: { tenantId: req.user!.tenantId, name: trimmedName },
+				});
+			}
+			const ticket = await tx.ticket.create({
+				data: { eventId, guestId: guest.id, name: guest.name },
+			});
+			results.push(ticket);
+		}
+		return results;
+	});
 
 	// Bump event version so sync clients pick up the new tickets
 	await prisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
@@ -112,6 +161,7 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: R
 	const result = tickets.map(t => ({
 		id: t.id,
 		eventId: t.eventId,
+		guestId: t.guestId,
 		name: t.name,
 		status: t.status,
 		version: t.version,

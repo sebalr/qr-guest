@@ -23,10 +23,19 @@ export interface Event {
 export interface Ticket {
 	id: string;
 	eventId: string;
+	guestId?: string | null;
 	name: string;
 	status: string;
 	version: number;
 	scanCount?: number;
+}
+
+export interface Guest {
+	id: string;
+	name: string;
+	tenantId: string;
+	createdAt: string;
+	events: { eventId: string; eventName: string }[];
 }
 
 export interface SyncPayload {
@@ -122,10 +131,13 @@ export const getTicketsApi = (eventId: string) => api.get<{ data: Ticket[] }>(`/
 export const addTicketsApi = (eventId: string, names: string[]) =>
 	api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: names.map(name => ({ name })) });
 
-export const createTicketApi = (eventId: string, name: string) =>
-	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, { name });
+export const createTicketApi = (eventId: string, data: { name?: string; guestId?: string }) =>
+	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data);
 
 export const cancelTicketApi = (ticketId: string) => api.post<{ data: Ticket }>(`/tickets/${ticketId}/cancel`);
+
+// Guests
+export const searchGuestsApi = (q: string) => api.get<{ data: Guest[] }>('/guests', { params: { q } });
 
 export const getTicketQRApi = (ticketId: string) => api.get<{ data: { qrToken: string } }>(`/tickets/${ticketId}/qr`);
 

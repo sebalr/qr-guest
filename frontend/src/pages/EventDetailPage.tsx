@@ -1,6 +1,6 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEventApi, getTicketsApi, addTicketsApi, createTicketApi, cancelTicketApi, getTicketQRApi, Event, Ticket } from '../api';
+import { getEventApi, getTicketsApi, addTicketsApi, createTicketApi, cancelTicketApi, getTicketQRApi, searchGuestsApi, Event, Ticket, Guest } from '../api';
 import { db } from '../db';
 import QRCodeDisplay from '../components/QRCodeDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -42,10 +42,15 @@ export default function EventDetailPage() {
 	const [adding, setAdding] = useState(false);
 	const [bulkError, setBulkError] = useState('');
 
-	// Single add
+	// Single add – guest search
 	const [singleName, setSingleName] = useState('');
 	const [addingSingle, setAddingSingle] = useState(false);
 	const [singleError, setSingleError] = useState('');
+	const [guestSuggestions, setGuestSuggestions] = useState<Guest[]>([]);
+	const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+	const [showSuggestions, setShowSuggestions] = useState(false);
+	const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const suggestionRef = useRef<HTMLDivElement>(null);
 
 	// QR map and scan counts
 	const [qrMap, setQrMap] = useState<Record<string, string>>({});
@@ -93,13 +98,52 @@ export default function EventDetailPage() {
 			.finally(() => setLoading(false));
 	}, [id]);
 
+	// Close suggestions on outside click
+	useEffect(() => {
+		function handleClick(e: MouseEvent) {
+			if (suggestionRef.current && !suggestionRef.current.contains(e.target as Node)) {
+				setShowSuggestions(false);
+			}
+		}
+		document.addEventListener('mousedown', handleClick);
+		return () => document.removeEventListener('mousedown', handleClick);
+	}, []);
+
+	function handleSingleNameChange(value: string) {
+		setSingleName(value);
+		setSelectedGuest(null);
+		if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+		if (!value.trim()) {
+			setGuestSuggestions([]);
+			setShowSuggestions(false);
+			return;
+		}
+		searchTimerRef.current = setTimeout(async () => {
+			try {
+				const res = await searchGuestsApi(value.trim());
+				setGuestSuggestions(res.data.data);
+				setShowSuggestions(true);
+			} catch {
+				setGuestSuggestions([]);
+			}
+		}, 300);
+	}
+
+	function handleSelectGuest(guest: Guest) {
+		setSelectedGuest(guest);
+		setSingleName(guest.name);
+		setShowSuggestions(false);
+		setGuestSuggestions([]);
+	}
+
 	async function handleAddSingle(e: FormEvent) {
 		e.preventDefault();
 		if (!id) return;
 		setSingleError('');
 		setAddingSingle(true);
 		try {
-			const res = await createTicketApi(id, singleName.trim());
+			const payload = selectedGuest ? { guestId: selectedGuest.id } : { name: singleName.trim() };
+			const res = await createTicketApi(id, payload);
 			const newTicket = res.data.data;
 			setTickets(prev => [...prev, newTicket]);
 			db.tickets.put({
@@ -110,6 +154,8 @@ export default function EventDetailPage() {
 				version: newTicket.version,
 			});
 			setSingleName('');
+			setSelectedGuest(null);
+			setGuestSuggestions([]);
 		} catch {
 			setSingleError('Failed to add guest.');
 		} finally {
@@ -317,17 +363,71 @@ export default function EventDetailPage() {
 					</Card>
 				)}
 
-				{/* Single guest add */}
+				{/* Single guest add with autocomplete */}
 				<form
 					onSubmit={handleAddSingle}
 					className="flex gap-2 items-start">
-					<div className="flex-1 space-y-1">
-						<Input
-							placeholder="Add guest by name…"
-							value={singleName}
-							onChange={e => setSingleName(e.target.value)}
-						/>
+					<div
+						className="flex-1 space-y-1 relative"
+						ref={suggestionRef}>
+						<div className="relative">
+							<Input
+								placeholder="Add guest by name…"
+								value={singleName}
+								onChange={e => handleSingleNameChange(e.target.value)}
+								onFocus={() => guestSuggestions.length > 0 && setShowSuggestions(true)}
+								autoComplete="off"
+							/>
+							{selectedGuest && (
+								<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium pointer-events-none">
+									Existing guest
+								</span>
+							)}
+						</div>
 						{singleError && <p className="text-xs text-destructive">{singleError}</p>}
+
+						{/* Suggestions dropdown */}
+						{showSuggestions && guestSuggestions.length > 0 && (
+							<div className="absolute z-30 top-full mt-1 w-full bg-background border rounded-lg shadow-lg overflow-hidden">
+								<p className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b bg-slate-50">
+									Existing guests in your organisation
+								</p>
+								<ul className="max-h-56 overflow-y-auto divide-y">
+									{guestSuggestions.map(g => (
+										<li key={g.id}>
+											<button
+												type="button"
+												className="w-full text-left px-3 py-2 hover:bg-accent transition-colors"
+												onMouseDown={e => {
+													e.preventDefault();
+													handleSelectGuest(g);
+												}}>
+												<p className="text-sm font-medium">{g.name}</p>
+												{g.events.length > 0 && (
+													<p className="text-xs text-muted-foreground truncate">
+														{g.events.map(ev => ev.eventName).join(', ')}
+													</p>
+												)}
+											</button>
+										</li>
+									))}
+								</ul>
+								<div className="border-t px-3 py-2 bg-slate-50">
+									<p className="text-xs text-muted-foreground">
+										Not listed?{' '}
+										<button
+											type="button"
+											className="underline hover:text-foreground"
+											onMouseDown={e => {
+												e.preventDefault();
+												setShowSuggestions(false);
+											}}>
+											Create new guest &quot;{singleName}&quot;
+										</button>
+									</p>
+								</div>
+							</div>
+						)}
 					</div>
 					<Button
 						type="submit"

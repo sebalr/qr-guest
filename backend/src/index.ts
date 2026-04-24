@@ -9,6 +9,7 @@ import scansRouter from './routes/scans';
 import syncRouter from './routes/sync';
 import adminRouter from './routes/admin';
 import statsRouter from './routes/stats';
+import guestsRouter from './routes/guests';
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/scan', scansRouter);
 app.use('/sync', syncRouter);
 app.use('/admin', adminRouter);
 app.use('/events', statsRouter);
+app.use('/guests', guestsRouter);
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
