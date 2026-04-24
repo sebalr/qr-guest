@@ -39,6 +39,14 @@ export interface SyncPayload {
   }[];
 }
 
+export interface RemoteScan {
+  id: string;
+  ticketId: string;
+  eventId: string;
+  scannedAt: string;
+  deviceId: string;
+}
+
 export interface SyncResponse {
   ticketUpdates: {
     id: string;
@@ -47,6 +55,7 @@ export interface SyncResponse {
     status: string;
     version: number;
   }[];
+  scanUpdates: RemoteScan[];
   newTicketVersion: number;
   newScanCursor: string;
 }

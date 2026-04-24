@@ -151,7 +151,7 @@ export default function ScannerPage() {
           })),
         });
 
-        const { ticketUpdates, newTicketVersion, newScanCursor } = res.data.data;
+        const { ticketUpdates, scanUpdates, newTicketVersion, newScanCursor } = res.data.data;
 
         if (ticketUpdates?.length) {
           await db.tickets.bulkPut(
@@ -161,6 +161,20 @@ export default function ScannerPage() {
               name: t.name,
               status: t.status,
               version: t.version,
+            })),
+          );
+        }
+
+        // Persist remote scans from other devices — this makes the duplicate dialog
+        // work cross-device: device B will see device A's scans after the next sync.
+        if (scanUpdates?.length) {
+          await db.scans.bulkPut(
+            scanUpdates.map((s) => ({
+              id: s.id,
+              ticket_id: s.ticketId,
+              event_id: s.eventId,
+              scanned_at: s.scannedAt,
+              synced: true,
             })),
           );
         }
