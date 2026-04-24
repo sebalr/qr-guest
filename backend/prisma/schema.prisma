@@ -36,16 +36,18 @@ model User {
 }
 
 model Event {
-  id        String   @id @default(uuid())
-  tenantId  String   @map("tenant_id")
-  name      String
-  startsAt  DateTime @map("starts_at")
-  endsAt    DateTime @map("ends_at")
-  version   Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  tickets   Ticket[]
-  scans     Scan[]
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  name        String
+  description String?
+  imageUrl    String?   @map("image_url")
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  version     Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tickets     Ticket[]
+  scans       Scan[]
 
   @@map("events")
 }

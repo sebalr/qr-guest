@@ -8,6 +8,43 @@ const router = Router();
 
 router.use(authMiddleware);
 
+// Single ticket create — owner/admin only
+router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	if (!eventId) {
+		res.status(400).json({ error: 'Invalid event id' });
+		return;
+	}
+
+	const { name } = req.body as { name?: string };
+	if (!name || !name.trim()) {
+		res.status(400).json({ error: 'name is required' });
+		return;
+	}
+
+	const event = await prisma.event.findFirst({
+		where: { id: eventId, tenantId: req.user!.tenantId },
+	});
+	if (!event) {
+		res.status(404).json({ error: 'Event not found' });
+		return;
+	}
+
+	const tenant = await prisma.tenant.findUnique({ where: { id: req.user!.tenantId } });
+	if (tenant?.plan === 'free') {
+		const existing = await prisma.ticket.count({ where: { eventId } });
+		if (existing >= 10) {
+			res.status(403).json({ error: 'Free plan allows a maximum of 10 tickets per event.' });
+			return;
+		}
+	}
+
+	const ticket = await prisma.ticket.create({ data: { eventId, name: name.trim() } });
+	await prisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
+
+	res.status(201).json({ data: ticket });
+});
+
 // Bulk create tickets — owner/admin only
 router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

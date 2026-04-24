@@ -7,6 +7,7 @@ import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
 import ScannerPage from './pages/ScannerPage';
 import SuperAdminPage from './pages/SuperAdminPage';
+import DashboardPage from './pages/DashboardPage';
 
 export default function App() {
 	return (
@@ -42,6 +43,14 @@ export default function App() {
 						element={
 							<ProtectedRoute roles={['scanner', 'admin', 'owner']}>
 								<ScannerPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/events/:id/dashboard"
+						element={
+							<ProtectedRoute roles={['admin', 'owner']}>
+								<DashboardPage />
 							</ProtectedRoute>
 						}
 					/>
