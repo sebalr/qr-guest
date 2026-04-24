@@ -56,7 +56,8 @@ export const ModelName = {
   Event: 'Event',
   Ticket: 'Ticket',
   Scan: 'Scan',
-  SyncState: 'SyncState'
+  SyncState: 'SyncState',
+  Guest: 'Guest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -102,6 +103,8 @@ export const EventScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
   name: 'name',
+  description: 'description',
+  imageUrl: 'imageUrl',
   startsAt: 'startsAt',
   endsAt: 'endsAt',
   version: 'version',
@@ -114,6 +117,7 @@ export type EventScalarFieldEnum = (typeof EventScalarFieldEnum)[keyof typeof Ev
 export const TicketScalarFieldEnum = {
   id: 'id',
   eventId: 'eventId',
+  guestId: 'guestId',
   name: 'name',
   status: 'status',
   version: 'version',
@@ -147,6 +151,16 @@ export const SyncStateScalarFieldEnum = {
 export type SyncStateScalarFieldEnum = (typeof SyncStateScalarFieldEnum)[keyof typeof SyncStateScalarFieldEnum]
 
 
+export const GuestScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  name: 'name',
+  createdAt: 'createdAt'
+} as const
+
+export type GuestScalarFieldEnum = (typeof GuestScalarFieldEnum)[keyof typeof GuestScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -161,4 +175,12 @@ export const QueryMode = {
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

@@ -47,3 +47,8 @@ export type Scan = Prisma.ScanModel
  * 
  */
 export type SyncState = Prisma.SyncStateModel
+/**
+ * Model Guest
+ * 
+ */
+export type Guest = Prisma.GuestModel
