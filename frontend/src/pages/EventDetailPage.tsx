@@ -3,6 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getEventApi, getTicketsApi, addTicketsApi, cancelTicketApi, getTicketQRApi, Event, Ticket } from '../api';
 import { db } from '../db';
 import QRCodeDisplay from '../components/QRCodeDisplay';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, QrCode, Camera, Plus, X, AlertCircle, Users, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function EventDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -121,131 +129,166 @@ export default function EventDetailPage() {
 	}
 
 	const totalScanned = Object.values(scanCounts).reduce((a, b) => a + b, 0);
+	const cancelledCount = tickets.filter(t => t.status === 'cancelled').length;
 
 	if (loading) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50">
-				<p className="text-gray-500">Loading…</p>
+			<div className="min-h-screen flex items-center justify-center">
+				<p className="text-muted-foreground">Loading…</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<header className="bg-blue-700 text-white px-6 py-4 flex items-center gap-4 shadow">
-				<button
-					onClick={() => navigate('/events')}
-					className="text-white opacity-80 hover:opacity-100">
-					← Back
-				</button>
-				<h1 className="text-xl font-bold flex-1">{event?.name ?? 'Event'}</h1>
-				<button
-					onClick={() => navigate(`/events/${id}/scan`)}
-					className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-lg font-medium text-sm">
-					📷 Scanner
-				</button>
+		<div className="min-h-screen bg-slate-50">
+			<header className="bg-background border-b sticky top-0 z-10">
+				<div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={() => navigate('/events')}>
+						<ArrowLeft className="h-4 w-4" />
+					</Button>
+					<h1 className="font-bold text-lg flex-1 truncate">{event?.name ?? 'Event'}</h1>
+					<Button
+						size="sm"
+						className="gap-1.5"
+						onClick={() => navigate(`/events/${id}/scan`)}>
+						<Camera className="h-4 w-4" />
+						Scanner
+					</Button>
+				</div>
 			</header>
 
-			<main className="max-w-3xl mx-auto px-4 py-6">
+			<main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 				{event && (
-					<div className="bg-white rounded-xl shadow p-5 mb-6">
-						<p className="text-sm text-gray-500">
-							{new Date(event.startsAt).toLocaleString()} – {new Date(event.endsAt).toLocaleString()}
-						</p>
-						<div className="flex gap-6 mt-3">
-							<div className="text-center">
-								<p className="text-2xl font-bold text-blue-700">{tickets.length}</p>
-								<p className="text-xs text-gray-500">Total Tickets</p>
+					<Card>
+						<CardContent className="pt-6">
+							<p className="text-sm text-muted-foreground mb-4">
+								{new Date(event.startsAt).toLocaleString()} – {new Date(event.endsAt).toLocaleString()}
+							</p>
+							<div className="grid grid-cols-3 gap-4">
+								<div className="flex flex-col items-center p-3 rounded-lg bg-slate-50 border">
+									<Users className="h-5 w-5 text-muted-foreground mb-1" />
+									<p className="text-2xl font-bold">{tickets.length}</p>
+									<p className="text-xs text-muted-foreground">Total</p>
+								</div>
+								<div className="flex flex-col items-center p-3 rounded-lg bg-green-50 border border-green-100">
+									<CheckCircle2 className="h-5 w-5 text-green-600 mb-1" />
+									<p className="text-2xl font-bold text-green-600">{totalScanned}</p>
+									<p className="text-xs text-muted-foreground">Scanned</p>
+								</div>
+								<div className="flex flex-col items-center p-3 rounded-lg bg-red-50 border border-red-100">
+									<XCircle className="h-5 w-5 text-red-500 mb-1" />
+									<p className="text-2xl font-bold text-red-500">{cancelledCount}</p>
+									<p className="text-xs text-muted-foreground">Cancelled</p>
+								</div>
 							</div>
-							<div className="text-center">
-								<p className="text-2xl font-bold text-green-600">{totalScanned}</p>
-								<p className="text-xs text-gray-500">Scanned</p>
-							</div>
-							<div className="text-center">
-								<p className="text-2xl font-bold text-red-500">{tickets.filter(t => t.status === 'cancelled').length}</p>
-								<p className="text-xs text-gray-500">Cancelled</p>
-							</div>
-						</div>
-					</div>
+						</CardContent>
+					</Card>
 				)}
 
-				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-lg font-semibold text-gray-800">Tickets</h2>
-					<button
-						onClick={() => setShowBulk(v => !v)}
-						className="bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-800">
-						{showBulk ? 'Cancel' : '+ Add Tickets'}
-					</button>
+				<div className="flex justify-between items-center">
+					<h2 className="text-lg font-semibold">Tickets</h2>
+					<Button
+						variant={showBulk ? 'outline' : 'default'}
+						size="sm"
+						className="gap-1.5"
+						onClick={() => setShowBulk(v => !v)}>
+						{showBulk ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+						{showBulk ? 'Cancel' : 'Add Tickets'}
+					</Button>
 				</div>
 
 				{showBulk && (
-					<form
-						onSubmit={handleAddTickets}
-						className="bg-white rounded-xl shadow p-5 mb-5 space-y-3">
-						<label className="block text-sm font-medium text-gray-700">Guest names (one per line)</label>
-						<textarea
-							rows={5}
-							value={bulkNames}
-							onChange={e => setBulkNames(e.target.value)}
-							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="Alice Smith&#10;Bob Jones&#10;Carol White"
-						/>
-						{bulkError && <p className="text-red-600 text-sm">{bulkError}</p>}
-						<button
-							type="submit"
-							disabled={adding}
-							className="bg-blue-700 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-800 disabled:opacity-60">
-							{adding ? 'Adding…' : 'Add Tickets'}
-						</button>
-					</form>
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Add Guest Tickets</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<form
+								onSubmit={handleAddTickets}
+								className="space-y-3">
+								<div className="space-y-2">
+									<Label>Guest names (one per line)</Label>
+									<Textarea
+										rows={5}
+										value={bulkNames}
+										onChange={e => setBulkNames(e.target.value)}
+										placeholder={'Alice Smith\nBob Jones\nCarol White'}
+									/>
+								</div>
+								{bulkError && (
+									<Alert variant="destructive">
+										<AlertCircle className="h-4 w-4" />
+										<AlertDescription>{bulkError}</AlertDescription>
+									</Alert>
+								)}
+								<Button
+									type="submit"
+									disabled={adding}>
+									{adding ? 'Adding…' : 'Add Tickets'}
+								</Button>
+							</form>
+						</CardContent>
+					</Card>
 				)}
 
-				<ul className="space-y-3">
-					{tickets.map(ticket => (
-						<li
-							key={ticket.id}
-							className="bg-white rounded-xl shadow p-4">
-							<div className="flex justify-between items-start">
-								<div>
-									<p className="font-medium text-gray-800">{ticket.name}</p>
-									<p className="text-xs text-gray-400 mt-0.5 font-mono">{ticket.id}</p>
-									<span
-										className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-											ticket.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-										}`}>
-										{ticket.status}
-									</span>
-									{scanCounts[ticket.id] ? (
-										<span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-											Scanned {scanCounts[ticket.id]}×
-										</span>
-									) : null}
-								</div>
-								<div className="flex gap-2 ml-4">
-									<button
-										onClick={() => handleShowQR(ticket.id)}
-										className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded">
-										{qrMap[ticket.id] ? 'Hide QR' : 'QR'}
-									</button>
-									{ticket.status === 'active' && (
-										<button
-											onClick={() => handleCancel(ticket.id)}
-											className="text-xs bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1 rounded">
-											Cancel
-										</button>
+				<div className="space-y-3">
+					{tickets.length === 0 ? (
+						<Card className="py-12 text-center">
+							<CardContent>
+								<p className="text-muted-foreground">No tickets yet.</p>
+							</CardContent>
+						</Card>
+					) : (
+						tickets.map(ticket => (
+							<Card key={ticket.id}>
+								<CardContent className="p-4">
+									<div className="flex justify-between items-start gap-4">
+										<div className="min-w-0">
+											<p className="font-medium truncate">{ticket.name}</p>
+											<p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{ticket.id}</p>
+											<div className="flex flex-wrap gap-1.5 mt-2">
+												<Badge variant={ticket.status === 'active' ? 'success' : 'destructive'}>{ticket.status}</Badge>
+												{scanCounts[ticket.id] ? (
+													<Badge variant="secondary">Scanned {scanCounts[ticket.id]}×</Badge>
+												) : null}
+											</div>
+										</div>
+										<div className="flex gap-2 shrink-0">
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => handleShowQR(ticket.id)}>
+												<QrCode className="h-3.5 w-3.5 mr-1" />
+												{qrMap[ticket.id] ? 'Hide' : 'QR'}
+											</Button>
+											{ticket.status === 'active' && (
+												<Button
+													variant="destructive"
+													size="sm"
+													onClick={() => handleCancel(ticket.id)}>
+													Cancel
+												</Button>
+											)}
+										</div>
+									</div>
+									{qrMap[ticket.id] && (
+										<>
+											<Separator className="my-3" />
+											<div className="flex justify-center">
+												<QRCodeDisplay value={qrMap[ticket.id]} />
+											</div>
+										</>
 									)}
-								</div>
-							</div>
-							{qrMap[ticket.id] && (
-								<div className="mt-3 flex justify-center">
-									<QRCodeDisplay value={qrMap[ticket.id]} />
-								</div>
-							)}
-						</li>
-					))}
-					{tickets.length === 0 && <p className="text-gray-400 text-center py-8">No tickets yet.</p>}
-				</ul>
+								</CardContent>
+							</Card>
+						))
+					)}
+				</div>
 			</main>
 		</div>
 	);
 }
+

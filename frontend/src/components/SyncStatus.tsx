@@ -1,3 +1,5 @@
+import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
+
 interface Props {
   online: boolean;
   lastSync: string | null;
@@ -15,14 +17,24 @@ function timeAgo(iso: string): string {
 
 export default function SyncStatus({ online, lastSync, scannedCount, totalCount, unsyncedCount = 0 }: Props) {
   return (
-    <div className="text-right text-xs text-gray-300 leading-snug">
-      <div className="flex items-center justify-end gap-1 font-medium">
-        <span>{online ? '🟢' : '🔴'}</span>
-        <span>{online ? 'Online' : 'Offline'}</span>
+    <div className="text-right text-xs text-gray-400 leading-snug">
+      <div className="flex items-center justify-end gap-1.5 font-medium mb-0.5">
+        {online
+          ? <Wifi className="h-3.5 w-3.5 text-green-400" />
+          : <WifiOff className="h-3.5 w-3.5 text-red-400" />
+        }
+        <span className={online ? 'text-green-400' : 'text-red-400'}>
+          {online ? 'Online' : 'Offline'}
+        </span>
       </div>
-      {lastSync && <div>Synced {timeAgo(lastSync)}</div>}
-      <div>
-        {scannedCount}/{totalCount} scanned
+      {lastSync && (
+        <div className="flex items-center justify-end gap-1">
+          <RefreshCw className="h-3 w-3" />
+          {timeAgo(lastSync)}
+        </div>
+      )}
+      <div className="font-mono">
+        {scannedCount}/{totalCount}
       </div>
       {unsyncedCount > 0 && (
         <div className="text-yellow-400">{unsyncedCount} pending</div>
@@ -30,3 +42,4 @@ export default function SyncStatus({ online, lastSync, scannedCount, totalCount,
     </div>
   );
 }
+

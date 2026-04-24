@@ -1,4 +1,6 @@
 import { LocalTicket, LocalScan } from '../db';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   ticket: LocalTicket;
@@ -14,35 +16,39 @@ export default function DuplicateDialog({ ticket, lastScan, onScanAgain, onCance
   });
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-gray-800">
-        <div className="text-center mb-4">
-          <span className="text-5xl">⚠️</span>
+    <div className="fixed inset-0 bg-black/75 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm text-gray-800">
+        <div className="p-6 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="bg-orange-100 rounded-full p-3">
+              <AlertTriangle className="h-8 w-8 text-orange-500" />
+            </div>
+          </div>
+          <h2 className="text-xl font-bold text-orange-600 mb-1">
+            Already Scanned
+          </h2>
+          <p className="font-semibold text-gray-800">{ticket.name}</p>
+          <p className="text-gray-500 text-sm mt-1">
+            Last scanned at <span className="font-medium text-gray-700">{scanTime}</span>
+          </p>
         </div>
-        <h2 className="text-xl font-bold text-center text-orange-600 mb-2">
-          Ticket Already Scanned
-        </h2>
-        <p className="text-center text-gray-600 mb-1">
-          <span className="font-semibold">{ticket.name}</span>
-        </p>
-        <p className="text-center text-gray-500 text-sm mb-6">
-          Last scanned at <span className="font-medium text-gray-700">{scanTime}</span>
-        </p>
-        <div className="flex gap-3">
-          <button
+        <div className="px-6 pb-6 flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
             onClick={onCancel}
-            className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-50"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            className="flex-1 bg-orange-500 hover:bg-orange-600"
             onClick={onScanAgain}
-            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl font-medium"
           >
             Scan Again
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
 }
+
