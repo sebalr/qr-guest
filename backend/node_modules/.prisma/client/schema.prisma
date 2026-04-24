@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  plan      String   @default("free")
+  createdAt DateTime @default(now()) @map("created_at")
+  users     User[]
+  events    Event[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String
+  isSuperAdmin Boolean  @default(false) @map("is_super_admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  scans        Scan[]
+
+  @@map("users")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  startsAt  DateTime @map("starts_at")
+  endsAt    DateTime @map("ends_at")
+  version   Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tickets   Ticket[]
+  scans     Scan[]
+
+  @@map("events")
+}
+
+model Ticket {
+  id        String   @id @default(uuid())
+  eventId   String   @map("event_id")
+  name      String
+  status    String   @default("active")
+  version   Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  event     Event    @relation(fields: [eventId], references: [id])
+  scans     Scan[]
+
+  @@map("tickets")
+}
+
+model Scan {
+  id        String   @id @default(uuid())
+  ticketId  String   @map("ticket_id")
+  eventId   String   @map("event_id")
+  deviceId  String   @map("device_id")
+  userId    String   @map("user_id")
+  scannedAt DateTime @map("scanned_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("scans")
+}
+
+model SyncState {
+  deviceId          String   @map("device_id")
+  eventId           String   @map("event_id")
+  lastTicketVersion Int      @default(0) @map("last_ticket_version")
+  lastScanCursor    DateTime @default(now()) @map("last_scan_cursor")
+
+  @@id([deviceId, eventId])
+  @@map("sync_state")
+}
