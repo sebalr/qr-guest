@@ -5,6 +5,9 @@ import { db, LocalTicket, LocalScan } from '../db';
 import { postScanApi, syncApi } from '../api';
 import DuplicateDialog from '../components/DuplicateDialog';
 import SyncStatus from '../components/SyncStatus';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ArrowLeft, RefreshCw, AlertTriangle, Camera } from 'lucide-react';
 
 function getDeviceId(): string {
 	let id = localStorage.getItem('device_id');
@@ -354,13 +357,15 @@ export default function ScannerPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-900 text-white flex flex-col">
-			<header className="bg-gray-800 px-4 py-3 flex items-center gap-3">
-				<button
-					onClick={() => navigate(`/events/${eventId}`)}
-					className="opacity-70 hover:opacity-100">
-					← Back
-				</button>
+		<div className="min-h-screen bg-gray-950 text-white flex flex-col">
+			<header className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center gap-3">
+				<Button
+					variant="ghost"
+					size="icon"
+					className="text-gray-300 hover:text-white hover:bg-gray-800"
+					onClick={() => navigate(`/events/${eventId}`)}>
+					<ArrowLeft className="h-4 w-4" />
+				</Button>
 				<h1 className="font-bold text-lg flex-1">QR Scanner</h1>
 				<SyncStatus
 					online={online}
@@ -373,31 +378,39 @@ export default function ScannerPage() {
 
 			{/* Sync error banner */}
 			{syncError && (
-				<div className="bg-yellow-900/80 border-b border-yellow-600 px-4 py-2 flex items-center gap-3 text-sm">
-					<span className="text-yellow-300 flex-1">⚠ Sync error: {syncError}. Local scans are safe.</span>
-					<button
-						onClick={() => doSync()}
-						className="bg-yellow-700 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-xs font-medium">
-						Retry Sync
-					</button>
-					<button
-						onClick={triggerFullResync}
-						className="bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-medium">
+				<div className="bg-yellow-900/80 border-b border-yellow-700 px-4 py-2 flex items-center gap-3 text-sm">
+					<AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0" />
+					<span className="text-yellow-200 flex-1">Sync error: {syncError}. Local scans are safe.</span>
+					<Button
+						size="sm"
+						variant="outline"
+						className="text-xs border-yellow-700 text-yellow-300 hover:bg-yellow-800"
+						onClick={() => doSync()}>
+						Retry
+					</Button>
+					<Button
+						size="sm"
+						variant="destructive"
+						className="text-xs"
+						onClick={triggerFullResync}>
 						Full Resync
-					</button>
+					</Button>
 				</div>
 			)}
 
 			<div className="flex-1 flex flex-col items-center justify-center p-4">
 				{cameraError ? (
-					<div className="bg-red-900/50 border border-red-500 rounded-xl p-6 text-center max-w-sm">
-						<p className="text-red-300 text-lg font-medium">📷 {cameraError}</p>
-						<p className="text-gray-400 text-sm mt-2">Allow camera access in browser settings and reload.</p>
-						<button
-							onClick={() => window.location.reload()}
-							className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+					<div className="bg-red-950/50 border border-red-800 rounded-xl p-8 text-center max-w-sm">
+						<Camera className="h-12 w-12 text-red-400 mx-auto mb-3" />
+						<p className="text-red-300 text-lg font-medium mb-2">Camera Unavailable</p>
+						<p className="text-gray-400 text-sm">{cameraError}</p>
+						<p className="text-gray-500 text-xs mt-1">Allow camera access in browser settings and reload.</p>
+						<Button
+							className="mt-5"
+							variant="destructive"
+							onClick={() => window.location.reload()}>
 							Retry
-						</button>
+						</Button>
 					</div>
 				) : (
 					<div className="relative w-full max-w-md">
@@ -406,30 +419,42 @@ export default function ScannerPage() {
 							className="w-full rounded-xl"
 							style={{ aspectRatio: '4/3', objectFit: 'cover', background: '#000' }}
 						/>
-						{/* Scan overlay */}
+						{/* Corner scan overlay */}
 						<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-							<div className="w-56 h-56 border-4 border-blue-400 rounded-xl opacity-70" />
+							<div className="relative w-56 h-56">
+								{/* Top-left corner */}
+								<div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-400 rounded-tl-lg" />
+								{/* Top-right corner */}
+								<div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-400 rounded-tr-lg" />
+								{/* Bottom-left corner */}
+								<div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-400 rounded-bl-lg" />
+								{/* Bottom-right corner */}
+								<div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-400 rounded-br-lg" />
+							</div>
 						</div>
 
 						{scanState !== 'idle' && (
 							<div
 								className={`absolute inset-0 flex items-center justify-center rounded-xl ${
-									scanState === 'success' ? 'bg-green-900/80' : 'bg-red-900/80'
+									scanState === 'success' ? 'bg-green-900/85' : 'bg-red-900/85'
 								}`}>
-								<p className="text-white text-xl font-bold text-center px-4">{message}</p>
+								<p className="text-white text-xl font-bold text-center px-6">{message}</p>
 							</div>
 						)}
 					</div>
 				)}
 
-				<p className="text-gray-400 text-sm mt-4">Point camera at a QR code</p>
+				<p className="text-gray-500 text-sm mt-4">Point camera at a QR code</p>
 
 				{/* Manual Full Resync button — always accessible */}
-				<button
-					onClick={triggerFullResync}
-					className="mt-6 bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm">
-					🔄 Full Resync
-				</button>
+				<Button
+					variant="outline"
+					size="sm"
+					className="mt-6 border-gray-700 text-gray-400 hover:bg-gray-800 gap-2"
+					onClick={triggerFullResync}>
+					<RefreshCw className="h-3.5 w-3.5" />
+					Full Resync
+				</Button>
 			</div>
 
 			{duplicateInfo && pendingTicket && (

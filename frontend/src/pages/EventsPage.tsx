@@ -2,6 +2,13 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getEventsApi, createEventApi, Event } from '../api';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { QrCode, Plus, X, Calendar, ChevronRight, AlertCircle, LogOut, Shield } from 'lucide-react';
 
 export default function EventsPage() {
 	const { logout, user } = useAuth();
@@ -41,106 +48,142 @@ export default function EventsPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<header className="bg-blue-700 text-white px-6 py-4 flex justify-between items-center shadow">
-				<h1 className="text-xl font-bold">QR Guest</h1>
-				<div className="flex items-center gap-4">
-					<span className="text-sm opacity-80">{user?.email}</span>
-					{user?.isSuperAdmin ? (
-						<button
-							onClick={() => navigate('/super-admin')}
-							className="text-sm bg-emerald-600 px-3 py-1 rounded hover:bg-emerald-700">
-							Super Admin
-						</button>
-					) : null}
-					<button
-						onClick={logout}
-						className="text-sm bg-blue-800 px-3 py-1 rounded hover:bg-blue-900">
-						Logout
-					</button>
+		<div className="min-h-screen bg-slate-50">
+			<header className="bg-background border-b sticky top-0 z-10">
+				<div className="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+					<div className="flex items-center gap-2">
+						<div className="bg-primary rounded-lg p-1.5">
+							<QrCode className="h-5 w-5 text-primary-foreground" />
+						</div>
+						<span className="font-bold text-lg tracking-tight">QR Guest</span>
+					</div>
+					<div className="flex items-center gap-2">
+						<span className="text-sm text-muted-foreground hidden sm:block">{user?.email}</span>
+						{user?.isSuperAdmin && (
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => navigate('/super-admin')}
+								className="gap-1.5">
+								<Shield className="h-3.5 w-3.5" />
+								<span className="hidden sm:inline">Super Admin</span>
+							</Button>
+						)}
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={logout}
+							className="gap-1.5">
+							<LogOut className="h-3.5 w-3.5" />
+							<span className="hidden sm:inline">Logout</span>
+						</Button>
+					</div>
 				</div>
 			</header>
 
 			<main className="max-w-3xl mx-auto px-4 py-8">
 				<div className="flex justify-between items-center mb-6">
-					<h2 className="text-2xl font-semibold text-gray-800">Events</h2>
-					<button
+					<div>
+						<h1 className="text-2xl font-bold tracking-tight">Events</h1>
+						<p className="text-muted-foreground text-sm">Manage your guest events</p>
+					</div>
+					<Button
 						onClick={() => setShowForm(v => !v)}
-						className="bg-blue-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-800">
-						{showForm ? 'Cancel' : '+ New Event'}
-					</button>
+						className="gap-2">
+						{showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+						{showForm ? 'Cancel' : 'New Event'}
+					</Button>
 				</div>
 
 				{showForm && (
-					<form
-						onSubmit={handleCreate}
-						className="bg-white rounded-xl shadow p-6 mb-6 space-y-4">
-						<h3 className="font-semibold text-lg text-gray-700">Create Event</h3>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
-							<input
-								type="text"
-								required
-								value={name}
-								onChange={e => setName(e.target.value)}
-								className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Starts At</label>
-								<input
-									type="datetime-local"
-									required
-									value={startsAt}
-									onChange={e => setStartsAt(e.target.value)}
-									className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								/>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Ends At</label>
-								<input
-									type="datetime-local"
-									required
-									value={endsAt}
-									onChange={e => setEndsAt(e.target.value)}
-									className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								/>
-							</div>
-						</div>
-						{formError && <p className="text-red-600 text-sm">{formError}</p>}
-						<button
-							type="submit"
-							disabled={creating}
-							className="bg-blue-700 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-800 disabled:opacity-60">
-							{creating ? 'Creating…' : 'Create'}
-						</button>
-					</form>
+					<Card className="mb-6">
+						<CardHeader>
+							<CardTitle className="text-lg">Create Event</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<form
+								onSubmit={handleCreate}
+								className="space-y-4">
+								<div className="space-y-2">
+									<Label htmlFor="event-name">Event Name</Label>
+									<Input
+										id="event-name"
+										type="text"
+										placeholder="e.g. Annual Conference 2025"
+										required
+										value={name}
+										onChange={e => setName(e.target.value)}
+									/>
+								</div>
+								<div className="grid grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="starts-at">Starts At</Label>
+										<Input
+											id="starts-at"
+											type="datetime-local"
+											required
+											value={startsAt}
+											onChange={e => setStartsAt(e.target.value)}
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="ends-at">Ends At</Label>
+										<Input
+											id="ends-at"
+											type="datetime-local"
+											required
+											value={endsAt}
+											onChange={e => setEndsAt(e.target.value)}
+										/>
+									</div>
+								</div>
+								{formError && (
+									<Alert variant="destructive">
+										<AlertCircle className="h-4 w-4" />
+										<AlertDescription>{formError}</AlertDescription>
+									</Alert>
+								)}
+								<Button
+									type="submit"
+									disabled={creating}>
+									{creating ? 'Creating…' : 'Create Event'}
+								</Button>
+							</form>
+						</CardContent>
+					</Card>
 				)}
 
 				{loading ? (
-					<p className="text-gray-500 text-center py-12">Loading events…</p>
+					<div className="text-center py-16 text-muted-foreground">Loading events…</div>
 				) : events.length === 0 ? (
-					<p className="text-gray-400 text-center py-12">No events yet. Create one above.</p>
+					<Card className="py-16 text-center">
+						<CardContent>
+							<Calendar className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+							<p className="text-muted-foreground">No events yet. Create your first event above.</p>
+						</CardContent>
+					</Card>
 				) : (
-					<ul className="space-y-3">
+					<div className="space-y-3">
 						{events.map(ev => (
-							<li
+							<Card
 								key={ev.id}
-								className="bg-white rounded-xl shadow p-5 flex justify-between items-center cursor-pointer hover:shadow-md transition"
+								className="cursor-pointer hover:shadow-md transition-shadow"
 								onClick={() => navigate(`/events/${ev.id}`)}>
-								<div>
-									<p className="font-semibold text-gray-800">{ev.name}</p>
-									<p className="text-sm text-gray-500">
-										{new Date(ev.startsAt).toLocaleString()} – {new Date(ev.endsAt).toLocaleString()}
-									</p>
-								</div>
-								<span className="text-blue-600 text-sm font-medium">View →</span>
-							</li>
+								<CardContent className="p-5 flex justify-between items-center gap-4">
+									<div className="min-w-0">
+										<p className="font-semibold truncate">{ev.name}</p>
+										<p className="text-sm text-muted-foreground mt-0.5">
+											{new Date(ev.startsAt).toLocaleString()} – {new Date(ev.endsAt).toLocaleString()}
+										</p>
+									</div>
+									<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+								</CardContent>
+							</Card>
 						))}
-					</ul>
+					</div>
 				)}
 			</main>
 		</div>
 	);
 }
+
