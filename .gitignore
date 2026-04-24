@@ -33,7 +33,7 @@ Thumbs.db
 *.swo
 
 # Prisma
-backend/prisma/migrations/
+# Keep migrations in git so production can use `prisma migrate deploy`.
 
 # Docker
 .docker/
