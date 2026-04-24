@@ -15,7 +15,8 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		res.status(400).json({ error: 'Invalid event id' });
 		return;
 	}
-	const { tickets } = req.body as { tickets: { name: string }[] };
+	const body = req.body as { tickets?: { name: string }[]; names?: string[] };
+	const tickets = Array.isArray(body.tickets) ? body.tickets : Array.isArray(body.names) ? body.names.map(name => ({ name })) : [];
 
 	if (!Array.isArray(tickets) || tickets.length === 0) {
 		res.status(400).json({ error: 'tickets must be a non-empty array' });

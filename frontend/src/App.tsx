@@ -6,42 +6,73 @@ import RegisterPage from './pages/RegisterPage';
 import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
 import ScannerPage from './pages/ScannerPage';
+import SuperAdminPage from './pages/SuperAdminPage';
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/events"
-            element={
-              <ProtectedRoute roles={['admin', 'owner']}>
-                <EventsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/events/:id"
-            element={
-              <ProtectedRoute roles={['admin', 'owner']}>
-                <EventDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/events/:id/scan"
-            element={
-              <ProtectedRoute roles={['scanner', 'admin', 'owner']}>
-                <ScannerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/" element={<Navigate to="/events" replace />} />
-          <Route path="*" element={<Navigate to="/events" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  );
+	return (
+		<AuthProvider>
+			<BrowserRouter>
+				<Routes>
+					<Route
+						path="/login"
+						element={<LoginPage />}
+					/>
+					<Route
+						path="/register"
+						element={<RegisterPage />}
+					/>
+					<Route
+						path="/events"
+						element={
+							<ProtectedRoute roles={['admin', 'owner']}>
+								<EventsPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/events/:id"
+						element={
+							<ProtectedRoute roles={['admin', 'owner']}>
+								<EventDetailPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/events/:id/scan"
+						element={
+							<ProtectedRoute roles={['scanner', 'admin', 'owner']}>
+								<ScannerPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/super-admin"
+						element={
+							<ProtectedRoute roles={['owner', 'admin']}>
+								<SuperAdminPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/"
+						element={
+							<Navigate
+								to="/events"
+								replace
+							/>
+						}
+					/>
+					<Route
+						path="*"
+						element={
+							<Navigate
+								to="/events"
+								replace
+							/>
+						}
+					/>
+				</Routes>
+			</BrowserRouter>
+		</AuthProvider>
+	);
 }
