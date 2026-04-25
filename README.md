@@ -39,7 +39,7 @@ docker compose up -d
 cd backend
 cp .env.example .env   # set DATABASE_URL etc.
 npm install
-npx prisma migrate deploy
+npm run prisma:migrate
 npm run dev
 
 # Prisma Client is generated explicitly in Prisma v7.
@@ -96,6 +96,58 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 | `FRONTEND_URL`      | Public frontend URL used in verification links |
 | `RESEND_API_KEY`    | Resend API key for auth emails                 |
 | `RESEND_FROM_EMAIL` | Verified sender address used for auth emails   |
+
+## Prisma Fresh Start (Pre-Production)
+
+Use this flow when you want to completely reset the database and migration history during development.
+
+```bash
+cd backend
+
+# 1) Make sure schema and migration files are up to date
+npm run prisma:generate
+npm run prisma:status
+
+# 2) Destructive reset: drops all data and reapplies migrations
+npm run prisma:reset
+
+# 3) Confirm migration state
+npm run prisma:status
+```
+
+Notes:
+
+- This is destructive and should only be used before production.
+- The current baseline is a single initial migration in [backend/prisma/migrations](backend/prisma/migrations).
+- Tenant records are created at signup and each tenant schema is initialized after registration.
+
+## Tenant Schema Migrations
+
+This project uses dynamic tenant schemas (`tenant_<tenantId>`). Prisma migrations update `public`, but tenant schemas are migrated with SQL files in [backend/prisma/tenant-migrations](backend/prisma/tenant-migrations).
+
+```bash
+cd backend
+
+# Preview what would run per tenant schema
+npm run tenant:migrate:dry
+
+# Apply tenant migrations to all discovered tenant_* schemas
+npm run tenant:migrate
+```
+
+Optional targeting:
+
+```bash
+cd backend
+npm run tenant:migrate -- --schema tenant_<tenant-id>
+```
+
+When adding a column to tenant tables:
+
+1. Add a new ordered SQL file in [backend/prisma/tenant-migrations](backend/prisma/tenant-migrations) (example: `0002_add_some_column.sql`).
+2. Use idempotent SQL (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`) where possible.
+3. Run `npm run tenant:migrate` to apply it to existing tenants.
+4. New signups will automatically get all tenant migration files during tenant initialization.
 
 ### Frontend
 
