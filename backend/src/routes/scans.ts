@@ -59,13 +59,20 @@ router.post('/device-event-debug', async (req: Request, res: Response): Promise<
 });
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-	const { ticketId, eventId, deviceId, scannedAt, confirmed } = req.body as {
+	const { id: bodyId, ticketId, eventId, deviceId, scannedAt, confirmed } = req.body as {
+		id?: string;
 		ticketId: string;
 		eventId: string;
 		deviceId: string;
 		scannedAt: string;
 		confirmed?: boolean;
 	};
+
+	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+	if (bodyId !== undefined && (typeof bodyId !== 'string' || !UUID_RE.test(bodyId))) {
+		res.status(400).json({ error: 'id must be a valid UUID' });
+		return;
+	}
 
 	if (!ticketId || !eventId || !deviceId || !scannedAt) {
 		res.status(400).json({ error: 'ticketId, eventId, deviceId, and scannedAt are required' });
@@ -108,10 +115,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
 	const dedupeKey = confirmed === true ? null : `${eventId}:${ticketId}`;
 
+	const scanId = bodyId ?? randomUUID();
+
 	let scan;
 	try {
 		scan = await prisma.scan.create({
 			data: {
+				id: scanId,
 				ticketId,
 				eventId,
 				deviceId,

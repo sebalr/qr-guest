@@ -363,7 +363,7 @@ export default function ScannerPage() {
 
 		// Best-effort immediate online push — does NOT affect local record
 		if (navigator.onLine) {
-			postScanApi(ticketId, eid, getDeviceId(), scannedAt).catch(() => {});
+			postScanApi(ticketId, eid, getDeviceId(), scannedAt, scanId).catch(() => {});
 		}
 	}
 
