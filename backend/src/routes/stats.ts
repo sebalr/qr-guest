@@ -8,6 +8,122 @@ const router = Router();
 router.use(authMiddleware);
 router.use(requireRole(['owner', 'admin']));
 
+router.get('/:id/device-debug-data', async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	if (!eventId) {
+		res.status(400).json({ error: 'Invalid event id' });
+		return;
+	}
+
+	const event = await prisma.event.findFirst({
+		where: { id: eventId, tenantId: req.user!.tenantId },
+		select: { id: true },
+	});
+	if (!event) {
+		res.status(404).json({ error: 'Event not found' });
+		return;
+	}
+
+	const rows = await prisma.$queryRaw<
+		{
+			id: string;
+			event_id: string;
+			device_id: string;
+			user_id: string;
+			uploader_email: string;
+			payload_size_bytes: number;
+			created_at: Date;
+		}[]
+	>`
+		SELECT d.id,
+		       d.event_id,
+		       d.device_id,
+		       d.user_id,
+		       COALESCE(u.email, '') AS uploader_email,
+		       OCTET_LENGTH(d.payload::text) AS payload_size_bytes,
+		       d.created_at
+		FROM device_event_debug_data d
+		LEFT JOIN users u ON u.id = d.user_id
+		WHERE d.event_id = ${eventId} AND d.tenant_id = ${req.user!.tenantId}
+		ORDER BY d.created_at DESC
+	`;
+
+	res.json({
+		data: rows.map(row => ({
+			id: row.id,
+			eventId: row.event_id,
+			deviceId: row.device_id,
+			userId: row.user_id,
+			uploaderEmail: row.uploader_email,
+			payloadSizeBytes: Number(row.payload_size_bytes),
+			createdAt: row.created_at.toISOString(),
+		})),
+	});
+});
+
+router.get('/:id/device-debug-data/:dumpId', async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	const dumpId = Array.isArray(req.params.dumpId) ? req.params.dumpId[0] : req.params.dumpId;
+	if (!eventId || !dumpId) {
+		res.status(400).json({ error: 'Invalid request' });
+		return;
+	}
+
+	const event = await prisma.event.findFirst({
+		where: { id: eventId, tenantId: req.user!.tenantId },
+		select: { id: true },
+	});
+	if (!event) {
+		res.status(404).json({ error: 'Event not found' });
+		return;
+	}
+
+	const rows = await prisma.$queryRaw<
+		{
+			id: string;
+			event_id: string;
+			device_id: string;
+			user_id: string;
+			uploader_email: string;
+			payload_size_bytes: number;
+			payload: Record<string, unknown>;
+			created_at: Date;
+		}[]
+	>`
+		SELECT d.id,
+		       d.event_id,
+		       d.device_id,
+		       d.user_id,
+		       COALESCE(u.email, '') AS uploader_email,
+		       OCTET_LENGTH(d.payload::text) AS payload_size_bytes,
+		       d.payload,
+		       d.created_at
+		FROM device_event_debug_data d
+		LEFT JOIN users u ON u.id = d.user_id
+		WHERE d.id = ${dumpId} AND d.event_id = ${eventId} AND d.tenant_id = ${req.user!.tenantId}
+		LIMIT 1
+	`;
+
+	if (rows.length === 0) {
+		res.status(404).json({ error: 'Device debug payload not found' });
+		return;
+	}
+
+	const row = rows[0];
+	res.json({
+		data: {
+			id: row.id,
+			eventId: row.event_id,
+			deviceId: row.device_id,
+			userId: row.user_id,
+			uploaderEmail: row.uploader_email,
+			payloadSizeBytes: Number(row.payload_size_bytes),
+			payload: row.payload,
+			createdAt: row.created_at.toISOString(),
+		},
+	});
+});
+
 router.get('/:id/stats', async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!eventId) {

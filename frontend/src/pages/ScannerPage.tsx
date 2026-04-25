@@ -2,13 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BrowserQRCodeReader, IScannerControls } from '@zxing/browser';
 import { db, LocalTicket, LocalScan } from '../db';
-import { postScanApi, syncApi } from '../api';
+import { postScanApi, syncApi, uploadDeviceEventDebugDataApi } from '../api';
 import DuplicateDialog from '../components/DuplicateDialog';
 import SyncStatus from '../components/SyncStatus';
 import { createSyncPayload, mapSyncResponseToLocal, parseQRPayload, resolveMetaForSync } from '../lib/scannerLogic';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, RefreshCw, AlertTriangle, Camera } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ArrowLeft, RefreshCw, AlertTriangle, Camera, MoreVertical, UploadCloud, Trash2 } from 'lucide-react';
 
 function getDeviceId(): string {
 	let id = localStorage.getItem('device_id');
@@ -78,6 +80,10 @@ export default function ScannerPage() {
 	const [scannedCount, setScannedCount] = useState(0);
 	const [totalCount, setTotalCount] = useState(0);
 	const [unsyncedCount, setUnsyncedCount] = useState(0);
+	const [uploadingDebugData, setUploadingDebugData] = useState(false);
+	const [clearingLocalData, setClearingLocalData] = useState(false);
+	const [clearLocalDataDialogOpen, setClearLocalDataDialogOpen] = useState(false);
+	const [menuFeedback, setMenuFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 	const [duplicateInfo, setDuplicateInfo] = useState<{
 		ticket: LocalTicket;
 		lastScan: LocalScan;
@@ -196,6 +202,75 @@ export default function ScannerPage() {
 			setSyncError(msg);
 		}
 	}, [eventId, doSync]);
+
+	const handleUploadDeviceDebugData = useCallback(async () => {
+		if (!eventId) return;
+		setUploadingDebugData(true);
+		setMenuFeedback(null);
+
+		try {
+			const [eventTickets, eventScans, metaRows] = await Promise.all([
+				db.tickets.where('event_id').equals(eventId).toArray(),
+				db.scans.where('event_id').equals(eventId).toArray(),
+				db.meta.toArray(),
+			]);
+
+			const payload: Record<string, unknown> = {
+				eventId,
+				capturedAt: new Date().toISOString(),
+				device: {
+					deviceId: getDeviceId(),
+					online: navigator.onLine,
+					userAgent: navigator.userAgent,
+					language: navigator.language,
+					platform: navigator.platform,
+				},
+				localState: {
+					tickets: eventTickets,
+					scans: eventScans,
+					meta: metaRows,
+					summary: {
+						ticketCount: eventTickets.length,
+						scanCount: eventScans.length,
+						unsyncedScanCount: eventScans.filter(scan => scan.synced !== true).length,
+					},
+				},
+			};
+
+			await uploadDeviceEventDebugDataApi({
+				eventId,
+				deviceId: getDeviceId(),
+				payload,
+			});
+
+			setMenuFeedback({ kind: 'success', text: 'Local device event data sent to API.' });
+		} catch {
+			setMenuFeedback({ kind: 'error', text: 'Failed to send local device event data.' });
+		} finally {
+			setUploadingDebugData(false);
+		}
+	}, [eventId]);
+
+	const handleClearLocalEventData = useCallback(async () => {
+		if (!eventId) return;
+
+		setClearingLocalData(true);
+		setMenuFeedback(null);
+
+		try {
+			await db.transaction('rw', db.tickets, db.scans, db.meta, async () => {
+				await db.tickets.where('event_id').equals(eventId).delete();
+				await db.scans.where('event_id').equals(eventId).delete();
+				await db.meta.clear();
+			});
+			await refreshCounts();
+			setMenuFeedback({ kind: 'success', text: 'Local device data cleared for this event.' });
+		} catch {
+			setMenuFeedback({ kind: 'error', text: 'Failed to clear local device data.' });
+		} finally {
+			setClearingLocalData(false);
+		}
+	}, [eventId, refreshCounts]);
 
 	// Auto-sync every 60s when online; skip if a sync is already running
 	useEffect(() => {
@@ -322,7 +397,49 @@ export default function ScannerPage() {
 					totalCount={totalCount}
 					unsyncedCount={unsyncedCount}
 				/>
+				<Popover>
+					<PopoverTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="text-gray-300 hover:text-white hover:bg-gray-800"
+							aria-label="Scanner tools">
+							<MoreVertical className="h-4 w-4" />
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent
+						align="end"
+						className="w-72 bg-gray-900 border-gray-700 text-gray-100 p-2 space-y-1">
+						<Button
+							variant="ghost"
+							className="w-full justify-start gap-2 text-gray-100 hover:bg-gray-800"
+							disabled={uploadingDebugData || clearingLocalData}
+							onClick={handleUploadDeviceDebugData}>
+							<UploadCloud className="h-4 w-4" />
+							{uploadingDebugData ? 'Sending local data…' : 'Send local device data to API'}
+						</Button>
+						<Button
+							variant="ghost"
+							className="w-full justify-start gap-2 text-red-300 hover:bg-red-900/30 hover:text-red-200"
+							disabled={uploadingDebugData || clearingLocalData}
+							onClick={() => setClearLocalDataDialogOpen(true)}>
+							<Trash2 className="h-4 w-4" />
+							{clearingLocalData ? 'Clearing local data…' : 'Clear local event data'}
+						</Button>
+					</PopoverContent>
+				</Popover>
 			</header>
+
+			{menuFeedback && (
+				<div
+					className={`px-4 py-2 text-sm border-b ${
+						menuFeedback.kind === 'success'
+							? 'bg-emerald-950/70 border-emerald-800 text-emerald-200'
+							: 'bg-red-950/70 border-red-800 text-red-200'
+					}`}>
+					{menuFeedback.text}
+				</div>
+			)}
 
 			{/* Sync error banner */}
 			{syncError && (
@@ -421,6 +538,38 @@ export default function ScannerPage() {
 					}}
 				/>
 			)}
+
+			<Dialog
+				open={clearLocalDataDialogOpen}
+				onOpenChange={open => {
+					if (!clearingLocalData) setClearLocalDataDialogOpen(open);
+				}}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Clear local event data?</DialogTitle>
+						<DialogDescription>
+							This removes local tickets, scans, and sync metadata on this device only. Server data is not affected.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							disabled={clearingLocalData}
+							onClick={() => setClearLocalDataDialogOpen(false)}>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							disabled={clearingLocalData}
+							onClick={async () => {
+								await handleClearLocalEventData();
+								setClearLocalDataDialogOpen(false);
+							}}>
+							{clearingLocalData ? 'Clearing…' : 'Clear Local Data'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

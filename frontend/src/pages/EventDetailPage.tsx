@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateQrPdf, sharePdfOrDownload } from '@/lib/generateQrPdf';
 import {
 	ArrowLeft,
@@ -86,6 +86,9 @@ export default function EventDetailPage() {
 	const [scanHistoryItems, setScanHistoryItems] = useState<ScanHistoryItem[]>([]);
 	const [scanHistoryLoading, setScanHistoryLoading] = useState(false);
 	const [scanHistoryError, setScanHistoryError] = useState('');
+	const [cancelTargetTicketId, setCancelTargetTicketId] = useState<string | null>(null);
+	const [cancelingTicket, setCancelingTicket] = useState(false);
+	const [errorDialogMessage, setErrorDialogMessage] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (!id) return;
@@ -225,14 +228,18 @@ export default function EventDetailPage() {
 		}
 	}
 
-	async function handleCancel(ticketId: string) {
-		if (!confirm('Cancel this ticket?')) return;
+	async function handleCancelConfirmed() {
+		if (!cancelTargetTicketId) return;
+		setCancelingTicket(true);
 		try {
-			await cancelTicketApi(ticketId);
-			setTickets(prev => prev.map(t => (t.id === ticketId ? { ...t, status: 'cancelled' } : t)));
-			db.tickets.update(ticketId, { status: 'cancelled' });
+			await cancelTicketApi(cancelTargetTicketId);
+			setTickets(prev => prev.map(t => (t.id === cancelTargetTicketId ? { ...t, status: 'cancelled' } : t)));
+			db.tickets.update(cancelTargetTicketId, { status: 'cancelled' });
+			setCancelTargetTicketId(null);
 		} catch {
-			alert('Failed to cancel ticket.');
+			setErrorDialogMessage('Failed to cancel ticket.');
+		} finally {
+			setCancelingTicket(false);
 		}
 	}
 
@@ -266,7 +273,7 @@ export default function EventDetailPage() {
 		try {
 			await fetchQrToken(ticketId);
 		} catch {
-			alert('Failed to load QR code.');
+			setErrorDialogMessage('Failed to load QR code.');
 		}
 	}
 
@@ -377,6 +384,7 @@ export default function EventDetailPage() {
 
 	const totalScanned = Object.values(scanCounts).reduce((a, b) => a + b, 0);
 	const cancelledCount = tickets.filter(t => t.status === 'cancelled').length;
+	const cancelTargetTicket = cancelTargetTicketId ? (tickets.find(t => t.id === cancelTargetTicketId) ?? null) : null;
 
 	if (loading) {
 		return (
@@ -654,7 +662,7 @@ export default function EventDetailPage() {
 												<Button
 													variant="destructive"
 													size="sm"
-													onClick={() => handleCancel(ticket.id)}>
+													onClick={() => setCancelTargetTicketId(ticket.id)}>
 													Cancel
 												</Button>
 											)}
@@ -716,6 +724,53 @@ export default function EventDetailPage() {
 					</Button>
 				</div>
 			)}
+
+			<Dialog
+				open={!!cancelTargetTicketId}
+				onOpenChange={open => {
+					if (!open && !cancelingTicket) setCancelTargetTicketId(null);
+				}}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Cancel ticket?</DialogTitle>
+						<DialogDescription>
+							{cancelTargetTicket
+								? `This will mark ${cancelTargetTicket.name}'s ticket as cancelled.`
+								: 'This will mark this ticket as cancelled.'}
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							disabled={cancelingTicket}
+							onClick={() => setCancelTargetTicketId(null)}>
+							Keep Active
+						</Button>
+						<Button
+							variant="destructive"
+							disabled={cancelingTicket}
+							onClick={handleCancelConfirmed}>
+							{cancelingTicket ? 'Cancelling…' : 'Cancel Ticket'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={!!errorDialogMessage}
+				onOpenChange={open => {
+					if (!open) setErrorDialogMessage(null);
+				}}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Action failed</DialogTitle>
+						<DialogDescription>{errorDialogMessage}</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button onClick={() => setErrorDialogMessage(null)}>OK</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			<Dialog
 				open={scanHistoryOpen}

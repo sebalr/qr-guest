@@ -123,6 +123,33 @@ export interface AdminUser {
 	tenant: { id: string; name: string; plan: string };
 }
 
+export interface DeviceEventDebugUploadPayload {
+	eventId: string;
+	deviceId: string;
+	payload: Record<string, unknown>;
+}
+
+export interface DeviceEventDebugUploadResponse {
+	id: string;
+	eventId: string;
+	deviceId: string;
+	createdAt: string;
+}
+
+export interface EventDeviceDebugDataItem {
+	id: string;
+	eventId: string;
+	deviceId: string;
+	userId: string;
+	uploaderEmail: string;
+	payloadSizeBytes: number;
+	createdAt: string;
+}
+
+export interface EventDeviceDebugDataDetail extends EventDeviceDebugDataItem {
+	payload: Record<string, unknown>;
+}
+
 export type ManageableUserRole = 'admin' | 'scanner';
 
 // Auth
@@ -164,6 +191,15 @@ export const getEventStatsApi = (eventId: string, interval?: string) =>
 // Scan
 export const postScanApi = (ticketId: string, eventId: string, deviceId: string, scannedAt: string) =>
 	api.post('/scan', { ticketId, eventId, deviceId, scannedAt });
+
+export const uploadDeviceEventDebugDataApi = (payload: DeviceEventDebugUploadPayload) =>
+	api.post<{ data: DeviceEventDebugUploadResponse }>('/scan/device-event-debug', payload);
+
+export const getEventDeviceDebugDataApi = (eventId: string) =>
+	api.get<{ data: EventDeviceDebugDataItem[] }>(`/events/${eventId}/device-debug-data`);
+
+export const getEventDeviceDebugDataItemApi = (eventId: string, dumpId: string) =>
+	api.get<{ data: EventDeviceDebugDataDetail }>(`/events/${eventId}/device-debug-data/${dumpId}`);
 
 // Sync
 export const syncApi = (payload: SyncPayload) => api.post<{ data: SyncResponse }>('/sync', payload);

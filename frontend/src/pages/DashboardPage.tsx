@@ -1,10 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEventApi, getEventStatsApi, Event, EventStats } from '../api';
+import {
+	getEventApi,
+	getEventStatsApi,
+	getEventDeviceDebugDataApi,
+	getEventDeviceDebugDataItemApi,
+	Event,
+	EventStats,
+	EventDeviceDebugDataItem,
+	EventDeviceDebugDataDetail,
+} from '../api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Users, CheckCircle2, XCircle, AlertTriangle, RefreshCw, BarChart2, Clock, Shield } from 'lucide-react';
+import { ArrowLeft, Users, CheckCircle2, XCircle, AlertTriangle, RefreshCw, BarChart2, Clock, Shield, Download, Bug } from 'lucide-react';
 import {
 	BarChart,
 	Bar,
@@ -50,6 +59,10 @@ export default function DashboardPage() {
 	const [autoRefresh, setAutoRefresh] = useState(false);
 	const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 	const [interval, setSelectedInterval] = useState<Interval>('1h');
+	const [debugDataRows, setDebugDataRows] = useState<EventDeviceDebugDataItem[]>([]);
+	const [debugDataLoading, setDebugDataLoading] = useState(false);
+	const [downloadingDebugId, setDownloadingDebugId] = useState<string | null>(null);
+	const [debugDataError, setDebugDataError] = useState('');
 
 	const fetchStats = useCallback(async () => {
 		if (!id) return;
@@ -68,6 +81,53 @@ export default function DashboardPage() {
 	useEffect(() => {
 		fetchStats();
 	}, [fetchStats]);
+
+	const fetchDeviceDebugData = useCallback(async () => {
+		if (!id) return;
+		setDebugDataLoading(true);
+		setDebugDataError('');
+
+		try {
+			const res = await getEventDeviceDebugDataApi(id);
+			setDebugDataRows(res.data.data);
+		} catch {
+			setDebugDataError('Failed to load uploaded device debug payloads.');
+		} finally {
+			setDebugDataLoading(false);
+		}
+	}, [id]);
+
+	useEffect(() => {
+		fetchDeviceDebugData();
+	}, [fetchDeviceDebugData]);
+
+	const downloadDebugPayload = useCallback(
+		async (dumpId: string) => {
+			if (!id) return;
+			setDownloadingDebugId(dumpId);
+			setDebugDataError('');
+
+			try {
+				const res = await getEventDeviceDebugDataItemApi(id, dumpId);
+				const item: EventDeviceDebugDataDetail = res.data.data;
+				const serialized = JSON.stringify(item, null, 2);
+				const blob = new Blob([serialized], { type: 'application/json' });
+				const url = URL.createObjectURL(blob);
+				const anchor = document.createElement('a');
+				anchor.href = url;
+				anchor.download = `event-${id}-device-debug-${item.deviceId}-${item.id}.json`;
+				document.body.appendChild(anchor);
+				anchor.click();
+				anchor.remove();
+				URL.revokeObjectURL(url);
+			} catch {
+				setDebugDataError('Failed to download device debug payload.');
+			} finally {
+				setDownloadingDebugId(null);
+			}
+		},
+		[id],
+	);
 
 	useEffect(() => {
 		if (!autoRefresh) return;
@@ -277,6 +337,55 @@ export default function DashboardPage() {
 									</Bar>
 								</BarChart>
 							</ResponsiveContainer>
+						)}
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardHeader>
+						<div className="flex items-center justify-between gap-3 flex-wrap">
+							<CardTitle className="text-base flex items-center gap-2">
+								<Bug className="h-4 w-4" />
+								Device Debug Uploads
+							</CardTitle>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={fetchDeviceDebugData}
+								disabled={debugDataLoading}>
+								<RefreshCw className={`h-3.5 w-3.5 ${debugDataLoading ? 'animate-spin' : ''}`} />
+							</Button>
+						</div>
+					</CardHeader>
+					<CardContent>
+						{debugDataError && <p className="text-sm text-destructive mb-3">{debugDataError}</p>}
+						{debugDataRows.length === 0 ? (
+							<p className="text-sm text-muted-foreground">No device debug payloads uploaded for this event yet.</p>
+						) : (
+							<div className="space-y-2">
+								{debugDataRows.map(item => (
+									<div
+										key={item.id}
+										className="border rounded-lg p-3 flex items-center justify-between gap-3 flex-wrap">
+										<div className="min-w-0">
+											<p className="text-sm font-medium">Device {item.deviceId}</p>
+											<p className="text-xs text-muted-foreground truncate">
+												Uploaded by {item.uploaderEmail || item.userId} on {new Date(item.createdAt).toLocaleString()}
+											</p>
+											<p className="text-[11px] text-muted-foreground">{item.payloadSizeBytes} bytes</p>
+										</div>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => downloadDebugPayload(item.id)}
+											disabled={downloadingDebugId === item.id}
+											className="gap-1.5">
+											<Download className="h-3.5 w-3.5" />
+											{downloadingDebugId === item.id ? 'Downloading…' : 'Download JSON'}
+										</Button>
+									</div>
+								))}
+							</div>
 						)}
 					</CardContent>
 				</Card>

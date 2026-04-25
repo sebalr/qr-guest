@@ -85,6 +85,20 @@ model Scan {
   @@map("scans")
 }
 
+model DeviceEventDebugData {
+  id        String   @id
+  eventId   String   @map("event_id")
+  tenantId  String   @map("tenant_id")
+  deviceId  String   @map("device_id")
+  userId    String   @map("user_id")
+  payload   Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([eventId, createdAt])
+  @@index([tenantId])
+  @@map("device_event_debug_data")
+}
+
 model SyncState {
   deviceId          String   @map("device_id")
   eventId           String   @map("event_id")
