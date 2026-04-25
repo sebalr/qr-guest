@@ -5,6 +5,7 @@ import { db, LocalTicket, LocalScan } from '../db';
 import { postScanApi, syncApi } from '../api';
 import DuplicateDialog from '../components/DuplicateDialog';
 import SyncStatus from '../components/SyncStatus';
+import { createSyncPayload, mapSyncResponseToLocal, parseQRPayload, resolveMetaForSync } from '../lib/scannerLogic';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, RefreshCw, AlertTriangle, Camera } from 'lucide-react';
@@ -135,55 +136,31 @@ export default function ScannerPage() {
 			setSyncError(null);
 
 			try {
-				let meta = await getMeta();
-
-				if (fullResync) {
-					// Reset cursors — server will return all tickets + scans
-					meta = { last_ticket_version: 0, last_scan_cursor: new Date(0).toISOString(), last_sync_at: null };
-				}
+				const meta = resolveMetaForSync(await getMeta(), fullResync);
 
 				// Collect the IDs of unsynced scans BEFORE sending
 				const unsynced = await getUnsyncedScans();
 				const unsyncedIds = unsynced.map(s => s.id);
 
-				const res = await syncApi({
-					eventId: eventId!,
-					lastTicketVersion: meta.last_ticket_version,
-					lastScanCursor: meta.last_scan_cursor,
-					localScans: unsynced.map(s => ({
-						id: s.id,
-						ticketId: s.ticket_id,
-						scannedAt: s.scanned_at,
+				const res = await syncApi(
+					createSyncPayload({
+						eventId: eventId!,
+						meta,
+						unsynced,
 						deviceId: getDeviceId(),
-					})),
-				});
+					}),
+				);
 
-				const { ticketUpdates, scanUpdates, newTicketVersion, newScanCursor } = res.data.data;
+				const { ticketRows, scanRows, newTicketVersion, newScanCursor } = mapSyncResponseToLocal(res.data.data);
 
-				if (ticketUpdates?.length) {
-					await db.tickets.bulkPut(
-						ticketUpdates.map(t => ({
-							id: t.id,
-							event_id: t.eventId,
-							name: t.name,
-							status: t.status,
-							version: t.version,
-						})),
-					);
+				if (ticketRows.length) {
+					await db.tickets.bulkPut(ticketRows);
 				}
 
 				// Persist remote scans from other devices — this makes the duplicate dialog
 				// work cross-device: device B will see device A's scans after the next sync.
-				if (scanUpdates?.length) {
-					await db.scans.bulkPut(
-						scanUpdates.map(s => ({
-							id: s.id,
-							ticket_id: s.ticketId,
-							event_id: s.eventId,
-							scanned_at: s.scannedAt,
-							synced: true,
-						})),
-					);
+				if (scanRows.length) {
+					await db.scans.bulkPut(scanRows);
 				}
 
 				// Only mark the exact scans we sent as synced — not any newly added ones
@@ -266,42 +243,8 @@ export default function ScannerPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	function parseQR(text: string): { tid: string; eid: string } | null {
-		// Try JSON
-		try {
-			const obj = JSON.parse(text) as { tid?: string; eid?: string };
-			if (obj.tid && obj.eid) return { tid: obj.tid, eid: obj.eid };
-		} catch {
-			/* not JSON */
-		}
-
-		// Try JWT (backend issues JWT with tid/eid claims)
-		if (text.split('.').length === 3) {
-			try {
-				const payload = text.split('.')[1];
-				const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))) as {
-					tid?: string;
-					eid?: string;
-				};
-				if (decoded.tid && decoded.eid) return { tid: decoded.tid, eid: decoded.eid };
-			} catch {
-				/* not valid JWT */
-			}
-		}
-
-		// Try base64 JSON
-		try {
-			const decoded = JSON.parse(atob(text)) as { tid?: string; eid?: string };
-			if (decoded.tid && decoded.eid) return { tid: decoded.tid, eid: decoded.eid };
-		} catch {
-			/* not base64 */
-		}
-
-		return null;
-	}
-
 	async function handleScan(qrText: string) {
-		const parsed = parseQR(qrText);
+		const parsed = parseQRPayload(qrText);
 		if (!parsed) {
 			showError('Invalid QR code format.');
 			return;

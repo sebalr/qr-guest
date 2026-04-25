@@ -48,6 +48,7 @@ export interface TicketScanDetail {
 
 export interface SyncPayload {
 	eventId: string;
+	deviceId: string;
 	lastTicketVersion: number;
 	lastScanCursor: string;
 	localScans: {

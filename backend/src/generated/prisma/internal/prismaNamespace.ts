@@ -1025,6 +1025,7 @@ export const ScanScalarFieldEnum = {
   eventId: 'eventId',
   deviceId: 'deviceId',
   userId: 'userId',
+  dedupeKey: 'dedupeKey',
   scannedAt: 'scannedAt',
   createdAt: 'createdAt'
 } as const
