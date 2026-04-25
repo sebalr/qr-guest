@@ -29,27 +29,62 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-	const { name, description, imageUrl } = req.body;
-	const startsAt = req.body.startsAt ?? req.body.starts_at;
-	const endsAt = req.body.endsAt ?? req.body.ends_at;
+	try {
+		// Validate user and tenant
+		if (!req.user || !req.user.tenantId) {
+			res.status(401).json({ error: 'Unauthorized: No user or tenant information' });
+			return;
+		}
 
-	if (!name) {
-		res.status(400).json({ error: 'name is required' });
-		return;
+		const { name, description, imageUrl } = req.body;
+		const startsAt = req.body.startsAt ?? req.body.starts_at;
+		const endsAt = req.body.endsAt ?? req.body.ends_at;
+
+		if (!name) {
+			res.status(400).json({ error: 'name is required' });
+			return;
+		}
+
+		// Validate and parse dates
+		const startDate = startsAt ? new Date(startsAt) : undefined;
+		const endDate = endsAt ? new Date(endsAt) : undefined;
+
+		if (startDate && isNaN(startDate.getTime())) {
+			res.status(400).json({ error: 'Invalid start date format' });
+			return;
+		}
+
+		if (endDate && isNaN(endDate.getTime())) {
+			res.status(400).json({ error: 'Invalid end date format' });
+			return;
+		}
+
+		// Verify tenant exists
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: req.user.tenantId },
+		});
+
+		if (!tenant) {
+			res.status(401).json({ error: 'Unauthorized: Tenant not found' });
+			return;
+		}
+
+		const event = await prisma.event.create({
+			data: {
+				tenantId: req.user.tenantId,
+				name,
+				...(description ? { description } : {}),
+				...(imageUrl ? { imageUrl } : {}),
+				...(startDate ? { startsAt: startDate } : {}),
+				...(endDate ? { endsAt: endDate } : {}),
+			},
+		});
+
+		res.status(201).json({ data: event });
+	} catch (error) {
+		console.error('Error creating event:', error);
+		res.status(500).json({ error: 'Failed to create event' });
 	}
-
-	const event = await prisma.event.create({
-		data: {
-			tenantId: req.user!.tenantId,
-			name,
-			...(description ? { description } : {}),
-			...(imageUrl ? { imageUrl } : {}),
-			...(startsAt ? { startsAt: new Date(startsAt) } : {}),
-			...(endsAt ? { endsAt: new Date(endsAt) } : {}),
-		},
-	});
-
-	res.status(201).json({ data: event });
 });
 
 export default router;

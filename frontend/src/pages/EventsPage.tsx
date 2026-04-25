@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { QrCode, Plus, X, Calendar, ChevronRight, AlertCircle, LogOut, Shield, Image } from 'lucide-react';
 
 export default function EventsPage() {
@@ -18,8 +19,8 @@ export default function EventsPage() {
 	const [loading, setLoading] = useState(true);
 	const [showForm, setShowForm] = useState(false);
 	const [name, setName] = useState('');
-	const [startsAt, setStartsAt] = useState('');
-	const [endsAt, setEndsAt] = useState('');
+	const [startsAt, setStartsAt] = useState<Date | undefined>(undefined);
+	const [endsAt, setEndsAt] = useState<Date | undefined>(undefined);
 	const [description, setDescription] = useState('');
 	const [imageUrl, setImageUrl] = useState('');
 	const [formError, setFormError] = useState('');
@@ -39,20 +40,21 @@ export default function EventsPage() {
 		try {
 			const res = await createEventApi({
 				name,
-				startsAt: startsAt || undefined,
-				endsAt: endsAt || undefined,
+				startsAt: startsAt?.toISOString(),
+				endsAt: endsAt?.toISOString(),
 				description: description || undefined,
 				imageUrl: imageUrl || undefined,
 			});
 			setEvents(prev => [res.data.data, ...prev]);
 			setShowForm(false);
 			setName('');
-			setStartsAt('');
-			setEndsAt('');
+			setStartsAt(undefined);
+			setEndsAt(undefined);
 			setDescription('');
 			setImageUrl('');
-		} catch {
-			setFormError('Failed to create event.');
+		} catch (error: unknown) {
+			const errorMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to create event.';
+			setFormError(errorMsg);
 		} finally {
 			setCreating(false);
 		}
@@ -148,23 +150,21 @@ export default function EventsPage() {
 										onChange={e => setDescription(e.target.value)}
 									/>
 								</div>
-								<div className="grid grid-cols-2 gap-4">
+								<div className="grid gap-4">
 									<div className="space-y-2">
-										<Label htmlFor="starts-at">Starts At</Label>
-										<Input
-											id="starts-at"
-											type="datetime-local"
+										<Label>Start Date & Time</Label>
+										<DateTimePicker
 											value={startsAt}
-											onChange={e => setStartsAt(e.target.value)}
+											onChange={setStartsAt}
+											placeholder="Pick start date & time"
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="ends-at">Ends At</Label>
-										<Input
-											id="ends-at"
-											type="datetime-local"
+										<Label>End Date & Time</Label>
+										<DateTimePicker
 											value={endsAt}
-											onChange={e => setEndsAt(e.target.value)}
+											onChange={setEndsAt}
+											placeholder="Pick end date & time"
 										/>
 									</div>
 								</div>
@@ -241,4 +241,3 @@ export default function EventsPage() {
 		</div>
 	);
 }
-
