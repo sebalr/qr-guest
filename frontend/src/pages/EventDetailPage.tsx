@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
@@ -51,6 +51,7 @@ type ScanHistoryItem = TicketScanDetail & {
 
 type GuestListView = 'full' | 'compact';
 const COMPACT_VIEW_DEFAULT_THRESHOLD = 300;
+const COMPACT_GRID_COLUMNS = 4;
 
 export default function EventDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -399,10 +400,17 @@ export default function EventDetailPage() {
 	const totalScanned = Object.values(scanCounts).reduce((a, b) => a + b, 0);
 	const cancelledCount = tickets.filter(t => t.status === 'cancelled').length;
 	const cancelTargetTicket = cancelTargetTicketId ? (tickets.find(t => t.id === cancelTargetTicketId) ?? null) : null;
+	const compactRows = useMemo(() => {
+		const rows: Ticket[][] = [];
+		for (let i = 0; i < tickets.length; i += COMPACT_GRID_COLUMNS) {
+			rows.push(tickets.slice(i, i + COMPACT_GRID_COLUMNS));
+		}
+		return rows;
+	}, [tickets]);
 	const compactRowVirtualizer = useVirtualizer({
-		count: tickets.length,
+		count: compactRows.length,
 		getScrollElement: () => compactListRef.current,
-		estimateSize: () => 68,
+		estimateSize: () => 190,
 		overscan: 10,
 	});
 
@@ -669,12 +677,12 @@ export default function EventDetailPage() {
 									position: 'relative',
 								}}>
 								{compactRowVirtualizer.getVirtualItems().map(virtualRow => {
-									const ticket = tickets[virtualRow.index];
-									if (!ticket) return null;
+									const rowTickets = compactRows[virtualRow.index];
+									if (!rowTickets || rowTickets.length === 0) return null;
 
 									return (
 										<div
-											key={ticket.id}
+											key={`compact-row-${virtualRow.index}`}
 											data-index={virtualRow.index}
 											ref={compactRowVirtualizer.measureElement}
 											style={{
@@ -684,56 +692,58 @@ export default function EventDetailPage() {
 												width: '100%',
 												transform: `translateY(${virtualRow.start}px)`,
 											}}
-											className="px-3 py-2.5 flex items-center justify-between gap-3 border-b last:border-b-0">
-											<div className="flex items-center gap-3 min-w-0">
-												{canManageTickets && (
-													<Checkbox
-														checked={selected.has(ticket.id)}
-														onChange={() => toggleSelect(ticket.id)}
-														id={`chk-compact-${ticket.id}`}
-													/>
-												)}
-												<div className="min-w-0">
-													<p className="font-medium text-sm truncate">{ticket.name}</p>
-													<div className="flex items-center gap-1.5 mt-1 flex-wrap">
-														<Badge variant={ticket.status === 'active' ? 'success' : 'destructive'}>{ticket.status}</Badge>
-														{scanCounts[ticket.id] ? (
-															<button
-																type="button"
-																onClick={() => openScanHistory(ticket)}
-																className="inline-flex items-center rounded-full border border-transparent bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-																Scanned {scanCounts[ticket.id]}x
-															</button>
-														) : null}
+											className="px-3 py-3 border-b last:border-b-0">
+											<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+												{rowTickets.map(ticket => (
+													<div
+														key={ticket.id}
+														className="aspect-square rounded-lg border bg-background p-3 flex flex-col gap-2">
+														<div className="flex items-start justify-between gap-2 min-w-0">
+															<p className="text-sm font-medium leading-tight break-words">{ticket.name}</p>
+															{canManageTickets && (
+																<Checkbox
+																	checked={selected.has(ticket.id)}
+																	onChange={() => toggleSelect(ticket.id)}
+																	id={`chk-compact-${ticket.id}`}
+																/>
+															)}
+														</div>
+														<div className="flex items-center gap-1.5 flex-wrap">
+															<Badge variant={ticket.status === 'active' ? 'success' : 'destructive'}>{ticket.status}</Badge>
+															{scanCounts[ticket.id] ? (
+																<button
+																	type="button"
+																	onClick={() => openScanHistory(ticket)}
+																	className="inline-flex items-center rounded-full border border-transparent bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+																	Scanned {scanCounts[ticket.id]}x
+																</button>
+															) : null}
+														</div>
+														{canManageTickets && ticket.status === 'active' && (
+															<div className="mt-auto pt-1 flex gap-1.5 flex-wrap">
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onClick={() => handleShowQR(ticket.id)}>
+																	<QrCode className="h-3.5 w-3.5" />
+																</Button>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	disabled={generatingPdf}
+																	onClick={() => handleGeneratePdf([ticket.id])}>
+																	<Share2 className="h-3.5 w-3.5" />
+																</Button>
+																<Button
+																	variant="destructive"
+																	size="sm"
+																	onClick={() => setCancelTargetTicketId(ticket.id)}>
+																	Cancel
+																</Button>
+															</div>
+														)}
 													</div>
-												</div>
-											</div>
-											<div className="flex gap-1.5 shrink-0">
-												{canManageTickets && ticket.status === 'active' && (
-													<Button
-														variant="outline"
-														size="sm"
-														onClick={() => handleShowQR(ticket.id)}>
-														<QrCode className="h-3.5 w-3.5" />
-													</Button>
-												)}
-												{canManageTickets && ticket.status === 'active' && (
-													<Button
-														variant="outline"
-														size="sm"
-														disabled={generatingPdf}
-														onClick={() => handleGeneratePdf([ticket.id])}>
-														<Share2 className="h-3.5 w-3.5" />
-													</Button>
-												)}
-												{canManageTickets && ticket.status === 'active' && (
-													<Button
-														variant="destructive"
-														size="sm"
-														onClick={() => setCancelTargetTicketId(ticket.id)}>
-														Cancel
-													</Button>
-												)}
+												))}
 											</div>
 										</div>
 									);
