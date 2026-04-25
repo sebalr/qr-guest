@@ -58,6 +58,11 @@ npm run dev
 | ------ | ---------------------------- | ------------------------------ |
 | POST   | /auth/register               | Create tenant + owner account  |
 | POST   | /auth/login                  | Login                          |
+| POST   | /auth/resend-verification    | Resend verification email      |
+| POST   | /auth/verify-email           | Verify email with token        |
+| POST   | /auth/forgot-password        | Send password reset email      |
+| POST   | /auth/reset-password         | Reset password with token      |
+| POST   | /auth/accept-invitation      | Accept invited user account    |
 | GET    | /events                      | List events                    |
 | POST   | /events                      | Create event                   |
 | POST   | /events/:id/tickets/bulk     | Bulk create tickets            |
@@ -82,12 +87,15 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 
 ### Backend
 
-| Variable       | Description                  |
-| -------------- | ---------------------------- |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET`   | Secret for auth JWTs         |
-| `QR_SECRET`    | Secret for QR ticket JWTs    |
-| `PORT`         | HTTP port (default: 3000)    |
+| Variable            | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `DATABASE_URL`      | PostgreSQL connection string                   |
+| `JWT_SECRET`        | Secret for auth JWTs                           |
+| `QR_SECRET`         | Secret for QR ticket JWTs                      |
+| `PORT`              | HTTP port (default: 3000)                      |
+| `FRONTEND_URL`      | Public frontend URL used in verification links |
+| `RESEND_API_KEY`    | Resend API key for auth emails                 |
+| `RESEND_FROM_EMAIL` | Verified sender address used for auth emails   |
 
 ### Frontend
 

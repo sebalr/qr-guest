@@ -386,6 +386,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Tenant: 'Tenant',
   User: 'User',
+  UserAuthToken: 'UserAuthToken',
   UserTenant: 'UserTenant',
   Event: 'Event',
   Ticket: 'Ticket',
@@ -408,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tenant" | "user" | "userTenant" | "event" | "ticket" | "scan" | "deviceEventDebugData" | "syncState" | "guest"
+    modelProps: "tenant" | "user" | "userAuthToken" | "userTenant" | "event" | "ticket" | "scan" | "deviceEventDebugData" | "syncState" | "guest"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -557,6 +558,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserAuthToken: {
+      payload: Prisma.$UserAuthTokenPayload<ExtArgs>
+      fields: Prisma.UserAuthTokenFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserAuthTokenFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserAuthTokenFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>
+        }
+        findFirst: {
+          args: Prisma.UserAuthTokenFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserAuthTokenFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>
+        }
+        findMany: {
+          args: Prisma.UserAuthTokenFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>[]
+        }
+        create: {
+          args: Prisma.UserAuthTokenCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>
+        }
+        createMany: {
+          args: Prisma.UserAuthTokenCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserAuthTokenCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>[]
+        }
+        delete: {
+          args: Prisma.UserAuthTokenDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>
+        }
+        update: {
+          args: Prisma.UserAuthTokenUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserAuthTokenDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserAuthTokenUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserAuthTokenUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserAuthTokenUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserAuthTokenPayload>
+        }
+        aggregate: {
+          args: Prisma.UserAuthTokenAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserAuthToken>
+        }
+        groupBy: {
+          args: Prisma.UserAuthTokenGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserAuthTokenGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserAuthTokenCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserAuthTokenCountAggregateOutputType> | number
         }
       }
     }
@@ -1131,11 +1206,25 @@ export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
   passwordHash: 'passwordHash',
+  emailVerifiedAt: 'emailVerifiedAt',
   isSuperAdmin: 'isSuperAdmin',
   createdAt: 'createdAt'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const UserAuthTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  type: 'type',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type UserAuthTokenScalarFieldEnum = (typeof UserAuthTokenScalarFieldEnum)[keyof typeof UserAuthTokenScalarFieldEnum]
 
 
 export const UserTenantScalarFieldEnum = {
@@ -1456,6 +1545,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   tenant?: Prisma.TenantOmit
   user?: Prisma.UserOmit
+  userAuthToken?: Prisma.UserAuthTokenOmit
   userTenant?: Prisma.UserTenantOmit
   event?: Prisma.EventOmit
   ticket?: Prisma.TicketOmit

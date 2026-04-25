@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../auth/AuthContext';
 import {
 	AdminEvent,
@@ -37,7 +38,6 @@ export default function SuperAdminPage() {
 	const [roleSaving, setRoleSaving] = useState<Record<string, boolean>>({});
 	const [planSaving, setPlanSaving] = useState<Record<string, boolean>>({});
 	const [createEmail, setCreateEmail] = useState('');
-	const [createPassword, setCreatePassword] = useState('');
 	const [createRole, setCreateRole] = useState<ManageableUserRole>('scanner');
 	const [creatingUser, setCreatingUser] = useState(false);
 	const isSuperAdmin = user?.isSuperAdmin === true;
@@ -79,7 +79,7 @@ export default function SuperAdminPage() {
 			const updated = nextPlan === 'pro' ? (await upgradeTenantApi(tenantId)).data.data : (await downgradeTenantApi(tenantId)).data.data;
 
 			setTenants(prev => prev.map(t => (t.id === tenantId ? { ...t, plan: updated.plan } : t)));
-			setUsers(prev => prev.map(u => (u.tenantId === tenantId ? { ...u, tenant: { ...u.tenant, plan: updated.plan } } : u)));
+			setUsers(prev => prev.map(u => (u.tenantId === tenantId && u.tenant ? { ...u, tenant: { ...u.tenant, plan: updated.plan } } : u)));
 			setEvents(prev => prev.map(e => (e.tenantId === tenantId ? { ...e, tenant: { ...e.tenant, plan: updated.plan } } : e)));
 		} catch {
 			setError('Failed to update tenant plan.');
@@ -104,13 +104,19 @@ export default function SuperAdminPage() {
 		setError('');
 		setCreatingUser(true);
 		try {
-			const created = (await createAdminUserApi(createEmail, createPassword, createRole)).data.data;
+			const created = (await createAdminUserApi(createEmail, createRole)).data.data;
 			setUsers(prev => [created, ...prev]);
 			setCreateEmail('');
-			setCreatePassword('');
 			setCreateRole('scanner');
-		} catch {
-			setError('Failed to create user. Ensure email is unique and password has at least 8 characters.');
+			if (created.emailDispatched === false) {
+				setError('User created, but the invitation email could not be sent.');
+			}
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setError((err.response?.data as { error?: string } | undefined)?.error ?? 'Failed to create user.');
+			} else {
+				setError('Failed to create user.');
+			}
 		} finally {
 			setCreatingUser(false);
 		}
@@ -226,22 +232,13 @@ export default function SuperAdminPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="grid md:grid-cols-4 gap-3 items-end">
-							<div className="space-y-2 md:col-span-2">
+							<div className="space-y-2 md:col-span-3">
 								<Label>Email</Label>
 								<Input
 									type="email"
 									value={createEmail}
 									onChange={e => setCreateEmail(e.target.value)}
 									placeholder="user@company.com"
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label>Password</Label>
-								<Input
-									type="password"
-									value={createPassword}
-									onChange={e => setCreatePassword(e.target.value)}
-									placeholder="min 8 chars"
 								/>
 							</div>
 							<div className="space-y-2">
@@ -267,8 +264,8 @@ export default function SuperAdminPage() {
 						<div className="mt-4">
 							<Button
 								onClick={handleCreateUser}
-								disabled={creatingUser || !createEmail || !createPassword || createPassword.length < 8}>
-								{creatingUser ? 'Creating…' : 'Create User'}
+								disabled={creatingUser || !createEmail}>
+								{creatingUser ? 'Creating…' : 'Send Invitation'}
 							</Button>
 						</div>
 					</CardContent>
@@ -329,6 +326,7 @@ export default function SuperAdminPage() {
 									<TableHead>Tenant</TableHead>
 									<TableHead>Plan</TableHead>
 									<TableHead>Role</TableHead>
+									<TableHead>Status</TableHead>
 									<TableHead>Super Admin</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -336,9 +334,9 @@ export default function SuperAdminPage() {
 								{users.map(entry => (
 									<TableRow key={entry.id}>
 										<TableCell>{entry.email}</TableCell>
-										<TableCell>{entry.tenant.name}</TableCell>
+										<TableCell>{entry.tenant?.name ?? 'Multiple tenants'}</TableCell>
 										<TableCell>
-											<Badge variant={entry.tenant.plan === 'pro' ? 'default' : 'secondary'}>{entry.tenant.plan}</Badge>
+											<Badge variant={entry.tenant?.plan === 'pro' ? 'default' : 'secondary'}>{entry.tenant?.plan ?? 'n/a'}</Badge>
 										</TableCell>
 										<TableCell>
 											{entry.role === 'owner' ? (
@@ -365,6 +363,11 @@ export default function SuperAdminPage() {
 													</SelectContent>
 												</Select>
 											)}
+										</TableCell>
+										<TableCell>
+											<Badge variant={entry.accountStatus === 'active' ? 'default' : 'secondary'}>
+												{entry.accountStatus.replace('_', ' ')}
+											</Badge>
 										</TableCell>
 										<TableCell>
 											{entry.isSuperAdmin ? (

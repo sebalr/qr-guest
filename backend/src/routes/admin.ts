@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import prisma from '../prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requireSuperAdmin } from '../middleware/roles';
+import { getAccountStatus } from '../lib/accountStatus';
+import { sendInvitationEmail } from '../lib/authEmails';
+import { AUTH_TOKEN_TYPES, issueUserAuthToken } from '../lib/userAuthTokens';
 
 const router = Router();
 
@@ -10,6 +12,10 @@ router.use(authMiddleware);
 
 type TenantScopedRole = 'admin' | 'scanner';
 const TENANT_ALLOWED_ROLES: TenantScopedRole[] = ['admin', 'scanner'];
+
+function normalizeEmail(email: string): string {
+	return email.trim().toLowerCase();
+}
 
 function canManageTenantUsers(req: Request): boolean {
 	const user = req.user;
@@ -40,6 +46,7 @@ router.get('/users', async (req: Request, res: Response): Promise<void> => {
 			data: users.map(u => ({
 				id: u.id,
 				email: u.email,
+				accountStatus: getAccountStatus(u),
 				isSuperAdmin: u.isSuperAdmin,
 				createdAt: u.createdAt,
 				tenants: u.userTenants.map(ut => ({
@@ -65,6 +72,8 @@ router.get('/users', async (req: Request, res: Response): Promise<void> => {
 			data: userTenants.map(ut => ({
 				id: ut.user.id,
 				email: ut.user.email,
+				accountStatus: getAccountStatus(ut.user),
+				tenantId: ut.tenant.id,
 				role: ut.role,
 				isSuperAdmin: ut.user.isSuperAdmin,
 				createdAt: ut.user.createdAt,
@@ -85,14 +94,13 @@ router.post('/users', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	const { email, password, role } = req.body as {
+	const { email, role } = req.body as {
 		email?: string;
-		password?: string;
 		role?: string;
 	};
 
-	if (!email || !password || !role) {
-		res.status(400).json({ error: 'email, password, and role are required' });
+	if (!email || !role) {
+		res.status(400).json({ error: 'email and role are required' });
 		return;
 	}
 
@@ -101,12 +109,7 @@ router.post('/users', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	if (password.length < 8) {
-		res.status(400).json({ error: 'password must be at least 8 characters' });
-		return;
-	}
-
-	const normalizedEmail = email.trim().toLowerCase();
+	const normalizedEmail = normalizeEmail(email);
 
 	const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (existing) {
@@ -114,12 +117,12 @@ router.post('/users', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	const passwordHash = await bcrypt.hash(password, 12);
+	const inviterEmail = req.user?.email ?? (await prisma.user.findUnique({ where: { id: req.user!.userId } }))?.email ?? 'An administrator';
 
 	const user = await prisma.user.create({
 		data: {
 			email: normalizedEmail,
-			passwordHash,
+			passwordHash: null,
 			isSuperAdmin: false,
 		},
 	});
@@ -136,13 +139,36 @@ router.post('/users', async (req: Request, res: Response): Promise<void> => {
 		},
 	});
 
+	const invitation = await issueUserAuthToken({
+		userId: user.id,
+		type: AUTH_TOKEN_TYPES.invitation,
+		ttlHours: 24 * 7,
+	});
+
+	let emailDispatched = true;
+	try {
+		await sendInvitationEmail({
+			to: userTenant.user.email,
+			tenantName: userTenant.tenant.name,
+			role: userTenant.role,
+			inviterEmail,
+			token: invitation.token,
+		});
+	} catch (error) {
+		emailDispatched = false;
+		console.error('Invitation email dispatch failed:', error);
+	}
+
 	res.status(201).json({
 		data: {
 			id: userTenant.user.id,
 			email: userTenant.user.email,
+			accountStatus: getAccountStatus(userTenant.user),
+			tenantId: userTenant.tenant.id,
 			role: userTenant.role,
 			isSuperAdmin: userTenant.user.isSuperAdmin,
 			createdAt: userTenant.user.createdAt,
+			emailDispatched,
 			tenant: {
 				id: userTenant.tenant.id,
 				name: userTenant.tenant.name,
@@ -212,6 +238,8 @@ router.patch('/users/:id/role', async (req: Request, res: Response): Promise<voi
 		data: {
 			id: updated.user.id,
 			email: updated.user.email,
+			accountStatus: getAccountStatus(updated.user),
+			tenantId: updated.tenant.id,
 			role: updated.role,
 			isSuperAdmin: updated.user.isSuperAdmin,
 			createdAt: updated.user.createdAt,

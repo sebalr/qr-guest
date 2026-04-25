@@ -1,7 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../auth/AuthContext';
-import { loginApi } from '../api';
+import { loginApi, resendVerificationApi } from '../api';
 import { isRecaptchaEnabled, executeRecaptcha } from '../recaptcha';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,13 +24,19 @@ export default function LoginPage() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
+	const [errorCode, setErrorCode] = useState('');
+	const [infoMessage, setInfoMessage] = useState('');
 	const [loading, setLoading] = useState(false);
+	const [resendingVerification, setResendingVerification] = useState(false);
 	const [showTenantDialog, setShowTenantDialog] = useState(false);
 	const [availableTenants, setLocalAvailableTenants] = useState<Tenant[]>([]);
+	const [pendingUserId, setPendingUserId] = useState('');
 
 	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
 		setError('');
+		setErrorCode('');
+		setInfoMessage('');
 		setLoading(true);
 
 		try {
@@ -43,19 +50,24 @@ export default function LoginPage() {
 
 			// Check if user has multiple tenants or single tenant
 			if (responseData.token) {
-				// Single tenant - auto login
 				login(responseData.token);
 				navigate('/events');
 			} else if (responseData.tenants && responseData.tenants.length > 0) {
-				// Multiple tenants - show selection dialog
+				setPendingUserId(responseData.userId ?? '');
 				setLocalAvailableTenants(responseData.tenants);
 				setAvailableTenants(responseData.tenants);
 				setShowTenantDialog(true);
 			} else {
 				setError('No tenants available for this account.');
 			}
-		} catch {
-			setError('Invalid credentials. Please try again.');
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				const apiError = err.response?.data as { error?: string; code?: string } | undefined;
+				setError(apiError?.error ?? 'Invalid credentials. Please try again.');
+				setErrorCode(apiError?.code ?? '');
+			} else {
+				setError('Invalid credentials. Please try again.');
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -64,11 +76,34 @@ export default function LoginPage() {
 	const handleTenantSelect = async (tenantId: string) => {
 		try {
 			setError('');
-			await selectTenant(tenantId);
+			if (!pendingUserId) {
+				throw new Error('Missing tenant selection session.');
+			}
+
+			await selectTenant(pendingUserId, tenantId);
 			setShowTenantDialog(false);
 			navigate('/events');
 		} catch (err) {
 			setError('Failed to select tenant. Please try again.');
+		}
+	};
+
+	const handleResendVerification = async () => {
+		setResendingVerification(true);
+		setError('');
+		setInfoMessage('');
+
+		try {
+			const res = await resendVerificationApi(email);
+			setInfoMessage(res.data.data.message);
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setError((err.response?.data as { error?: string } | undefined)?.error ?? 'Failed to resend verification email.');
+			} else {
+				setError('Failed to resend verification email.');
+			}
+		} finally {
+			setResendingVerification(false);
 		}
 	};
 
@@ -104,7 +139,14 @@ export default function LoginPage() {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="password">Password</Label>
+								<div className="flex items-center justify-between gap-3">
+									<Label htmlFor="password">Password</Label>
+									<Link
+										to="/forgot-password"
+										className="text-xs text-primary font-medium hover:underline">
+										Forgot password?
+									</Link>
+								</div>
 								<Input
 									id="password"
 									type="password"
@@ -119,6 +161,21 @@ export default function LoginPage() {
 									<AlertCircle className="h-4 w-4" />
 									<AlertDescription>{error}</AlertDescription>
 								</Alert>
+							)}
+							{infoMessage && (
+								<Alert>
+									<AlertDescription>{infoMessage}</AlertDescription>
+								</Alert>
+							)}
+							{errorCode === 'EMAIL_NOT_VERIFIED' && email && (
+								<Button
+									type="button"
+									variant="outline"
+									className="w-full"
+									onClick={handleResendVerification}
+									disabled={resendingVerification}>
+									{resendingVerification ? 'Sending verification email…' : 'Resend verification email'}
+								</Button>
 							)}
 							<Button
 								type="submit"

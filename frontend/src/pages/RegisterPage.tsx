@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { registerApi } from '../api';
 import { isRecaptchaEnabled, executeRecaptcha } from '../recaptcha';
 import { Button } from '@/components/ui/button';
@@ -11,17 +11,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QrCode, AlertCircle } from 'lucide-react';
 
 export default function RegisterPage() {
-	const { login } = useAuth();
-	const navigate = useNavigate();
 	const [tenantName, setTenantName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
+	const [successMessage, setSuccessMessage] = useState('');
 	const [loading, setLoading] = useState(false);
 
 	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
 		setError('');
+		setSuccessMessage('');
 		setLoading(true);
 
 		try {
@@ -31,10 +31,16 @@ export default function RegisterPage() {
 			}
 
 			const res = await registerApi(email, password, tenantName, recaptchaToken);
-			login(res.data.data.token);
-			navigate('/events');
-		} catch {
-			setError('Registration failed. Email may already be in use.');
+			setSuccessMessage(res.data.data.message);
+			setTenantName('');
+			setEmail('');
+			setPassword('');
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setError((err.response?.data as { error?: string } | undefined)?.error ?? 'Registration failed.');
+			} else {
+				setError('Registration failed. Email may already be in use.');
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -98,6 +104,11 @@ export default function RegisterPage() {
 								<Alert variant="destructive">
 									<AlertCircle className="h-4 w-4" />
 									<AlertDescription>{error}</AlertDescription>
+								</Alert>
+							)}
+							{successMessage && (
+								<Alert>
+									<AlertDescription>{successMessage}</AlertDescription>
 								</Alert>
 							)}
 							<Button

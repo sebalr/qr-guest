@@ -116,11 +116,13 @@ export interface AdminEvent {
 export interface AdminUser {
 	id: string;
 	email: string;
+	accountStatus: 'active' | 'pending_verification' | 'invited';
 	role: string;
 	isSuperAdmin: boolean;
 	createdAt: string;
-	tenantId: string;
-	tenant: { id: string; name: string; plan: string };
+	tenantId?: string;
+	emailDispatched?: boolean;
+	tenant?: { id: string; name: string; plan: string };
 }
 
 export interface DeviceEventDebugUploadPayload {
@@ -158,14 +160,31 @@ interface Tenant {
 
 export type ManageableUserRole = 'admin' | 'scanner';
 
+export interface AuthActionResponse {
+	message: string;
+}
+
 // Auth
 export const loginApi = (email: string, password: string, recaptchaToken?: string) =>
-	api.post<{ data: { token?: string; tenants?: Tenant[] } }>('/auth/login', { email, password, recaptchaToken });
+	api.post<{ data: { token?: string; tenants?: Tenant[]; userId?: string } }>('/auth/login', { email, password, recaptchaToken });
 
 export const registerApi = (email: string, password: string, name: string, recaptchaToken?: string) =>
-	api.post<{ data: { token: string } }>('/auth/register', { tenantName: name, email, password, recaptchaToken });
+	api.post<{ data: { requiresEmailVerification: boolean; emailDispatched: boolean; message: string } }>('/auth/register', {
+		tenantName: name,
+		email,
+		password,
+		recaptchaToken,
+	});
 
-export const selectTenantApi = (tenantId: string) => api.post<{ data: { token: string } }>('/auth/select-tenant', { tenantId });
+export const selectTenantApi = (userId: string, tenantId: string) =>
+	api.post<{ data: { token: string } }>('/auth/select-tenant', { userId, tenantId });
+export const resendVerificationApi = (email: string) => api.post<{ data: AuthActionResponse }>('/auth/resend-verification', { email });
+export const verifyEmailApi = (token: string) => api.post<{ data: AuthActionResponse }>('/auth/verify-email', { token });
+export const forgotPasswordApi = (email: string) => api.post<{ data: AuthActionResponse }>('/auth/forgot-password', { email });
+export const resetPasswordApi = (token: string, password: string) =>
+	api.post<{ data: AuthActionResponse }>('/auth/reset-password', { token, password });
+export const acceptInvitationApi = (token: string, password: string) =>
+	api.post<{ data: { token?: string; tenants?: Tenant[]; userId?: string } }>('/auth/accept-invitation', { token, password });
 
 // Events
 export const getEventsApi = () => api.get<{ data: Event[] }>('/events');
@@ -216,8 +235,8 @@ export const syncApi = (payload: SyncPayload) => api.post<{ data: SyncResponse }
 export const getAdminTenantsApi = () => api.get<{ data: AdminTenant[] }>('/admin/tenants');
 export const getAdminEventsApi = () => api.get<{ data: AdminEvent[] }>('/admin/events');
 export const getAdminUsersApi = () => api.get<{ data: AdminUser[] }>('/admin/users');
-export const createAdminUserApi = (email: string, password: string, role: ManageableUserRole) =>
-	api.post<{ data: AdminUser }>('/admin/users', { email, password, role });
+export const createAdminUserApi = (email: string, role: ManageableUserRole) =>
+	api.post<{ data: AdminUser }>('/admin/users', { email, role });
 export const upgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/upgrade`);
 export const downgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/downgrade`);
 export const updateUserRoleApi = (userId: string, role: ManageableUserRole) =>

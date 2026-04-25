@@ -32,7 +32,7 @@ interface AuthContextValue {
 	login: (token: string) => void;
 	logout: () => void;
 	isRole: (roles: string[]) => boolean;
-	selectTenant: (tenantId: string) => Promise<void>;
+	selectTenant: (userId: string, tenantId: string) => Promise<void>;
 	setAvailableTenants: (tenants: AvailableTenant[]) => void;
 }
 
@@ -100,9 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	);
 
 	const selectTenant = useCallback(
-		async (tenantId: string) => {
+		async (userId: string, tenantId: string) => {
 			try {
-				const res = await selectTenantApi(tenantId);
+				const res = await selectTenantApi(userId, tenantId);
 				if (res.data.data.token) {
 					login(res.data.data.token);
 				}

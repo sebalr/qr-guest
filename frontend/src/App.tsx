@@ -3,6 +3,10 @@ import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
 import ScannerPage from './pages/ScannerPage';
@@ -21,6 +25,22 @@ export default function App() {
 					<Route
 						path="/register"
 						element={<RegisterPage />}
+					/>
+					<Route
+						path="/verify-email"
+						element={<VerifyEmailPage />}
+					/>
+					<Route
+						path="/forgot-password"
+						element={<ForgotPasswordPage />}
+					/>
+					<Route
+						path="/reset-password"
+						element={<ResetPasswordPage />}
+					/>
+					<Route
+						path="/accept-invitation"
+						element={<AcceptInvitationPage />}
 					/>
 					<Route
 						path="/events"

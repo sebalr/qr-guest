@@ -28,6 +28,11 @@ export type Tenant = Prisma.TenantModel
  */
 export type User = Prisma.UserModel
 /**
+ * Model UserAuthToken
+ * 
+ */
+export type UserAuthToken = Prisma.UserAuthTokenModel
+/**
  * Model UserTenant
  * 
  */
