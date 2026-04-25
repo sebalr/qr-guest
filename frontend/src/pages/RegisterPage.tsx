@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { registerApi } from '../api';
 import { isRecaptchaEnabled, executeRecaptcha } from '../recaptcha';
@@ -11,17 +11,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QrCode, AlertCircle } from 'lucide-react';
 
 export default function RegisterPage() {
+	const navigate = useNavigate();
 	const [tenantName, setTenantName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
-	const [successMessage, setSuccessMessage] = useState('');
 	const [loading, setLoading] = useState(false);
 
 	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
 		setError('');
-		setSuccessMessage('');
 		setLoading(true);
 
 		try {
@@ -30,11 +29,15 @@ export default function RegisterPage() {
 				recaptchaToken = await executeRecaptcha('register');
 			}
 
-			const res = await registerApi(email, password, tenantName, recaptchaToken);
-			setSuccessMessage(res.data.data.message);
+			const submittedEmail = email;
+			const res = await registerApi(submittedEmail, password, tenantName, recaptchaToken);
 			setTenantName('');
 			setEmail('');
 			setPassword('');
+			navigate(`/register/check-email?email=${encodeURIComponent(submittedEmail)}`, {
+				replace: true,
+				state: { message: res.data.data.message },
+			});
 		} catch (err) {
 			if (axios.isAxiosError(err)) {
 				setError((err.response?.data as { error?: string } | undefined)?.error ?? 'Registration failed.');
@@ -104,11 +107,6 @@ export default function RegisterPage() {
 								<Alert variant="destructive">
 									<AlertCircle className="h-4 w-4" />
 									<AlertDescription>{error}</AlertDescription>
-								</Alert>
-							)}
-							{successMessage && (
-								<Alert>
-									<AlertDescription>{successMessage}</AlertDescription>
 								</Alert>
 							)}
 							<Button
