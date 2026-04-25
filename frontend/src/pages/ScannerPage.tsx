@@ -83,24 +83,29 @@ export default function ScannerPage() {
 	} | null>(null);
 	const [pendingTicket, setPendingTicket] = useState<{ tid: string; eid: string } | null>(null);
 
+	// Compatibility-safe unsynced matcher: treats only explicit true as synced.
+	const getUnsyncedScans = useCallback(async () => {
+		return db.scans.filter(scan => scan.synced !== true).toArray();
+	}, []);
+
 	// Load counts
 	const refreshCounts = useCallback(async () => {
 		if (!eventId) return;
 		try {
-			const [scanned, total, unsynced, meta] = await Promise.all([
+			const [scanned, total, unsyncedScans, meta] = await Promise.all([
 				db.scans.where('event_id').equals(eventId).count(),
 				db.tickets.where('event_id').equals(eventId).count(),
-				db.scans.where('synced').equals(0).count(),
+				getUnsyncedScans(),
 				getMeta(),
 			]);
 			setScannedCount(scanned);
 			setTotalCount(total);
-			setUnsyncedCount(unsynced);
+			setUnsyncedCount(unsyncedScans.length);
 			setLastSync(meta.last_sync_at);
 		} catch {
 			// Non-critical — UI will show stale counts
 		}
-	}, [eventId]);
+	}, [eventId, getUnsyncedScans]);
 
 	// Online/offline tracking
 	useEffect(() => {
@@ -138,7 +143,7 @@ export default function ScannerPage() {
 				}
 
 				// Collect the IDs of unsynced scans BEFORE sending
-				const unsynced = await db.scans.where('synced').equals(0).toArray();
+				const unsynced = await getUnsyncedScans();
 				const unsyncedIds = unsynced.map(s => s.id);
 
 				const res = await syncApi({
@@ -196,7 +201,7 @@ export default function ScannerPage() {
 				syncInProgressRef.current = false;
 			}
 		},
-		[eventId, refreshCounts],
+		[eventId, getUnsyncedScans, refreshCounts],
 	);
 
 	/** Full resync: resets all cursors and marks all local scans as unsynced so they are re-sent. */

@@ -173,6 +173,41 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 	res.json({ data: result });
 });
 
+// Scan history for a ticket — owner/admin/scanner
+router.get('/tickets/:id/scans', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
+	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	if (!ticketId) {
+		res.status(400).json({ error: 'Invalid ticket id' });
+		return;
+	}
+
+	const ticket = await prisma.ticket.findFirst({
+		where: { id: ticketId },
+		include: { event: true },
+	});
+
+	if (!ticket || ticket.event.tenantId !== req.user!.tenantId) {
+		res.status(404).json({ error: 'Ticket not found' });
+		return;
+	}
+
+	const scans = await prisma.scan.findMany({
+		where: { ticketId: ticket.id, eventId: ticket.eventId },
+		orderBy: { scannedAt: 'desc' },
+		include: { user: { select: { id: true, email: true } } },
+	});
+
+	res.json({
+		data: scans.map(scan => ({
+			id: scan.id,
+			scannedAt: scan.scannedAt,
+			deviceId: scan.deviceId,
+			userId: scan.userId,
+			scannedBy: scan.user?.email ?? 'Unknown scanner',
+		})),
+	});
+});
+
 // Cancel a ticket — owner/admin only
 router.post('/tickets/:id/cancel', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

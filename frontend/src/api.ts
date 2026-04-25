@@ -38,6 +38,14 @@ export interface Guest {
 	events: { eventId: string; eventName: string }[];
 }
 
+export interface TicketScanDetail {
+	id: string;
+	scannedAt: string;
+	deviceId: string;
+	userId: string;
+	scannedBy: string;
+}
+
 export interface SyncPayload {
 	eventId: string;
 	lastTicketVersion: number;
@@ -141,6 +149,7 @@ export const createTicketApi = (eventId: string, data: { name?: string; guestId?
 	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data);
 
 export const cancelTicketApi = (ticketId: string) => api.post<{ data: Ticket }>(`/tickets/${ticketId}/cancel`);
+export const getTicketScansApi = (ticketId: string) => api.get<{ data: TicketScanDetail[] }>(`/tickets/${ticketId}/scans`);
 
 // Guests
 export const searchGuestsApi = (q: string) => api.get<{ data: Guest[] }>('/guests', { params: { q } });

@@ -8,9 +8,11 @@ import {
 	cancelTicketApi,
 	getTicketQRApi,
 	searchGuestsApi,
+	getTicketScansApi,
 	Event,
 	Ticket,
 	Guest,
+	TicketScanDetail,
 } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { db } from '../db';
@@ -24,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateQrPdf, sharePdfOrDownload } from '@/lib/generateQrPdf';
 import {
 	ArrowLeft,
@@ -40,6 +43,10 @@ import {
 	Share2,
 	UserPlus,
 } from 'lucide-react';
+
+type ScanHistoryItem = TicketScanDetail & {
+	pendingSync?: boolean;
+};
 
 export default function EventDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -74,6 +81,11 @@ export default function EventDetailPage() {
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [generatingPdf, setGeneratingPdf] = useState(false);
 	const [pdfToast, setPdfToast] = useState('');
+	const [scanHistoryOpen, setScanHistoryOpen] = useState(false);
+	const [scanHistoryTicket, setScanHistoryTicket] = useState<Ticket | null>(null);
+	const [scanHistoryItems, setScanHistoryItems] = useState<ScanHistoryItem[]>([]);
+	const [scanHistoryLoading, setScanHistoryLoading] = useState(false);
+	const [scanHistoryError, setScanHistoryError] = useState('');
 
 	useEffect(() => {
 		if (!id) return;
@@ -97,7 +109,7 @@ export default function EventDetailPage() {
 							.where('ticket_id')
 							.equals(t.id)
 							.count()
-							.then(c => ({ id: t.id, count: c })),
+							.then(c => ({ id: t.id, count: Math.max(c, t.scanCount ?? 0) })),
 					),
 				);
 			})
@@ -316,6 +328,50 @@ export default function EventDetailPage() {
 			setPdfToast('Failed to generate PDF.');
 		} finally {
 			setGeneratingPdf(false);
+		}
+	}
+
+	async function openScanHistory(ticket: Ticket) {
+		setScanHistoryTicket(ticket);
+		setScanHistoryOpen(true);
+		setScanHistoryLoading(true);
+		setScanHistoryError('');
+		setScanHistoryItems([]);
+
+		try {
+			let remoteScans: TicketScanDetail[] = [];
+			let remoteFailed = false;
+
+			try {
+				const res = await getTicketScansApi(ticket.id);
+				remoteScans = res.data.data;
+			} catch {
+				remoteFailed = true;
+			}
+
+			const localScans = await db.scans.where('ticket_id').equals(ticket.id).toArray();
+			const remoteIds = new Set(remoteScans.map(scan => scan.id));
+			const localOnlyScans: ScanHistoryItem[] = localScans
+				.filter(scan => !remoteIds.has(scan.id))
+				.map(scan => ({
+					id: scan.id,
+					scannedAt: scan.scanned_at,
+					deviceId: 'local-device',
+					userId: 'local',
+					scannedBy: scan.synced ? 'Recorded on this device' : 'Pending sync (this device)',
+					pendingSync: !scan.synced,
+				}));
+
+			const merged = [...remoteScans, ...localOnlyScans].sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime());
+
+			setScanHistoryItems(merged);
+			if (remoteFailed) {
+				setScanHistoryError('Server history unavailable. Showing local records only.');
+			}
+		} catch {
+			setScanHistoryError('Failed to load scan history.');
+		} finally {
+			setScanHistoryLoading(false);
 		}
 	}
 
@@ -564,7 +620,14 @@ export default function EventDetailPage() {
 												<p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{ticket.id}</p>
 												<div className="flex flex-wrap gap-1.5 mt-2">
 													<Badge variant={ticket.status === 'active' ? 'success' : 'destructive'}>{ticket.status}</Badge>
-													{scanCounts[ticket.id] ? <Badge variant="secondary">Scanned {scanCounts[ticket.id]}×</Badge> : null}
+													{scanCounts[ticket.id] ? (
+														<button
+															type="button"
+															onClick={() => openScanHistory(ticket)}
+															className="inline-flex items-center rounded-full border border-transparent bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+															Scanned {scanCounts[ticket.id]}x
+														</button>
+													) : null}
 												</div>
 											</div>
 										</div>
@@ -653,6 +716,49 @@ export default function EventDetailPage() {
 					</Button>
 				</div>
 			)}
+
+			<Dialog
+				open={scanHistoryOpen}
+				onOpenChange={setScanHistoryOpen}>
+				<DialogContent className="sm:max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Scan History</DialogTitle>
+						<DialogDescription>
+							{scanHistoryTicket ? `${scanHistoryTicket.name} (${scanHistoryTicket.id})` : 'Loading ticket details...'}
+						</DialogDescription>
+					</DialogHeader>
+					<div className="max-h-80 overflow-y-auto rounded-md border">
+						{scanHistoryLoading ? (
+							<p className="p-4 text-sm text-muted-foreground">Loading scans...</p>
+						) : scanHistoryError ? (
+							<p className="p-4 text-sm text-destructive">{scanHistoryError}</p>
+						) : scanHistoryItems.length === 0 ? (
+							<p className="p-4 text-sm text-muted-foreground">No scans recorded for this ticket.</p>
+						) : (
+							<ul className="divide-y">
+								{scanHistoryItems.map((scan, index) => (
+									<li
+										key={scan.id}
+										className="p-3">
+										<div className="flex items-center gap-2">
+											<p className="text-sm font-medium">{scan.scannedBy}</p>
+											{scan.pendingSync ? (
+												<Badge
+													variant="warning"
+													className="text-[10px] px-1.5 py-0">
+													Pending sync
+												</Badge>
+											) : null}
+										</div>
+										<p className="text-xs text-muted-foreground mt-0.5">{new Date(scan.scannedAt).toLocaleString()}</p>
+										<p className="text-[11px] text-muted-foreground mt-1">Scan #{scanHistoryItems.length - index}</p>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
