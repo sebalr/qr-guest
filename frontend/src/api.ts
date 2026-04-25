@@ -150,14 +150,22 @@ export interface EventDeviceDebugDataDetail extends EventDeviceDebugDataItem {
 	payload: Record<string, unknown>;
 }
 
+interface Tenant {
+	id: string;
+	name: string;
+	role: string;
+}
+
 export type ManageableUserRole = 'admin' | 'scanner';
 
 // Auth
 export const loginApi = (email: string, password: string, recaptchaToken?: string) =>
-	api.post<{ data: { token: string } }>('/auth/login', { email, password, recaptchaToken });
+	api.post<{ data: { token?: string; tenants?: Tenant[] } }>('/auth/login', { email, password, recaptchaToken });
 
 export const registerApi = (email: string, password: string, name: string, recaptchaToken?: string) =>
 	api.post<{ data: { token: string } }>('/auth/register', { tenantName: name, email, password, recaptchaToken });
+
+export const selectTenantApi = (tenantId: string) => api.post<{ data: { token: string } }>('/auth/select-tenant', { tenantId });
 
 // Events
 export const getEventsApi = () => api.get<{ data: Event[] }>('/events');

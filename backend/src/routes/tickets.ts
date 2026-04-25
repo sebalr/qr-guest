@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { getPrismaForTenant } from '../prisma';
 import prisma from '../prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
@@ -8,7 +9,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-// Single ticket create — owner/admin only
+// Single ticket create - owner/admin only
 router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!eventId) {
@@ -22,8 +23,10 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 		return;
 	}
 
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 	});
 	if (!event) {
 		res.status(404).json({ error: 'Event not found' });
@@ -32,7 +35,7 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 
 	const tenant = await prisma.tenant.findUnique({ where: { id: req.user!.tenantId } });
 	if (tenant?.plan === 'free') {
-		const existing = await prisma.ticket.count({ where: { eventId } });
+		const existing = await tenantPrisma.ticket.count({ where: { eventId } });
 		if (existing >= 10) {
 			res.status(403).json({ error: 'Free plan allows a maximum of 10 tickets per event.' });
 			return;
@@ -43,9 +46,9 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 	let resolvedName: string;
 
 	if (guestId) {
-		// Use existing guest — verify it belongs to the same tenant
-		const guest = await prisma.guest.findFirst({
-			where: { id: guestId, tenantId: req.user!.tenantId },
+		// Use existing guest - verify it belongs to the same tenant
+		const guest = await tenantPrisma.guest.findFirst({
+			where: { id: guestId },
 		});
 		if (!guest) {
 			res.status(404).json({ error: 'Guest not found' });
@@ -56,27 +59,27 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 	} else {
 		// Find or create a guest by name within this tenant
 		const trimmedName = name!.trim();
-		let guest = await prisma.guest.findFirst({
-			where: { tenantId: req.user!.tenantId, name: { equals: trimmedName, mode: 'insensitive' } },
+		let guest = await tenantPrisma.guest.findFirst({
+			where: { name: { equals: trimmedName, mode: 'insensitive' } },
 		});
 		if (!guest) {
-			guest = await prisma.guest.create({
-				data: { tenantId: req.user!.tenantId, name: trimmedName },
+			guest = await tenantPrisma.guest.create({
+				data: { name: trimmedName },
 			});
 		}
 		resolvedGuestId = guest.id;
 		resolvedName = guest.name;
 	}
 
-	const ticket = await prisma.ticket.create({
+	const ticket = await tenantPrisma.ticket.create({
 		data: { eventId, guestId: resolvedGuestId, name: resolvedName },
 	});
-	await prisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
+	await tenantPrisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
 
 	res.status(201).json({ data: ticket });
 });
 
-// Bulk create tickets — owner/admin only
+// Bulk create tickets - owner/admin only
 router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!eventId) {
@@ -91,8 +94,10 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		return;
 	}
 
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 	});
 	if (!event) {
 		res.status(404).json({ error: 'Event not found' });
@@ -101,7 +106,7 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 
 	const tenant = await prisma.tenant.findUnique({ where: { id: req.user!.tenantId } });
 	if (tenant?.plan === 'free') {
-		const existing = await prisma.ticket.count({ where: { eventId } });
+		const existing = await tenantPrisma.ticket.count({ where: { eventId } });
 		if (existing + tickets.length > 10) {
 			res.status(403).json({
 				error: `Free plan allows a maximum of 10 tickets per event. Current: ${existing}`,
@@ -110,16 +115,16 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		}
 	}
 
-	const created = await prisma.$transaction(async tx => {
+	const created = await tenantPrisma.$transaction(async tx => {
 		const results = [];
 		for (const t of tickets) {
 			const trimmedName = t.name.trim();
 			let guest = await tx.guest.findFirst({
-				where: { tenantId: req.user!.tenantId, name: { equals: trimmedName, mode: 'insensitive' } },
+				where: { name: { equals: trimmedName, mode: 'insensitive' } },
 			});
 			if (!guest) {
 				guest = await tx.guest.create({
-					data: { tenantId: req.user!.tenantId, name: trimmedName },
+					data: { name: trimmedName },
 				});
 			}
 			const ticket = await tx.ticket.create({
@@ -131,12 +136,12 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 	});
 
 	// Bump event version so sync clients pick up the new tickets
-	await prisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
+	await tenantPrisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
 
 	res.status(201).json({ data: created });
 });
 
-// List tickets with scan count — owner/admin/scanner
+// List tickets with scan count - owner/admin/scanner
 router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!eventId) {
@@ -144,21 +149,23 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		return;
 	}
 
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 	});
 	if (!event) {
 		res.status(404).json({ error: 'Event not found' });
 		return;
 	}
 
-	const tickets = await prisma.ticket.findMany({
+	const ticketsData = await tenantPrisma.ticket.findMany({
 		where: { eventId },
 		include: { _count: { select: { scans: true } } },
 		orderBy: { createdAt: 'asc' },
 	});
 
-	const result = tickets.map(t => ({
+	const result = ticketsData.map(t => ({
 		id: t.id,
 		eventId: t.eventId,
 		guestId: t.guestId,
@@ -173,7 +180,7 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 	res.json({ data: result });
 });
 
-// Scan history for a ticket — owner/admin/scanner
+// Scan history for a ticket - owner/admin/scanner
 router.get('/tickets/:id/scans', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!ticketId) {
@@ -181,17 +188,19 @@ router.get('/tickets/:id/scans', requireRole(['owner', 'admin', 'scanner']), asy
 		return;
 	}
 
-	const ticket = await prisma.ticket.findFirst({
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const ticket = await tenantPrisma.ticket.findFirst({
 		where: { id: ticketId },
 		include: { event: true },
 	});
 
-	if (!ticket || ticket.event.tenantId !== req.user!.tenantId) {
+	if (!ticket) {
 		res.status(404).json({ error: 'Ticket not found' });
 		return;
 	}
 
-	const scans = await prisma.scan.findMany({
+	const scans = await tenantPrisma.scan.findMany({
 		where: { ticketId: ticket.id, eventId: ticket.eventId },
 		orderBy: { scannedAt: 'desc' },
 		include: { user: { select: { id: true, email: true } } },
@@ -208,7 +217,7 @@ router.get('/tickets/:id/scans', requireRole(['owner', 'admin', 'scanner']), asy
 	});
 });
 
-// Cancel a ticket — owner/admin only
+// Cancel a ticket - owner/admin only
 router.post('/tickets/:id/cancel', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!ticketId) {
@@ -216,12 +225,14 @@ router.post('/tickets/:id/cancel', requireRole(['owner', 'admin']), async (req: 
 		return;
 	}
 
-	const ticket = await prisma.ticket.findFirst({
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const ticket = await tenantPrisma.ticket.findFirst({
 		where: { id: ticketId },
 		include: { event: true },
 	});
 
-	if (!ticket || ticket.event.tenantId !== req.user!.tenantId) {
+	if (!ticket) {
 		res.status(404).json({ error: 'Ticket not found' });
 		return;
 	}
@@ -231,7 +242,7 @@ router.post('/tickets/:id/cancel', requireRole(['owner', 'admin']), async (req: 
 		return;
 	}
 
-	const updated = await prisma.ticket.update({
+	const updated = await tenantPrisma.ticket.update({
 		where: { id: ticketId },
 		data: { status: 'cancelled', version: { increment: 1 } },
 	});
@@ -239,7 +250,7 @@ router.post('/tickets/:id/cancel', requireRole(['owner', 'admin']), async (req: 
 	res.json({ data: updated });
 });
 
-// QR token for a ticket — owner/admin only
+// QR token for a ticket - owner/admin only
 router.get('/tickets/:id/qr', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!ticketId) {
@@ -247,12 +258,14 @@ router.get('/tickets/:id/qr', requireRole(['owner', 'admin']), async (req: Reque
 		return;
 	}
 
-	const ticket = await prisma.ticket.findFirst({
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const ticket = await tenantPrisma.ticket.findFirst({
 		where: { id: ticketId },
 		include: { event: true },
 	});
 
-	if (!ticket || ticket.event.tenantId !== req.user!.tenantId) {
+	if (!ticket) {
 		res.status(404).json({ error: 'Ticket not found' });
 		return;
 	}
@@ -268,7 +281,7 @@ router.get('/tickets/:id/qr', requireRole(['owner', 'admin']), async (req: Reque
 		return;
 	}
 
-	// Use noTimestamp to strip iat/exp — keeps the QR payload minimal for easy scanning
+	// Use noTimestamp to strip iat/exp - keeps the QR payload minimal for easy scanning
 	const qrToken = jwt.sign({ tid: ticket.id, eid: ticket.eventId }, secret, {
 		noTimestamp: true,
 	});

@@ -25,16 +25,57 @@ router.get('/users', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	const where = req.user!.isSuperAdmin ? undefined : { tenantId: req.user!.tenantId };
-	const users = await prisma.user.findMany({
-		where,
-		orderBy: [{ createdAt: 'desc' }],
-		include: {
-			tenant: { select: { id: true, name: true, plan: true } },
-		},
-	});
+	if (req.user!.isSuperAdmin) {
+		// Super admin sees all users
+		const users = await prisma.user.findMany({
+			orderBy: [{ createdAt: 'desc' }],
+			include: {
+				userTenants: {
+					include: { tenant: { select: { id: true, name: true, plan: true } } },
+				},
+			},
+		});
 
-	res.json({ data: users });
+		res.json({
+			data: users.map(u => ({
+				id: u.id,
+				email: u.email,
+				isSuperAdmin: u.isSuperAdmin,
+				createdAt: u.createdAt,
+				tenants: u.userTenants.map(ut => ({
+					id: ut.tenantId,
+					name: ut.tenant.name,
+					plan: ut.tenant.plan,
+					role: ut.role,
+				})),
+			})),
+		});
+	} else {
+		// Tenant owner/admin sees users in their tenant
+		const userTenants = await prisma.userTenant.findMany({
+			where: { tenantId: req.user!.tenantId },
+			include: {
+				user: true,
+				tenant: { select: { id: true, name: true, plan: true } },
+			},
+			orderBy: { user: { createdAt: 'desc' } },
+		});
+
+		res.json({
+			data: userTenants.map(ut => ({
+				id: ut.user.id,
+				email: ut.user.email,
+				role: ut.role,
+				isSuperAdmin: ut.user.isSuperAdmin,
+				createdAt: ut.user.createdAt,
+				tenant: {
+					id: ut.tenant.id,
+					name: ut.tenant.name,
+					plan: ut.tenant.plan,
+				},
+			})),
+		});
+	}
 });
 
 // Tenant user creation by owner/admin (and super admin).
@@ -77,18 +118,38 @@ router.post('/users', async (req: Request, res: Response): Promise<void> => {
 
 	const user = await prisma.user.create({
 		data: {
-			tenantId: req.user!.tenantId,
 			email: normalizedEmail,
 			passwordHash,
-			role,
 			isSuperAdmin: false,
-		},
-		include: {
-			tenant: { select: { id: true, name: true, plan: true } },
 		},
 	});
 
-	res.status(201).json({ data: user });
+	const userTenant = await prisma.userTenant.create({
+		data: {
+			userId: user.id,
+			tenantId: req.user!.tenantId,
+			role,
+		},
+		include: {
+			tenant: { select: { id: true, name: true, plan: true } },
+			user: true,
+		},
+	});
+
+	res.status(201).json({
+		data: {
+			id: userTenant.user.id,
+			email: userTenant.user.email,
+			role: userTenant.role,
+			isSuperAdmin: userTenant.user.isSuperAdmin,
+			createdAt: userTenant.user.createdAt,
+			tenant: {
+				id: userTenant.tenant.id,
+				name: userTenant.tenant.name,
+				plan: userTenant.tenant.plan,
+			},
+		},
+	});
 });
 
 // Tenant user role changes by owner/admin (and super admin).
@@ -111,42 +172,73 @@ router.patch('/users/:id/role', async (req: Request, res: Response): Promise<voi
 		return;
 	}
 
-	const existing = await prisma.user.findUnique({ where: { id: userId } });
-	if (!existing) {
+	const user = await prisma.user.findUnique({ where: { id: userId } });
+	if (!user) {
 		res.status(404).json({ error: 'User not found' });
 		return;
 	}
 
-	if (!req.user!.isSuperAdmin && existing.tenantId !== req.user!.tenantId) {
-		res.status(404).json({ error: 'User not found' });
-		return;
-	}
-
-	if (existing.isSuperAdmin) {
+	if (user.isSuperAdmin) {
 		res.status(403).json({ error: 'Cannot modify super admin users' });
 		return;
 	}
 
-	if (existing.role === 'owner') {
+	// Check if user has access to this tenant
+	const userTenant = await prisma.userTenant.findUnique({
+		where: { userId_tenantId: { userId, tenantId: req.user!.tenantId } },
+	});
+
+	if (!userTenant) {
+		res.status(404).json({ error: 'User not found in this tenant' });
+		return;
+	}
+
+	// Cannot change owner role
+	if (userTenant.role === 'owner') {
 		res.status(403).json({ error: 'Owner role is immutable' });
 		return;
 	}
 
-	const updated = await prisma.user.update({
-		where: { id: userId },
+	const updated = await prisma.userTenant.update({
+		where: { userId_tenantId: { userId, tenantId: req.user!.tenantId } },
 		data: { role },
-		include: { tenant: { select: { id: true, name: true, plan: true } } },
+		include: {
+			tenant: { select: { id: true, name: true, plan: true } },
+			user: true,
+		},
 	});
 
-	res.json({ data: updated });
+	res.json({
+		data: {
+			id: updated.user.id,
+			email: updated.user.email,
+			role: updated.role,
+			isSuperAdmin: updated.user.isSuperAdmin,
+			createdAt: updated.user.createdAt,
+			tenant: {
+				id: updated.tenant.id,
+				name: updated.tenant.name,
+				plan: updated.tenant.plan,
+			},
+		},
+	});
 });
 
 router.get('/tenants', requireSuperAdmin, async (_req: Request, res: Response): Promise<void> => {
 	const tenants = await prisma.tenant.findMany({
 		orderBy: { createdAt: 'asc' },
-		include: { _count: { select: { users: true, events: true } } },
+		include: { _count: { select: { userTenants: true, events: true } } },
 	});
-	res.json({ data: tenants });
+	res.json({
+		data: tenants.map(t => ({
+			id: t.id,
+			name: t.name,
+			plan: t.plan,
+			createdAt: t.createdAt,
+			userCount: t._count.userTenants,
+			eventCount: t._count.events,
+		})),
+	});
 });
 
 router.get('/events', requireSuperAdmin, async (_req: Request, res: Response): Promise<void> => {

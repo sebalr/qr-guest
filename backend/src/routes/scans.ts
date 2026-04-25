@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
-import prisma from '../prisma';
+import { getPrismaForTenant } from '../prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
 
@@ -30,8 +30,10 @@ router.post('/device-event-debug', async (req: Request, res: Response): Promise<
 		return;
 	}
 
-	const event = await prisma.event.findFirst({
-		where: { id: normalizedEventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: normalizedEventId },
 		select: { id: true },
 	});
 
@@ -43,9 +45,9 @@ router.post('/device-event-debug', async (req: Request, res: Response): Promise<
 	const rowId = randomUUID();
 	const payloadText = JSON.stringify(payload ?? {});
 
-	await prisma.$executeRaw`
-		INSERT INTO device_event_debug_data (id, event_id, tenant_id, device_id, user_id, payload)
-		VALUES (${rowId}, ${normalizedEventId}, ${req.user!.tenantId}, ${normalizedDeviceId}, ${req.user!.userId}, CAST(${payloadText} AS jsonb))
+	await tenantPrisma.$executeRaw`
+		INSERT INTO device_event_debug_data (id, event_id, device_id, user_id, payload)
+		VALUES (${rowId}, ${normalizedEventId}, ${normalizedDeviceId}, ${req.user!.userId}, CAST(${payloadText} AS jsonb))
 	`;
 
 	res.status(201).json({
@@ -59,7 +61,14 @@ router.post('/device-event-debug', async (req: Request, res: Response): Promise<
 });
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-	const { id: bodyId, ticketId, eventId, deviceId, scannedAt, confirmed } = req.body as {
+	const {
+		id: bodyId,
+		ticketId,
+		eventId,
+		deviceId,
+		scannedAt,
+		confirmed,
+	} = req.body as {
 		id?: string;
 		ticketId: string;
 		eventId: string;
@@ -85,12 +94,14 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	const ticket = await prisma.ticket.findFirst({
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const ticket = await tenantPrisma.ticket.findFirst({
 		where: { id: ticketId, eventId },
 		include: { event: true },
 	});
 
-	if (!ticket || ticket.event.tenantId !== req.user!.tenantId) {
+	if (!ticket) {
 		res.status(404).json({ error: 'Ticket not found' });
 		return;
 	}
@@ -100,7 +111,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	const existingScans = await prisma.scan.findMany({
+	const existingScans = await tenantPrisma.scan.findMany({
 		where: { ticketId, eventId },
 		orderBy: { scannedAt: 'asc' },
 	});
@@ -119,7 +130,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
 	let scan;
 	try {
-		scan = await prisma.scan.create({
+		scan = await tenantPrisma.scan.create({
 			data: {
 				id: scanId,
 				ticketId,
@@ -132,7 +143,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		});
 	} catch (error) {
 		if (isUniqueConstraintError(error) && confirmed !== true) {
-			const latestScans = await prisma.scan.findMany({
+			const latestScans = await tenantPrisma.scan.findMany({
 				where: { ticketId, eventId },
 				orderBy: { scannedAt: 'asc' },
 			});

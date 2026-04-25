@@ -10,9 +10,11 @@
  */
 export type * from './models/Tenant'
 export type * from './models/User'
+export type * from './models/UserTenant'
 export type * from './models/Event'
 export type * from './models/Ticket'
 export type * from './models/Scan'
+export type * from './models/DeviceEventDebugData'
 export type * from './models/SyncState'
 export type * from './models/Guest'
 export type * from './commonInputTypes'

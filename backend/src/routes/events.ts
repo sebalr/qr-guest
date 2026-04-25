@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import prisma from '../prisma';
+import { getPrismaForTenant } from '../prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
 
@@ -9,8 +9,8 @@ router.use(authMiddleware);
 
 // Read access is also available to scanners.
 router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
-	const events = await prisma.event.findMany({
-		where: { tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const events = await tenantPrisma.event.findMany({
 		orderBy: { createdAt: 'desc' },
 	});
 	res.json({ data: events });
@@ -18,8 +18,9 @@ router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request,
 
 router.get('/:id', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 	});
 	if (!event) {
 		res.status(404).json({ error: 'Event not found' });
@@ -59,19 +60,9 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 			return;
 		}
 
-		// Verify tenant exists
-		const tenant = await prisma.tenant.findUnique({
-			where: { id: req.user.tenantId },
-		});
-
-		if (!tenant) {
-			res.status(401).json({ error: 'Unauthorized: Tenant not found' });
-			return;
-		}
-
-		const event = await prisma.event.create({
+		const tenantPrisma = await getPrismaForTenant(req.user.tenantId);
+		const event = await tenantPrisma.event.create({
 			data: {
-				tenantId: req.user.tenantId,
 				name,
 				...(description ? { description } : {}),
 				...(imageUrl ? { imageUrl } : {}),

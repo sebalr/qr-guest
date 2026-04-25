@@ -28,6 +28,11 @@ export type Tenant = Prisma.TenantModel
  */
 export type User = Prisma.UserModel
 /**
+ * Model UserTenant
+ * 
+ */
+export type UserTenant = Prisma.UserTenantModel
+/**
  * Model Event
  * 
  */
@@ -42,6 +47,11 @@ export type Ticket = Prisma.TicketModel
  * 
  */
 export type Scan = Prisma.ScanModel
+/**
+ * Model DeviceEventDebugData
+ * 
+ */
+export type DeviceEventDebugData = Prisma.DeviceEventDebugDataModel
 /**
  * Model SyncState
  * 

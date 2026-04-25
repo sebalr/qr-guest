@@ -174,9 +174,7 @@ export type TenantWhereInput = {
   name?: Prisma.StringFilter<"Tenant"> | string
   plan?: Prisma.StringFilter<"Tenant"> | string
   createdAt?: Prisma.DateTimeFilter<"Tenant"> | Date | string
-  users?: Prisma.UserListRelationFilter
-  events?: Prisma.EventListRelationFilter
-  guests?: Prisma.GuestListRelationFilter
+  userTenants?: Prisma.UserTenantListRelationFilter
 }
 
 export type TenantOrderByWithRelationInput = {
@@ -184,9 +182,7 @@ export type TenantOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   plan?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  users?: Prisma.UserOrderByRelationAggregateInput
-  events?: Prisma.EventOrderByRelationAggregateInput
-  guests?: Prisma.GuestOrderByRelationAggregateInput
+  userTenants?: Prisma.UserTenantOrderByRelationAggregateInput
 }
 
 export type TenantWhereUniqueInput = Prisma.AtLeast<{
@@ -197,9 +193,7 @@ export type TenantWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Tenant"> | string
   plan?: Prisma.StringFilter<"Tenant"> | string
   createdAt?: Prisma.DateTimeFilter<"Tenant"> | Date | string
-  users?: Prisma.UserListRelationFilter
-  events?: Prisma.EventListRelationFilter
-  guests?: Prisma.GuestListRelationFilter
+  userTenants?: Prisma.UserTenantListRelationFilter
 }, "id">
 
 export type TenantOrderByWithAggregationInput = {
@@ -227,9 +221,7 @@ export type TenantCreateInput = {
   name: string
   plan?: string
   createdAt?: Date | string
-  users?: Prisma.UserCreateNestedManyWithoutTenantInput
-  events?: Prisma.EventCreateNestedManyWithoutTenantInput
-  guests?: Prisma.GuestCreateNestedManyWithoutTenantInput
+  userTenants?: Prisma.UserTenantCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateInput = {
@@ -237,9 +229,7 @@ export type TenantUncheckedCreateInput = {
   name: string
   plan?: string
   createdAt?: Date | string
-  users?: Prisma.UserUncheckedCreateNestedManyWithoutTenantInput
-  events?: Prisma.EventUncheckedCreateNestedManyWithoutTenantInput
-  guests?: Prisma.GuestUncheckedCreateNestedManyWithoutTenantInput
+  userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUpdateInput = {
@@ -247,9 +237,7 @@ export type TenantUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  users?: Prisma.UserUpdateManyWithoutTenantNestedInput
-  events?: Prisma.EventUpdateManyWithoutTenantNestedInput
-  guests?: Prisma.GuestUpdateManyWithoutTenantNestedInput
+  userTenants?: Prisma.UserTenantUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateInput = {
@@ -257,9 +245,7 @@ export type TenantUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  users?: Prisma.UserUncheckedUpdateManyWithoutTenantNestedInput
-  events?: Prisma.EventUncheckedUpdateManyWithoutTenantNestedInput
-  guests?: Prisma.GuestUncheckedUpdateManyWithoutTenantNestedInput
+  userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateManyInput = {
@@ -317,202 +303,62 @@ export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
 
-export type TenantCreateNestedOneWithoutUsersInput = {
-  create?: Prisma.XOR<Prisma.TenantCreateWithoutUsersInput, Prisma.TenantUncheckedCreateWithoutUsersInput>
-  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutUsersInput
+export type TenantCreateNestedOneWithoutUserTenantsInput = {
+  create?: Prisma.XOR<Prisma.TenantCreateWithoutUserTenantsInput, Prisma.TenantUncheckedCreateWithoutUserTenantsInput>
+  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutUserTenantsInput
   connect?: Prisma.TenantWhereUniqueInput
 }
 
-export type TenantUpdateOneRequiredWithoutUsersNestedInput = {
-  create?: Prisma.XOR<Prisma.TenantCreateWithoutUsersInput, Prisma.TenantUncheckedCreateWithoutUsersInput>
-  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutUsersInput
-  upsert?: Prisma.TenantUpsertWithoutUsersInput
+export type TenantUpdateOneRequiredWithoutUserTenantsNestedInput = {
+  create?: Prisma.XOR<Prisma.TenantCreateWithoutUserTenantsInput, Prisma.TenantUncheckedCreateWithoutUserTenantsInput>
+  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutUserTenantsInput
+  upsert?: Prisma.TenantUpsertWithoutUserTenantsInput
   connect?: Prisma.TenantWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TenantUpdateToOneWithWhereWithoutUsersInput, Prisma.TenantUpdateWithoutUsersInput>, Prisma.TenantUncheckedUpdateWithoutUsersInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TenantUpdateToOneWithWhereWithoutUserTenantsInput, Prisma.TenantUpdateWithoutUserTenantsInput>, Prisma.TenantUncheckedUpdateWithoutUserTenantsInput>
 }
 
-export type TenantCreateNestedOneWithoutEventsInput = {
-  create?: Prisma.XOR<Prisma.TenantCreateWithoutEventsInput, Prisma.TenantUncheckedCreateWithoutEventsInput>
-  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutEventsInput
-  connect?: Prisma.TenantWhereUniqueInput
-}
-
-export type TenantUpdateOneRequiredWithoutEventsNestedInput = {
-  create?: Prisma.XOR<Prisma.TenantCreateWithoutEventsInput, Prisma.TenantUncheckedCreateWithoutEventsInput>
-  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutEventsInput
-  upsert?: Prisma.TenantUpsertWithoutEventsInput
-  connect?: Prisma.TenantWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TenantUpdateToOneWithWhereWithoutEventsInput, Prisma.TenantUpdateWithoutEventsInput>, Prisma.TenantUncheckedUpdateWithoutEventsInput>
-}
-
-export type TenantCreateNestedOneWithoutGuestsInput = {
-  create?: Prisma.XOR<Prisma.TenantCreateWithoutGuestsInput, Prisma.TenantUncheckedCreateWithoutGuestsInput>
-  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutGuestsInput
-  connect?: Prisma.TenantWhereUniqueInput
-}
-
-export type TenantUpdateOneRequiredWithoutGuestsNestedInput = {
-  create?: Prisma.XOR<Prisma.TenantCreateWithoutGuestsInput, Prisma.TenantUncheckedCreateWithoutGuestsInput>
-  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutGuestsInput
-  upsert?: Prisma.TenantUpsertWithoutGuestsInput
-  connect?: Prisma.TenantWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TenantUpdateToOneWithWhereWithoutGuestsInput, Prisma.TenantUpdateWithoutGuestsInput>, Prisma.TenantUncheckedUpdateWithoutGuestsInput>
-}
-
-export type TenantCreateWithoutUsersInput = {
+export type TenantCreateWithoutUserTenantsInput = {
   id?: string
   name: string
   plan?: string
   createdAt?: Date | string
-  events?: Prisma.EventCreateNestedManyWithoutTenantInput
-  guests?: Prisma.GuestCreateNestedManyWithoutTenantInput
 }
 
-export type TenantUncheckedCreateWithoutUsersInput = {
+export type TenantUncheckedCreateWithoutUserTenantsInput = {
   id?: string
   name: string
   plan?: string
   createdAt?: Date | string
-  events?: Prisma.EventUncheckedCreateNestedManyWithoutTenantInput
-  guests?: Prisma.GuestUncheckedCreateNestedManyWithoutTenantInput
 }
 
-export type TenantCreateOrConnectWithoutUsersInput = {
+export type TenantCreateOrConnectWithoutUserTenantsInput = {
   where: Prisma.TenantWhereUniqueInput
-  create: Prisma.XOR<Prisma.TenantCreateWithoutUsersInput, Prisma.TenantUncheckedCreateWithoutUsersInput>
+  create: Prisma.XOR<Prisma.TenantCreateWithoutUserTenantsInput, Prisma.TenantUncheckedCreateWithoutUserTenantsInput>
 }
 
-export type TenantUpsertWithoutUsersInput = {
-  update: Prisma.XOR<Prisma.TenantUpdateWithoutUsersInput, Prisma.TenantUncheckedUpdateWithoutUsersInput>
-  create: Prisma.XOR<Prisma.TenantCreateWithoutUsersInput, Prisma.TenantUncheckedCreateWithoutUsersInput>
+export type TenantUpsertWithoutUserTenantsInput = {
+  update: Prisma.XOR<Prisma.TenantUpdateWithoutUserTenantsInput, Prisma.TenantUncheckedUpdateWithoutUserTenantsInput>
+  create: Prisma.XOR<Prisma.TenantCreateWithoutUserTenantsInput, Prisma.TenantUncheckedCreateWithoutUserTenantsInput>
   where?: Prisma.TenantWhereInput
 }
 
-export type TenantUpdateToOneWithWhereWithoutUsersInput = {
+export type TenantUpdateToOneWithWhereWithoutUserTenantsInput = {
   where?: Prisma.TenantWhereInput
-  data: Prisma.XOR<Prisma.TenantUpdateWithoutUsersInput, Prisma.TenantUncheckedUpdateWithoutUsersInput>
+  data: Prisma.XOR<Prisma.TenantUpdateWithoutUserTenantsInput, Prisma.TenantUncheckedUpdateWithoutUserTenantsInput>
 }
 
-export type TenantUpdateWithoutUsersInput = {
+export type TenantUpdateWithoutUserTenantsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  events?: Prisma.EventUpdateManyWithoutTenantNestedInput
-  guests?: Prisma.GuestUpdateManyWithoutTenantNestedInput
 }
 
-export type TenantUncheckedUpdateWithoutUsersInput = {
+export type TenantUncheckedUpdateWithoutUserTenantsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  events?: Prisma.EventUncheckedUpdateManyWithoutTenantNestedInput
-  guests?: Prisma.GuestUncheckedUpdateManyWithoutTenantNestedInput
-}
-
-export type TenantCreateWithoutEventsInput = {
-  id?: string
-  name: string
-  plan?: string
-  createdAt?: Date | string
-  users?: Prisma.UserCreateNestedManyWithoutTenantInput
-  guests?: Prisma.GuestCreateNestedManyWithoutTenantInput
-}
-
-export type TenantUncheckedCreateWithoutEventsInput = {
-  id?: string
-  name: string
-  plan?: string
-  createdAt?: Date | string
-  users?: Prisma.UserUncheckedCreateNestedManyWithoutTenantInput
-  guests?: Prisma.GuestUncheckedCreateNestedManyWithoutTenantInput
-}
-
-export type TenantCreateOrConnectWithoutEventsInput = {
-  where: Prisma.TenantWhereUniqueInput
-  create: Prisma.XOR<Prisma.TenantCreateWithoutEventsInput, Prisma.TenantUncheckedCreateWithoutEventsInput>
-}
-
-export type TenantUpsertWithoutEventsInput = {
-  update: Prisma.XOR<Prisma.TenantUpdateWithoutEventsInput, Prisma.TenantUncheckedUpdateWithoutEventsInput>
-  create: Prisma.XOR<Prisma.TenantCreateWithoutEventsInput, Prisma.TenantUncheckedCreateWithoutEventsInput>
-  where?: Prisma.TenantWhereInput
-}
-
-export type TenantUpdateToOneWithWhereWithoutEventsInput = {
-  where?: Prisma.TenantWhereInput
-  data: Prisma.XOR<Prisma.TenantUpdateWithoutEventsInput, Prisma.TenantUncheckedUpdateWithoutEventsInput>
-}
-
-export type TenantUpdateWithoutEventsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  plan?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  users?: Prisma.UserUpdateManyWithoutTenantNestedInput
-  guests?: Prisma.GuestUpdateManyWithoutTenantNestedInput
-}
-
-export type TenantUncheckedUpdateWithoutEventsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  plan?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  users?: Prisma.UserUncheckedUpdateManyWithoutTenantNestedInput
-  guests?: Prisma.GuestUncheckedUpdateManyWithoutTenantNestedInput
-}
-
-export type TenantCreateWithoutGuestsInput = {
-  id?: string
-  name: string
-  plan?: string
-  createdAt?: Date | string
-  users?: Prisma.UserCreateNestedManyWithoutTenantInput
-  events?: Prisma.EventCreateNestedManyWithoutTenantInput
-}
-
-export type TenantUncheckedCreateWithoutGuestsInput = {
-  id?: string
-  name: string
-  plan?: string
-  createdAt?: Date | string
-  users?: Prisma.UserUncheckedCreateNestedManyWithoutTenantInput
-  events?: Prisma.EventUncheckedCreateNestedManyWithoutTenantInput
-}
-
-export type TenantCreateOrConnectWithoutGuestsInput = {
-  where: Prisma.TenantWhereUniqueInput
-  create: Prisma.XOR<Prisma.TenantCreateWithoutGuestsInput, Prisma.TenantUncheckedCreateWithoutGuestsInput>
-}
-
-export type TenantUpsertWithoutGuestsInput = {
-  update: Prisma.XOR<Prisma.TenantUpdateWithoutGuestsInput, Prisma.TenantUncheckedUpdateWithoutGuestsInput>
-  create: Prisma.XOR<Prisma.TenantCreateWithoutGuestsInput, Prisma.TenantUncheckedCreateWithoutGuestsInput>
-  where?: Prisma.TenantWhereInput
-}
-
-export type TenantUpdateToOneWithWhereWithoutGuestsInput = {
-  where?: Prisma.TenantWhereInput
-  data: Prisma.XOR<Prisma.TenantUpdateWithoutGuestsInput, Prisma.TenantUncheckedUpdateWithoutGuestsInput>
-}
-
-export type TenantUpdateWithoutGuestsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  plan?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  users?: Prisma.UserUpdateManyWithoutTenantNestedInput
-  events?: Prisma.EventUpdateManyWithoutTenantNestedInput
-}
-
-export type TenantUncheckedUpdateWithoutGuestsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  plan?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  users?: Prisma.UserUncheckedUpdateManyWithoutTenantNestedInput
-  events?: Prisma.EventUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 
@@ -521,15 +367,11 @@ export type TenantUncheckedUpdateWithoutGuestsInput = {
  */
 
 export type TenantCountOutputType = {
-  users: number
-  events: number
-  guests: number
+  userTenants: number
 }
 
 export type TenantCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  users?: boolean | TenantCountOutputTypeCountUsersArgs
-  events?: boolean | TenantCountOutputTypeCountEventsArgs
-  guests?: boolean | TenantCountOutputTypeCountGuestsArgs
+  userTenants?: boolean | TenantCountOutputTypeCountUserTenantsArgs
 }
 
 /**
@@ -545,22 +387,8 @@ export type TenantCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exten
 /**
  * TenantCountOutputType without action
  */
-export type TenantCountOutputTypeCountUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.UserWhereInput
-}
-
-/**
- * TenantCountOutputType without action
- */
-export type TenantCountOutputTypeCountEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.EventWhereInput
-}
-
-/**
- * TenantCountOutputType without action
- */
-export type TenantCountOutputTypeCountGuestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.GuestWhereInput
+export type TenantCountOutputTypeCountUserTenantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserTenantWhereInput
 }
 
 
@@ -569,9 +397,7 @@ export type TenantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name?: boolean
   plan?: boolean
   createdAt?: boolean
-  users?: boolean | Prisma.Tenant$usersArgs<ExtArgs>
-  events?: boolean | Prisma.Tenant$eventsArgs<ExtArgs>
-  guests?: boolean | Prisma.Tenant$guestsArgs<ExtArgs>
+  userTenants?: boolean | Prisma.Tenant$userTenantsArgs<ExtArgs>
   _count?: boolean | Prisma.TenantCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tenant"]>
 
@@ -598,9 +424,7 @@ export type TenantSelectScalar = {
 
 export type TenantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "plan" | "createdAt", ExtArgs["result"]["tenant"]>
 export type TenantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  users?: boolean | Prisma.Tenant$usersArgs<ExtArgs>
-  events?: boolean | Prisma.Tenant$eventsArgs<ExtArgs>
-  guests?: boolean | Prisma.Tenant$guestsArgs<ExtArgs>
+  userTenants?: boolean | Prisma.Tenant$userTenantsArgs<ExtArgs>
   _count?: boolean | Prisma.TenantCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TenantIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -609,9 +433,7 @@ export type TenantIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type $TenantPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Tenant"
   objects: {
-    users: Prisma.$UserPayload<ExtArgs>[]
-    events: Prisma.$EventPayload<ExtArgs>[]
-    guests: Prisma.$GuestPayload<ExtArgs>[]
+    userTenants: Prisma.$UserTenantPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1012,9 +834,7 @@ readonly fields: TenantFieldRefs;
  */
 export interface Prisma__TenantClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  users<T extends Prisma.Tenant$usersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$usersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  events<T extends Prisma.Tenant$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  guests<T extends Prisma.Tenant$guestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$guestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GuestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  userTenants<T extends Prisma.Tenant$userTenantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$userTenantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserTenantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1441,75 +1261,27 @@ export type TenantDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
 }
 
 /**
- * Tenant.users
+ * Tenant.userTenants
  */
-export type Tenant$usersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Tenant$userTenantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the User
+   * Select specific fields to fetch from the UserTenant
    */
-  select?: Prisma.UserSelect<ExtArgs> | null
+  select?: Prisma.UserTenantSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the User
+   * Omit specific fields from the UserTenant
    */
-  omit?: Prisma.UserOmit<ExtArgs> | null
+  omit?: Prisma.UserTenantOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.UserInclude<ExtArgs> | null
-  where?: Prisma.UserWhereInput
-  orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[]
-  cursor?: Prisma.UserWhereUniqueInput
+  include?: Prisma.UserTenantInclude<ExtArgs> | null
+  where?: Prisma.UserTenantWhereInput
+  orderBy?: Prisma.UserTenantOrderByWithRelationInput | Prisma.UserTenantOrderByWithRelationInput[]
+  cursor?: Prisma.UserTenantWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.UserScalarFieldEnum | Prisma.UserScalarFieldEnum[]
-}
-
-/**
- * Tenant.events
- */
-export type Tenant$eventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Event
-   */
-  select?: Prisma.EventSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Event
-   */
-  omit?: Prisma.EventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.EventInclude<ExtArgs> | null
-  where?: Prisma.EventWhereInput
-  orderBy?: Prisma.EventOrderByWithRelationInput | Prisma.EventOrderByWithRelationInput[]
-  cursor?: Prisma.EventWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.EventScalarFieldEnum | Prisma.EventScalarFieldEnum[]
-}
-
-/**
- * Tenant.guests
- */
-export type Tenant$guestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Guest
-   */
-  select?: Prisma.GuestSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Guest
-   */
-  omit?: Prisma.GuestOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.GuestInclude<ExtArgs> | null
-  where?: Prisma.GuestWhereInput
-  orderBy?: Prisma.GuestOrderByWithRelationInput | Prisma.GuestOrderByWithRelationInput[]
-  cursor?: Prisma.GuestWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.GuestScalarFieldEnum | Prisma.GuestScalarFieldEnum[]
+  distinct?: Prisma.UserTenantScalarFieldEnum | Prisma.UserTenantScalarFieldEnum[]
 }
 
 /**

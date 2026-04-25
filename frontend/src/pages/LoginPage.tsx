@@ -9,14 +9,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QrCode, AlertCircle } from 'lucide-react';
+import { TenantSelectionDialog } from '@/components/TenantSelectionDialog';
+
+interface Tenant {
+	id: string;
+	name: string;
+	role: string;
+}
 
 export default function LoginPage() {
-	const { login } = useAuth();
+	const { login, selectTenant, setAvailableTenants } = useAuth();
 	const navigate = useNavigate();
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
+	const [showTenantDialog, setShowTenantDialog] = useState(false);
+	const [availableTenants, setLocalAvailableTenants] = useState<Tenant[]>([]);
 
 	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
@@ -30,14 +39,38 @@ export default function LoginPage() {
 			}
 
 			const res = await loginApi(email, password, recaptchaToken);
-			login(res.data.data.token);
-			navigate('/events');
+			const responseData = res.data.data;
+
+			// Check if user has multiple tenants or single tenant
+			if (responseData.token) {
+				// Single tenant - auto login
+				login(responseData.token);
+				navigate('/events');
+			} else if (responseData.tenants && responseData.tenants.length > 0) {
+				// Multiple tenants - show selection dialog
+				setLocalAvailableTenants(responseData.tenants);
+				setAvailableTenants(responseData.tenants);
+				setShowTenantDialog(true);
+			} else {
+				setError('No tenants available for this account.');
+			}
 		} catch {
 			setError('Invalid credentials. Please try again.');
 		} finally {
 			setLoading(false);
 		}
 	}
+
+	const handleTenantSelect = async (tenantId: string) => {
+		try {
+			setError('');
+			await selectTenant(tenantId);
+			setShowTenantDialog(false);
+			navigate('/events');
+		} catch (err) {
+			setError('Failed to select tenant. Please try again.');
+		}
+	};
 
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
@@ -107,7 +140,12 @@ export default function LoginPage() {
 					</CardFooter>
 				</Card>
 			</div>
+
+			<TenantSelectionDialog
+				tenants={availableTenants}
+				onSelect={handleTenantSelect}
+				isOpen={showTenantDialog}
+			/>
 		</div>
 	);
 }
-

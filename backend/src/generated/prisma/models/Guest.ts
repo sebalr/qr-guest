@@ -26,21 +26,18 @@ export type AggregateGuest = {
 
 export type GuestMinAggregateOutputType = {
   id: string | null
-  tenantId: string | null
   name: string | null
   createdAt: Date | null
 }
 
 export type GuestMaxAggregateOutputType = {
   id: string | null
-  tenantId: string | null
   name: string | null
   createdAt: Date | null
 }
 
 export type GuestCountAggregateOutputType = {
   id: number
-  tenantId: number
   name: number
   createdAt: number
   _all: number
@@ -49,21 +46,18 @@ export type GuestCountAggregateOutputType = {
 
 export type GuestMinAggregateInputType = {
   id?: true
-  tenantId?: true
   name?: true
   createdAt?: true
 }
 
 export type GuestMaxAggregateInputType = {
   id?: true
-  tenantId?: true
   name?: true
   createdAt?: true
 }
 
 export type GuestCountAggregateInputType = {
   id?: true
-  tenantId?: true
   name?: true
   createdAt?: true
   _all?: true
@@ -143,7 +137,6 @@ export type GuestGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 
 export type GuestGroupByOutputType = {
   id: string
-  tenantId: string
   name: string
   createdAt: Date
   _count: GuestCountAggregateOutputType | null
@@ -171,19 +164,15 @@ export type GuestWhereInput = {
   OR?: Prisma.GuestWhereInput[]
   NOT?: Prisma.GuestWhereInput | Prisma.GuestWhereInput[]
   id?: Prisma.StringFilter<"Guest"> | string
-  tenantId?: Prisma.StringFilter<"Guest"> | string
   name?: Prisma.StringFilter<"Guest"> | string
   createdAt?: Prisma.DateTimeFilter<"Guest"> | Date | string
-  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   tickets?: Prisma.TicketListRelationFilter
 }
 
 export type GuestOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  tenantId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  tenant?: Prisma.TenantOrderByWithRelationInput
   tickets?: Prisma.TicketOrderByRelationAggregateInput
 }
 
@@ -192,16 +181,13 @@ export type GuestWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.GuestWhereInput | Prisma.GuestWhereInput[]
   OR?: Prisma.GuestWhereInput[]
   NOT?: Prisma.GuestWhereInput | Prisma.GuestWhereInput[]
-  tenantId?: Prisma.StringFilter<"Guest"> | string
   name?: Prisma.StringFilter<"Guest"> | string
   createdAt?: Prisma.DateTimeFilter<"Guest"> | Date | string
-  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   tickets?: Prisma.TicketListRelationFilter
 }, "id">
 
 export type GuestOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  tenantId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.GuestCountOrderByAggregateInput
@@ -214,7 +200,6 @@ export type GuestScalarWhereWithAggregatesInput = {
   OR?: Prisma.GuestScalarWhereWithAggregatesInput[]
   NOT?: Prisma.GuestScalarWhereWithAggregatesInput | Prisma.GuestScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Guest"> | string
-  tenantId?: Prisma.StringWithAggregatesFilter<"Guest"> | string
   name?: Prisma.StringWithAggregatesFilter<"Guest"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Guest"> | Date | string
 }
@@ -223,13 +208,11 @@ export type GuestCreateInput = {
   id?: string
   name: string
   createdAt?: Date | string
-  tenant: Prisma.TenantCreateNestedOneWithoutGuestsInput
   tickets?: Prisma.TicketCreateNestedManyWithoutGuestInput
 }
 
 export type GuestUncheckedCreateInput = {
   id?: string
-  tenantId: string
   name: string
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutGuestInput
@@ -239,13 +222,11 @@ export type GuestUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  tenant?: Prisma.TenantUpdateOneRequiredWithoutGuestsNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutGuestNestedInput
 }
 
 export type GuestUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutGuestNestedInput
@@ -253,7 +234,6 @@ export type GuestUncheckedUpdateInput = {
 
 export type GuestCreateManyInput = {
   id?: string
-  tenantId: string
   name: string
   createdAt?: Date | string
 }
@@ -266,19 +246,8 @@ export type GuestUpdateManyMutationInput = {
 
 export type GuestUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type GuestListRelationFilter = {
-  every?: Prisma.GuestWhereInput
-  some?: Prisma.GuestWhereInput
-  none?: Prisma.GuestWhereInput
-}
-
-export type GuestOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
 }
 
 export type GuestNullableScalarRelationFilter = {
@@ -288,65 +257,20 @@ export type GuestNullableScalarRelationFilter = {
 
 export type GuestCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  tenantId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type GuestMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  tenantId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type GuestMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  tenantId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-}
-
-export type GuestCreateNestedManyWithoutTenantInput = {
-  create?: Prisma.XOR<Prisma.GuestCreateWithoutTenantInput, Prisma.GuestUncheckedCreateWithoutTenantInput> | Prisma.GuestCreateWithoutTenantInput[] | Prisma.GuestUncheckedCreateWithoutTenantInput[]
-  connectOrCreate?: Prisma.GuestCreateOrConnectWithoutTenantInput | Prisma.GuestCreateOrConnectWithoutTenantInput[]
-  createMany?: Prisma.GuestCreateManyTenantInputEnvelope
-  connect?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-}
-
-export type GuestUncheckedCreateNestedManyWithoutTenantInput = {
-  create?: Prisma.XOR<Prisma.GuestCreateWithoutTenantInput, Prisma.GuestUncheckedCreateWithoutTenantInput> | Prisma.GuestCreateWithoutTenantInput[] | Prisma.GuestUncheckedCreateWithoutTenantInput[]
-  connectOrCreate?: Prisma.GuestCreateOrConnectWithoutTenantInput | Prisma.GuestCreateOrConnectWithoutTenantInput[]
-  createMany?: Prisma.GuestCreateManyTenantInputEnvelope
-  connect?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-}
-
-export type GuestUpdateManyWithoutTenantNestedInput = {
-  create?: Prisma.XOR<Prisma.GuestCreateWithoutTenantInput, Prisma.GuestUncheckedCreateWithoutTenantInput> | Prisma.GuestCreateWithoutTenantInput[] | Prisma.GuestUncheckedCreateWithoutTenantInput[]
-  connectOrCreate?: Prisma.GuestCreateOrConnectWithoutTenantInput | Prisma.GuestCreateOrConnectWithoutTenantInput[]
-  upsert?: Prisma.GuestUpsertWithWhereUniqueWithoutTenantInput | Prisma.GuestUpsertWithWhereUniqueWithoutTenantInput[]
-  createMany?: Prisma.GuestCreateManyTenantInputEnvelope
-  set?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  disconnect?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  delete?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  connect?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  update?: Prisma.GuestUpdateWithWhereUniqueWithoutTenantInput | Prisma.GuestUpdateWithWhereUniqueWithoutTenantInput[]
-  updateMany?: Prisma.GuestUpdateManyWithWhereWithoutTenantInput | Prisma.GuestUpdateManyWithWhereWithoutTenantInput[]
-  deleteMany?: Prisma.GuestScalarWhereInput | Prisma.GuestScalarWhereInput[]
-}
-
-export type GuestUncheckedUpdateManyWithoutTenantNestedInput = {
-  create?: Prisma.XOR<Prisma.GuestCreateWithoutTenantInput, Prisma.GuestUncheckedCreateWithoutTenantInput> | Prisma.GuestCreateWithoutTenantInput[] | Prisma.GuestUncheckedCreateWithoutTenantInput[]
-  connectOrCreate?: Prisma.GuestCreateOrConnectWithoutTenantInput | Prisma.GuestCreateOrConnectWithoutTenantInput[]
-  upsert?: Prisma.GuestUpsertWithWhereUniqueWithoutTenantInput | Prisma.GuestUpsertWithWhereUniqueWithoutTenantInput[]
-  createMany?: Prisma.GuestCreateManyTenantInputEnvelope
-  set?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  disconnect?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  delete?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  connect?: Prisma.GuestWhereUniqueInput | Prisma.GuestWhereUniqueInput[]
-  update?: Prisma.GuestUpdateWithWhereUniqueWithoutTenantInput | Prisma.GuestUpdateWithWhereUniqueWithoutTenantInput[]
-  updateMany?: Prisma.GuestUpdateManyWithWhereWithoutTenantInput | Prisma.GuestUpdateManyWithWhereWithoutTenantInput[]
-  deleteMany?: Prisma.GuestScalarWhereInput | Prisma.GuestScalarWhereInput[]
 }
 
 export type GuestCreateNestedOneWithoutTicketsInput = {
@@ -365,66 +289,14 @@ export type GuestUpdateOneWithoutTicketsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.GuestUpdateToOneWithWhereWithoutTicketsInput, Prisma.GuestUpdateWithoutTicketsInput>, Prisma.GuestUncheckedUpdateWithoutTicketsInput>
 }
 
-export type GuestCreateWithoutTenantInput = {
-  id?: string
-  name: string
-  createdAt?: Date | string
-  tickets?: Prisma.TicketCreateNestedManyWithoutGuestInput
-}
-
-export type GuestUncheckedCreateWithoutTenantInput = {
-  id?: string
-  name: string
-  createdAt?: Date | string
-  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutGuestInput
-}
-
-export type GuestCreateOrConnectWithoutTenantInput = {
-  where: Prisma.GuestWhereUniqueInput
-  create: Prisma.XOR<Prisma.GuestCreateWithoutTenantInput, Prisma.GuestUncheckedCreateWithoutTenantInput>
-}
-
-export type GuestCreateManyTenantInputEnvelope = {
-  data: Prisma.GuestCreateManyTenantInput | Prisma.GuestCreateManyTenantInput[]
-  skipDuplicates?: boolean
-}
-
-export type GuestUpsertWithWhereUniqueWithoutTenantInput = {
-  where: Prisma.GuestWhereUniqueInput
-  update: Prisma.XOR<Prisma.GuestUpdateWithoutTenantInput, Prisma.GuestUncheckedUpdateWithoutTenantInput>
-  create: Prisma.XOR<Prisma.GuestCreateWithoutTenantInput, Prisma.GuestUncheckedCreateWithoutTenantInput>
-}
-
-export type GuestUpdateWithWhereUniqueWithoutTenantInput = {
-  where: Prisma.GuestWhereUniqueInput
-  data: Prisma.XOR<Prisma.GuestUpdateWithoutTenantInput, Prisma.GuestUncheckedUpdateWithoutTenantInput>
-}
-
-export type GuestUpdateManyWithWhereWithoutTenantInput = {
-  where: Prisma.GuestScalarWhereInput
-  data: Prisma.XOR<Prisma.GuestUpdateManyMutationInput, Prisma.GuestUncheckedUpdateManyWithoutTenantInput>
-}
-
-export type GuestScalarWhereInput = {
-  AND?: Prisma.GuestScalarWhereInput | Prisma.GuestScalarWhereInput[]
-  OR?: Prisma.GuestScalarWhereInput[]
-  NOT?: Prisma.GuestScalarWhereInput | Prisma.GuestScalarWhereInput[]
-  id?: Prisma.StringFilter<"Guest"> | string
-  tenantId?: Prisma.StringFilter<"Guest"> | string
-  name?: Prisma.StringFilter<"Guest"> | string
-  createdAt?: Prisma.DateTimeFilter<"Guest"> | Date | string
-}
-
 export type GuestCreateWithoutTicketsInput = {
   id?: string
   name: string
   createdAt?: Date | string
-  tenant: Prisma.TenantCreateNestedOneWithoutGuestsInput
 }
 
 export type GuestUncheckedCreateWithoutTicketsInput = {
   id?: string
-  tenantId: string
   name: string
   createdAt?: Date | string
 }
@@ -449,37 +321,9 @@ export type GuestUpdateWithoutTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  tenant?: Prisma.TenantUpdateOneRequiredWithoutGuestsNestedInput
 }
 
 export type GuestUncheckedUpdateWithoutTicketsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type GuestCreateManyTenantInput = {
-  id?: string
-  name: string
-  createdAt?: Date | string
-}
-
-export type GuestUpdateWithoutTenantInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  tickets?: Prisma.TicketUpdateManyWithoutGuestNestedInput
-}
-
-export type GuestUncheckedUpdateWithoutTenantInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  tickets?: Prisma.TicketUncheckedUpdateManyWithoutGuestNestedInput
-}
-
-export type GuestUncheckedUpdateManyWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -518,59 +362,45 @@ export type GuestCountOutputTypeCountTicketsArgs<ExtArgs extends runtime.Types.E
 
 export type GuestSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  tenantId?: boolean
   name?: boolean
   createdAt?: boolean
-  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   tickets?: boolean | Prisma.Guest$ticketsArgs<ExtArgs>
   _count?: boolean | Prisma.GuestCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["guest"]>
 
 export type GuestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  tenantId?: boolean
   name?: boolean
   createdAt?: boolean
-  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["guest"]>
 
 export type GuestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  tenantId?: boolean
   name?: boolean
   createdAt?: boolean
-  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["guest"]>
 
 export type GuestSelectScalar = {
   id?: boolean
-  tenantId?: boolean
   name?: boolean
   createdAt?: boolean
 }
 
-export type GuestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "name" | "createdAt", ExtArgs["result"]["guest"]>
+export type GuestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "createdAt", ExtArgs["result"]["guest"]>
 export type GuestInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   tickets?: boolean | Prisma.Guest$ticketsArgs<ExtArgs>
   _count?: boolean | Prisma.GuestCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type GuestIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
-}
-export type GuestIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
-}
+export type GuestIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type GuestIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $GuestPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Guest"
   objects: {
-    tenant: Prisma.$TenantPayload<ExtArgs>
     tickets: Prisma.$TicketPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    tenantId: string
     name: string
     createdAt: Date
   }, ExtArgs["result"]["guest"]>
@@ -967,7 +797,6 @@ readonly fields: GuestFieldRefs;
  */
 export interface Prisma__GuestClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  tenant<T extends Prisma.TenantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TenantDefaultArgs<ExtArgs>>): Prisma.Prisma__TenantClient<runtime.Types.Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   tickets<T extends Prisma.Guest$ticketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Guest$ticketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -999,7 +828,6 @@ export interface Prisma__GuestClient<T, Null = never, ExtArgs extends runtime.Ty
  */
 export interface GuestFieldRefs {
   readonly id: Prisma.FieldRef<"Guest", 'String'>
-  readonly tenantId: Prisma.FieldRef<"Guest", 'String'>
   readonly name: Prisma.FieldRef<"Guest", 'String'>
   readonly createdAt: Prisma.FieldRef<"Guest", 'DateTime'>
 }
@@ -1256,10 +1084,6 @@ export type GuestCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extension
    */
   data: Prisma.GuestCreateManyInput | Prisma.GuestCreateManyInput[]
   skipDuplicates?: boolean
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.GuestIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1330,10 +1154,6 @@ export type GuestUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extension
    * Limit how many Guests to update.
    */
   limit?: number
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.GuestIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**

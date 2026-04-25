@@ -53,9 +53,11 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Tenant: 'Tenant',
   User: 'User',
+  UserTenant: 'UserTenant',
   Event: 'Event',
   Ticket: 'Ticket',
   Scan: 'Scan',
+  DeviceEventDebugData: 'DeviceEventDebugData',
   SyncState: 'SyncState',
   Guest: 'Guest'
 } as const
@@ -88,10 +90,8 @@ export type TenantScalarFieldEnum = (typeof TenantScalarFieldEnum)[keyof typeof 
 
 export const UserScalarFieldEnum = {
   id: 'id',
-  tenantId: 'tenantId',
   email: 'email',
   passwordHash: 'passwordHash',
-  role: 'role',
   isSuperAdmin: 'isSuperAdmin',
   createdAt: 'createdAt'
 } as const
@@ -99,9 +99,19 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const UserTenantScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tenantId: 'tenantId',
+  role: 'role',
+  joinedAt: 'joinedAt'
+} as const
+
+export type UserTenantScalarFieldEnum = (typeof UserTenantScalarFieldEnum)[keyof typeof UserTenantScalarFieldEnum]
+
+
 export const EventScalarFieldEnum = {
   id: 'id',
-  tenantId: 'tenantId',
   name: 'name',
   description: 'description',
   imageUrl: 'imageUrl',
@@ -142,6 +152,18 @@ export const ScanScalarFieldEnum = {
 export type ScanScalarFieldEnum = (typeof ScanScalarFieldEnum)[keyof typeof ScanScalarFieldEnum]
 
 
+export const DeviceEventDebugDataScalarFieldEnum = {
+  id: 'id',
+  eventId: 'eventId',
+  deviceId: 'deviceId',
+  userId: 'userId',
+  payload: 'payload',
+  createdAt: 'createdAt'
+} as const
+
+export type DeviceEventDebugDataScalarFieldEnum = (typeof DeviceEventDebugDataScalarFieldEnum)[keyof typeof DeviceEventDebugDataScalarFieldEnum]
+
+
 export const SyncStateScalarFieldEnum = {
   deviceId: 'deviceId',
   eventId: 'eventId',
@@ -154,7 +176,6 @@ export type SyncStateScalarFieldEnum = (typeof SyncStateScalarFieldEnum)[keyof t
 
 export const GuestScalarFieldEnum = {
   id: 'id',
-  tenantId: 'tenantId',
   name: 'name',
   createdAt: 'createdAt'
 } as const
@@ -168,6 +189,13 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -184,4 +212,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

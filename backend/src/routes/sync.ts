@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import prisma from '../prisma';
+import { getPrismaForTenant } from '../prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
 
@@ -45,15 +45,17 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 	});
 	if (!event) {
 		res.status(404).json({ error: 'Event not found' });
 		return;
 	}
 
-	// Upsert all local scans — append-only, deduplicated by id
+	// Upsert all local scans - append-only, deduplicated by id
 	if (normalizedLocalScans.length > 0) {
 		for (const scan of normalizedLocalScans) {
 			if (!scan.id || !scan.ticketId || !scan.scannedAt) {
@@ -69,13 +71,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		}
 
 		const ticketIds = Array.from(new Set(normalizedLocalScans.map(s => s.ticketId)));
-		const allowedTickets = await prisma.ticket.findMany({
+		const allowedTickets = await tenantPrisma.ticket.findMany({
 			where: {
 				id: { in: ticketIds },
 				eventId,
-				event: {
-					tenantId: req.user!.tenantId,
-				},
 			},
 			select: { id: true },
 		});
@@ -85,9 +84,9 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		await prisma.$transaction(
+		await tenantPrisma.$transaction(
 			normalizedLocalScans.map(s =>
-				prisma.scan.upsert({
+				tenantPrisma.scan.upsert({
 					where: { id: s.id },
 					create: {
 						id: s.id,
@@ -104,13 +103,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 	}
 
 	const [ticketUpdates, scanUpdates] = await Promise.all([
-		prisma.ticket.findMany({
+		tenantPrisma.ticket.findMany({
 			where: {
 				eventId,
 				version: { gt: lastTicketVersion ?? 0 },
 			},
 		}),
-		prisma.scan.findMany({
+		tenantPrisma.scan.findMany({
 			where: {
 				eventId,
 				createdAt: { gt: cursorDate },
@@ -124,7 +123,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 	const newScanCursor = scanUpdates.length > 0 ? scanUpdates[scanUpdates.length - 1].createdAt.toISOString() : cursorDate.toISOString();
 
 	// Update sync state for this device/event
-	await prisma.syncState.upsert({
+	await tenantPrisma.syncState.upsert({
 		where: { deviceId_eventId: { deviceId: effectiveDeviceId, eventId } },
 		create: {
 			deviceId: effectiveDeviceId,

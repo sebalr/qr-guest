@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
+import { getPrismaForTenant } from '../prisma';
 import prisma from '../prisma';
 
 const router = Router();
@@ -15,8 +16,10 @@ router.get('/:id/device-debug-data', async (req: Request, res: Response): Promis
 		return;
 	}
 
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 		select: { id: true },
 	});
 	if (!event) {
@@ -24,7 +27,7 @@ router.get('/:id/device-debug-data', async (req: Request, res: Response): Promis
 		return;
 	}
 
-	const rows = await prisma.$queryRaw<
+	const rows = await tenantPrisma.$queryRaw<
 		{
 			id: string;
 			event_id: string;
@@ -44,7 +47,7 @@ router.get('/:id/device-debug-data', async (req: Request, res: Response): Promis
 		       d.created_at
 		FROM device_event_debug_data d
 		LEFT JOIN users u ON u.id = d.user_id
-		WHERE d.event_id = ${eventId} AND d.tenant_id = ${req.user!.tenantId}
+		WHERE d.event_id = ${eventId}
 		ORDER BY d.created_at DESC
 	`;
 
@@ -69,8 +72,10 @@ router.get('/:id/device-debug-data/:dumpId', async (req: Request, res: Response)
 		return;
 	}
 
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 		select: { id: true },
 	});
 	if (!event) {
@@ -78,7 +83,7 @@ router.get('/:id/device-debug-data/:dumpId', async (req: Request, res: Response)
 		return;
 	}
 
-	const rows = await prisma.$queryRaw<
+	const rows = await tenantPrisma.$queryRaw<
 		{
 			id: string;
 			event_id: string;
@@ -100,7 +105,7 @@ router.get('/:id/device-debug-data/:dumpId', async (req: Request, res: Response)
 		       d.created_at
 		FROM device_event_debug_data d
 		LEFT JOIN users u ON u.id = d.user_id
-		WHERE d.id = ${dumpId} AND d.event_id = ${eventId} AND d.tenant_id = ${req.user!.tenantId}
+		WHERE d.id = ${dumpId} AND d.event_id = ${eventId}
 		LIMIT 1
 	`;
 
@@ -137,8 +142,10 @@ router.get('/:id/stats', async (req: Request, res: Response): Promise<void> => {
 		? (rawInterval as '1h' | '30m' | '5m')
 		: '1h';
 
-	const event = await prisma.event.findFirst({
-		where: { id: eventId, tenantId: req.user!.tenantId },
+	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+
+	const event = await tenantPrisma.event.findFirst({
+		where: { id: eventId },
 	});
 	if (!event) {
 		res.status(404).json({ error: 'Event not found' });

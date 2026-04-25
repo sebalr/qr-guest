@@ -13,7 +13,7 @@ import { QrCode, AlertCircle } from 'lucide-react';
 export default function RegisterPage() {
 	const { login } = useAuth();
 	const navigate = useNavigate();
-	const [name, setName] = useState('');
+	const [tenantName, setTenantName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
@@ -30,7 +30,7 @@ export default function RegisterPage() {
 				recaptchaToken = await executeRecaptcha('register');
 			}
 
-			const res = await registerApi(email, password, name, recaptchaToken);
+			const res = await registerApi(email, password, tenantName, recaptchaToken);
 			login(res.data.data.token);
 			navigate('/events');
 		} catch {
@@ -61,14 +61,14 @@ export default function RegisterPage() {
 							onSubmit={handleSubmit}
 							className="space-y-4">
 							<div className="space-y-2">
-								<Label htmlFor="name">Full Name</Label>
+								<Label htmlFor="tenantName">Tenant Name</Label>
 								<Input
-									id="name"
+									id="tenantName"
 									type="text"
-									placeholder="Alice Smith"
+									placeholder="My Event Company"
 									required
-									value={name}
-									onChange={e => setName(e.target.value)}
+									value={tenantName}
+									onChange={e => setTenantName(e.target.value)}
 								/>
 							</div>
 							<div className="space-y-2">
@@ -123,4 +123,3 @@ export default function RegisterPage() {
 		</div>
 	);
 }
-
