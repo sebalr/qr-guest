@@ -25,7 +25,7 @@ export default function App() {
 					<Route
 						path="/events"
 						element={
-							<ProtectedRoute roles={['admin', 'owner']}>
+							<ProtectedRoute roles={['scanner', 'admin', 'owner']}>
 								<EventsPage />
 							</ProtectedRoute>
 						}
@@ -33,7 +33,7 @@ export default function App() {
 					<Route
 						path="/events/:id"
 						element={
-							<ProtectedRoute roles={['admin', 'owner']}>
+							<ProtectedRoute roles={['scanner', 'admin', 'owner']}>
 								<EventDetailPage />
 							</ProtectedRoute>
 						}

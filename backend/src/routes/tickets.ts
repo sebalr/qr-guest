@@ -110,7 +110,7 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		}
 	}
 
-	const created = await prisma.$transaction(async (tx) => {
+	const created = await prisma.$transaction(async tx => {
 		const results = [];
 		for (const t of tickets) {
 			const trimmedName = t.name.trim();
@@ -136,8 +136,8 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 	res.status(201).json({ data: created });
 });
 
-// List tickets with scan count — owner/admin only
-router.get('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+// List tickets with scan count — owner/admin/scanner
+router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!eventId) {
 		res.status(400).json({ error: 'Invalid event id' });
@@ -219,6 +219,11 @@ router.get('/tickets/:id/qr', requireRole(['owner', 'admin']), async (req: Reque
 
 	if (!ticket || ticket.event.tenantId !== req.user!.tenantId) {
 		res.status(404).json({ error: 'Ticket not found' });
+		return;
+	}
+
+	if (ticket.status === 'cancelled') {
+		res.status(422).json({ error: 'Ticket is cancelled' });
 		return;
 	}
 

@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEventApi, getTicketsApi, addTicketsApi, createTicketApi, cancelTicketApi, getTicketQRApi, searchGuestsApi, Event, Ticket, Guest } from '../api';
+import {
+	getEventApi,
+	getTicketsApi,
+	addTicketsApi,
+	createTicketApi,
+	cancelTicketApi,
+	getTicketQRApi,
+	searchGuestsApi,
+	Event,
+	Ticket,
+	Guest,
+} from '../api';
+import { useAuth } from '../auth/AuthContext';
 import { db } from '../db';
 import QRCodeDisplay from '../components/QRCodeDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,6 +44,8 @@ import {
 export default function EventDetailPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const { user } = useAuth();
+	const canManageTickets = user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin';
 	const [event, setEvent] = useState<Event | null>(null);
 	const [tickets, setTickets] = useState<Ticket[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -212,6 +226,10 @@ export default function EventDetailPage() {
 
 	async function fetchQrToken(ticketId: string): Promise<string> {
 		if (qrMap[ticketId]) return qrMap[ticketId];
+		const ticket = tickets.find(t => t.id === ticketId);
+		if (!ticket || ticket.status === 'cancelled') {
+			throw new Error('Ticket is cancelled');
+		}
 		const res = await getTicketQRApi(ticketId);
 		const token = res.data.data.qrToken;
 		setQrMap(prev => ({ ...prev, [ticketId]: token }));
@@ -219,6 +237,12 @@ export default function EventDetailPage() {
 	}
 
 	async function handleShowQR(ticketId: string) {
+		const ticket = tickets.find(t => t.id === ticketId);
+		if (!ticket || ticket.status === 'cancelled') {
+			setPdfToast('Cancelled tickets cannot display QR codes.');
+			return;
+		}
+
 		if (qrMap[ticketId]) {
 			setQrMap(prev => {
 				const n = { ...prev };
@@ -252,8 +276,9 @@ export default function EventDetailPage() {
 	}
 
 	async function buildGuestPdfData(ticketIds: string[]) {
+		const activeTicketIds = ticketIds.filter(tid => tickets.find(t => t.id === tid)?.status !== 'cancelled');
 		return Promise.all(
-			ticketIds.map(async tid => {
+			activeTicketIds.map(async tid => {
 				const token = await fetchQrToken(tid);
 				const ticket = tickets.find(t => t.id === tid)!;
 				return { id: tid, name: ticket.name, qrToken: token };
@@ -263,15 +288,29 @@ export default function EventDetailPage() {
 
 	async function handleGeneratePdf(ticketIds: string[]) {
 		if (!event) return;
+		const activeTicketIds = ticketIds.filter(tid => tickets.find(t => t.id === tid)?.status !== 'cancelled');
+		const skippedCount = ticketIds.length - activeTicketIds.length;
+
+		if (activeTicketIds.length === 0) {
+			setPdfToast('Selected tickets are cancelled and cannot be shared as QR.');
+			return;
+		}
+
 		setGeneratingPdf(true);
 		setPdfToast('');
 		try {
-			const guests = await buildGuestPdfData(ticketIds);
+			const guests = await buildGuestPdfData(activeTicketIds);
 			const blob = await generateQrPdf(guests, event.name);
 			const filename = `${event.name.replace(/[^a-z0-9]/gi, '_')}-guests.pdf`;
 			const shared = await sharePdfOrDownload(blob, filename, `${event.name} – Guest QR Codes`);
 			if (!shared) {
-				setPdfToast('PDF downloaded. Open WhatsApp and attach it manually.');
+				setPdfToast(
+					skippedCount > 0
+						? `PDF downloaded. ${skippedCount} cancelled ticket(s) were skipped.`
+						: 'PDF downloaded. Open WhatsApp and attach it manually.',
+				);
+			} else if (skippedCount > 0) {
+				setPdfToast(`${skippedCount} cancelled ticket(s) were skipped.`);
 			}
 		} catch {
 			setPdfToast('Failed to generate PDF.');
@@ -312,14 +351,16 @@ export default function EventDetailPage() {
 						)}
 						<h1 className="font-bold text-lg flex-1 truncate">{event?.name ?? 'Event'}</h1>
 					</div>
-					<Button
-						variant="outline"
-						size="sm"
-						className="gap-1.5"
-						onClick={() => navigate(`/events/${id}/dashboard`)}>
-						<BarChart2 className="h-4 w-4" />
-						<span className="hidden sm:inline">Dashboard</span>
-					</Button>
+					{canManageTickets && (
+						<Button
+							variant="outline"
+							size="sm"
+							className="gap-1.5"
+							onClick={() => navigate(`/events/${id}/dashboard`)}>
+							<BarChart2 className="h-4 w-4" />
+							<span className="hidden sm:inline">Dashboard</span>
+						</Button>
+					)}
 					<Button
 						size="sm"
 						className="gap-1.5"
@@ -364,85 +405,85 @@ export default function EventDetailPage() {
 				)}
 
 				{/* Single guest add with autocomplete */}
-				<form
-					onSubmit={handleAddSingle}
-					className="flex gap-2 items-start">
-					<div
-						className="flex-1 space-y-1 relative"
-						ref={suggestionRef}>
-						<div className="relative">
-							<Input
-								placeholder="Add guest by name…"
-								value={singleName}
-								onChange={e => handleSingleNameChange(e.target.value)}
-								onFocus={() => guestSuggestions.length > 0 && setShowSuggestions(true)}
-								autoComplete="off"
-							/>
-							{selectedGuest && (
-								<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium pointer-events-none">
-									Existing guest
-								</span>
-							)}
-						</div>
-						{singleError && <p className="text-xs text-destructive">{singleError}</p>}
+				{canManageTickets && (
+					<form
+						onSubmit={handleAddSingle}
+						className="flex gap-2 items-start">
+						<div
+							className="flex-1 space-y-1 relative"
+							ref={suggestionRef}>
+							<div className="relative">
+								<Input
+									placeholder="Add guest by name…"
+									value={singleName}
+									onChange={e => handleSingleNameChange(e.target.value)}
+									onFocus={() => guestSuggestions.length > 0 && setShowSuggestions(true)}
+									autoComplete="off"
+								/>
+								{selectedGuest && (
+									<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium pointer-events-none">
+										Existing guest
+									</span>
+								)}
+							</div>
+							{singleError && <p className="text-xs text-destructive">{singleError}</p>}
 
-						{/* Suggestions dropdown */}
-						{showSuggestions && guestSuggestions.length > 0 && (
-							<div className="absolute z-30 top-full mt-1 w-full bg-background border rounded-lg shadow-lg overflow-hidden">
-								<p className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b bg-slate-50">
-									Existing guests in your organisation
-								</p>
-								<ul className="max-h-56 overflow-y-auto divide-y">
-									{guestSuggestions.map(g => (
-										<li key={g.id}>
+							{/* Suggestions dropdown */}
+							{showSuggestions && guestSuggestions.length > 0 && (
+								<div className="absolute z-30 top-full mt-1 w-full bg-background border rounded-lg shadow-lg overflow-hidden">
+									<p className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b bg-slate-50">
+										Existing guests in your organisation
+									</p>
+									<ul className="max-h-56 overflow-y-auto divide-y">
+										{guestSuggestions.map(g => (
+											<li key={g.id}>
+												<button
+													type="button"
+													className="w-full text-left px-3 py-2 hover:bg-accent transition-colors"
+													onMouseDown={e => {
+														e.preventDefault();
+														handleSelectGuest(g);
+													}}>
+													<p className="text-sm font-medium">{g.name}</p>
+													{g.events.length > 0 && (
+														<p className="text-xs text-muted-foreground truncate">{g.events.map(ev => ev.eventName).join(', ')}</p>
+													)}
+												</button>
+											</li>
+										))}
+									</ul>
+									<div className="border-t px-3 py-2 bg-slate-50">
+										<p className="text-xs text-muted-foreground">
+											Not listed?{' '}
 											<button
 												type="button"
-												className="w-full text-left px-3 py-2 hover:bg-accent transition-colors"
+												className="underline hover:text-foreground"
 												onMouseDown={e => {
 													e.preventDefault();
-													handleSelectGuest(g);
+													setShowSuggestions(false);
 												}}>
-												<p className="text-sm font-medium">{g.name}</p>
-												{g.events.length > 0 && (
-													<p className="text-xs text-muted-foreground truncate">
-														{g.events.map(ev => ev.eventName).join(', ')}
-													</p>
-												)}
+												Create new guest &quot;{singleName}&quot;
 											</button>
-										</li>
-									))}
-								</ul>
-								<div className="border-t px-3 py-2 bg-slate-50">
-									<p className="text-xs text-muted-foreground">
-										Not listed?{' '}
-										<button
-											type="button"
-											className="underline hover:text-foreground"
-											onMouseDown={e => {
-												e.preventDefault();
-												setShowSuggestions(false);
-											}}>
-											Create new guest &quot;{singleName}&quot;
-										</button>
-									</p>
+										</p>
+									</div>
 								</div>
-							</div>
-						)}
-					</div>
-					<Button
-						type="submit"
-						size="sm"
-						disabled={addingSingle || !singleName.trim()}
-						className="gap-1.5 shrink-0">
-						<UserPlus className="h-3.5 w-3.5" />
-						{addingSingle ? 'Adding…' : 'Add'}
-					</Button>
-				</form>
+							)}
+						</div>
+						<Button
+							type="submit"
+							size="sm"
+							disabled={addingSingle || !singleName.trim()}
+							className="gap-1.5 shrink-0">
+							<UserPlus className="h-3.5 w-3.5" />
+							{addingSingle ? 'Adding…' : 'Add'}
+						</Button>
+					</form>
+				)}
 
 				<div className="flex justify-between items-center">
 					<div className="flex items-center gap-2">
 						<h2 className="text-lg font-semibold">Guests</h2>
-						{tickets.length > 0 && (
+						{canManageTickets && tickets.length > 0 && (
 							<button
 								type="button"
 								className="text-xs text-muted-foreground hover:text-foreground underline"
@@ -451,17 +492,19 @@ export default function EventDetailPage() {
 							</button>
 						)}
 					</div>
-					<Button
-						variant={showBulk ? 'outline' : 'default'}
-						size="sm"
-						className="gap-1.5"
-						onClick={() => setShowBulk(v => !v)}>
-						{showBulk ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-						{showBulk ? 'Cancel' : 'Bulk Add'}
-					</Button>
+					{canManageTickets && (
+						<Button
+							variant={showBulk ? 'outline' : 'default'}
+							size="sm"
+							className="gap-1.5"
+							onClick={() => setShowBulk(v => !v)}>
+							{showBulk ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+							{showBulk ? 'Cancel' : 'Bulk Add'}
+						</Button>
+					)}
 				</div>
 
-				{showBulk && (
+				{canManageTickets && showBulk && (
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-base">Bulk Add Guests</CardTitle>
@@ -508,39 +551,43 @@ export default function EventDetailPage() {
 								<CardContent className="p-4">
 									<div className="flex justify-between items-start gap-4">
 										<div className="flex items-start gap-3 min-w-0">
-											<Checkbox
-												className="mt-1"
-												checked={selected.has(ticket.id)}
-												onChange={() => toggleSelect(ticket.id)}
-												id={`chk-${ticket.id}`}
-											/>
+											{canManageTickets && (
+												<Checkbox
+													className="mt-1"
+													checked={selected.has(ticket.id)}
+													onChange={() => toggleSelect(ticket.id)}
+													id={`chk-${ticket.id}`}
+												/>
+											)}
 											<div className="min-w-0">
 												<p className="font-medium truncate">{ticket.name}</p>
 												<p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{ticket.id}</p>
 												<div className="flex flex-wrap gap-1.5 mt-2">
 													<Badge variant={ticket.status === 'active' ? 'success' : 'destructive'}>{ticket.status}</Badge>
-													{scanCounts[ticket.id] ? (
-														<Badge variant="secondary">Scanned {scanCounts[ticket.id]}×</Badge>
-													) : null}
+													{scanCounts[ticket.id] ? <Badge variant="secondary">Scanned {scanCounts[ticket.id]}×</Badge> : null}
 												</div>
 											</div>
 										</div>
 										<div className="flex gap-2 shrink-0 flex-wrap justify-end">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => handleShowQR(ticket.id)}>
-												<QrCode className="h-3.5 w-3.5 mr-1" />
-												{qrMap[ticket.id] ? 'Hide' : 'QR'}
-											</Button>
-											<Button
-												variant="outline"
-												size="sm"
-												disabled={generatingPdf}
-												onClick={() => handleGeneratePdf([ticket.id])}>
-												<Share2 className="h-3.5 w-3.5" />
-											</Button>
-											{ticket.status === 'active' && (
+											{canManageTickets && ticket.status === 'active' && (
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => handleShowQR(ticket.id)}>
+													<QrCode className="h-3.5 w-3.5 mr-1" />
+													{qrMap[ticket.id] ? 'Hide' : 'QR'}
+												</Button>
+											)}
+											{canManageTickets && ticket.status === 'active' && (
+												<Button
+													variant="outline"
+													size="sm"
+													disabled={generatingPdf}
+													onClick={() => handleGeneratePdf([ticket.id])}>
+													<Share2 className="h-3.5 w-3.5" />
+												</Button>
+											)}
+											{canManageTickets && ticket.status === 'active' && (
 												<Button
 													variant="destructive"
 													size="sm"
@@ -550,7 +597,7 @@ export default function EventDetailPage() {
 											)}
 										</div>
 									</div>
-									{qrMap[ticket.id] && (
+									{canManageTickets && qrMap[ticket.id] && (
 										<>
 											<Separator className="my-3" />
 											<div className="flex justify-center">
@@ -578,7 +625,7 @@ export default function EventDetailPage() {
 			)}
 
 			{/* Floating action bar */}
-			{selected.size > 0 && (
+			{canManageTickets && selected.size > 0 && (
 				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-background border shadow-xl rounded-2xl px-5 py-3 z-50">
 					<span className="text-sm font-medium">{selected.size} selected</span>
 					<Button

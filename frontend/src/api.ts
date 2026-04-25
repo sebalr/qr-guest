@@ -114,6 +114,8 @@ export interface AdminUser {
 	tenant: { id: string; name: string; plan: string };
 }
 
+export type ManageableUserRole = 'admin' | 'scanner';
+
 // Auth
 export const loginApi = (email: string, password: string, recaptchaToken?: string) =>
 	api.post<{ data: { token: string } }>('/auth/login', { email, password, recaptchaToken });
@@ -160,8 +162,11 @@ export const syncApi = (payload: SyncPayload) => api.post<{ data: SyncResponse }
 export const getAdminTenantsApi = () => api.get<{ data: AdminTenant[] }>('/admin/tenants');
 export const getAdminEventsApi = () => api.get<{ data: AdminEvent[] }>('/admin/events');
 export const getAdminUsersApi = () => api.get<{ data: AdminUser[] }>('/admin/users');
+export const createAdminUserApi = (email: string, password: string, role: ManageableUserRole) =>
+	api.post<{ data: AdminUser }>('/admin/users', { email, password, role });
 export const upgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/upgrade`);
 export const downgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/downgrade`);
-export const updateUserRoleApi = (userId: string, role: string) => api.patch<{ data: AdminUser }>(`/admin/users/${userId}/role`, { role });
+export const updateUserRoleApi = (userId: string, role: ManageableUserRole) =>
+	api.patch<{ data: AdminUser }>(`/admin/users/${userId}/role`, { role });
 
 export default api;

@@ -15,6 +15,7 @@ import { QrCode, Plus, X, Calendar, ChevronRight, AlertCircle, LogOut, Shield, I
 export default function EventsPage() {
 	const { logout, user } = useAuth();
 	const navigate = useNavigate();
+	const canManageEvents = user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin';
 	const [events, setEvents] = useState<Event[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [showForm, setShowForm] = useState(false);
@@ -82,14 +83,14 @@ export default function EventsPage() {
 					</div>
 					<div className="flex items-center gap-2">
 						<span className="text-sm text-muted-foreground hidden sm:block">{user?.email}</span>
-						{user?.isSuperAdmin && (
+						{(user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin') && (
 							<Button
 								variant="outline"
 								size="sm"
 								onClick={() => navigate('/super-admin')}
 								className="gap-1.5">
 								<Shield className="h-3.5 w-3.5" />
-								<span className="hidden sm:inline">Super Admin</span>
+								<span className="hidden sm:inline">Users</span>
 							</Button>
 						)}
 						<Button
@@ -108,17 +109,19 @@ export default function EventsPage() {
 				<div className="flex justify-between items-center mb-6">
 					<div>
 						<h1 className="text-2xl font-bold tracking-tight">Events</h1>
-						<p className="text-muted-foreground text-sm">Manage your guest events</p>
+						<p className="text-muted-foreground text-sm">{canManageEvents ? 'Manage your guest events' : 'Browse your assigned events'}</p>
 					</div>
-					<Button
-						onClick={() => setShowForm(v => !v)}
-						className="gap-2">
-						{showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-						{showForm ? 'Cancel' : 'New Event'}
-					</Button>
+					{canManageEvents && (
+						<Button
+							onClick={() => setShowForm(v => !v)}
+							className="gap-2">
+							{showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+							{showForm ? 'Cancel' : 'New Event'}
+						</Button>
+					)}
 				</div>
 
-				{showForm && (
+				{canManageEvents && showForm && (
 					<Card className="mb-6">
 						<CardHeader>
 							<CardTitle className="text-lg">Create Event</CardTitle>
@@ -229,7 +232,20 @@ export default function EventsPage() {
 											{formatDateRange(ev) && <p className="text-sm text-muted-foreground mt-0.5">{formatDateRange(ev)}</p>}
 										</div>
 									</div>
-									<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+									{canManageEvents ? (
+										<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+									) : (
+										<div className="flex gap-2 shrink-0">
+											<Button
+												size="sm"
+												onClick={e => {
+													e.stopPropagation();
+													navigate(`/events/${ev.id}/scan`);
+												}}>
+												Scan
+											</Button>
+										</div>
+									)}
 								</CardContent>
 							</Card>
 						))}

@@ -16,6 +16,9 @@ import {
 	AreaChart,
 	Area,
 	Cell,
+	PieChart,
+	Pie,
+	Legend,
 } from 'recharts';
 
 type Interval = '1h' | '30m' | '5m';
@@ -74,9 +77,7 @@ export default function DashboardPage() {
 
 	const attendanceRate = stats && stats.totalGuests > 0 ? Math.round((stats.scannedGuests / stats.totalGuests) * 100) : 0;
 
-	const maxScanCount = stats?.scansByInterval?.length
-		? Math.max(...stats.scansByInterval.map(h => h.count), 1)
-		: 1;
+	const maxScanCount = stats?.scansByInterval?.length ? Math.max(...stats.scansByInterval.map(h => h.count), 1) : 1;
 
 	const chartScansByInterval = (stats?.scansByInterval ?? []).map(row => ({
 		label: formatBucket(row.bucket, interval),
@@ -94,6 +95,23 @@ export default function DashboardPage() {
 		email: row.email,
 		scans: row.scanCount,
 	}));
+
+	const chartTopScannerShare = (() => {
+		const ranking = stats?.userScanRanking ?? [];
+		if (ranking.length === 0) return [] as { name: string; value: number }[];
+
+		const top = ranking.slice(0, 5).map(row => ({
+			name: row.email.split('@')[0],
+			value: row.scanCount,
+		}));
+
+		const others = ranking.slice(5).reduce((sum, row) => sum + row.scanCount, 0);
+		if (others > 0) {
+			top.push({ name: 'others', value: others });
+		}
+
+		return top;
+	})();
 
 	if (loading) {
 		return (
@@ -118,7 +136,9 @@ export default function DashboardPage() {
 						<p className="text-xs text-muted-foreground">Scan Dashboard</p>
 					</div>
 					<div className="flex items-center gap-2">
-						{lastUpdated && <span className="text-xs text-muted-foreground hidden sm:block">Updated {lastUpdated.toLocaleTimeString()}</span>}
+						{lastUpdated && (
+							<span className="text-xs text-muted-foreground hidden sm:block">Updated {lastUpdated.toLocaleTimeString()}</span>
+						)}
 						<Button
 							variant={autoRefresh ? 'default' : 'outline'}
 							size="sm"
@@ -242,7 +262,7 @@ export default function DashboardPage() {
 										allowDecimals={false}
 									/>
 									<Tooltip
-										formatter={(v) => [v, 'Scans']}
+										formatter={v => [v, 'Scans']}
 										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
 									/>
 									<Bar
@@ -312,7 +332,7 @@ export default function DashboardPage() {
 										allowDecimals={false}
 									/>
 									<Tooltip
-										formatter={(v) => [v, 'Checked in']}
+										formatter={v => [v, 'Checked in']}
 										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
 									/>
 									<Area
@@ -362,7 +382,7 @@ export default function DashboardPage() {
 										width={90}
 									/>
 									<Tooltip
-										formatter={(v) => [v, 'Scans']}
+										formatter={v => [v, 'Scans']}
 										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
 									/>
 									<Bar
@@ -371,6 +391,42 @@ export default function DashboardPage() {
 										radius={[0, 4, 4, 0]}
 									/>
 								</BarChart>
+							</ResponsiveContainer>
+						</CardContent>
+					</Card>
+				)}
+
+				{chartTopScannerShare.length > 0 && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base flex items-center gap-2">
+								<Shield className="h-4 w-4 text-indigo-500" />
+								Top Scanner Share
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<ResponsiveContainer
+								width="100%"
+								height={260}>
+								<PieChart>
+									<Pie
+										data={chartTopScannerShare}
+										dataKey="value"
+										nameKey="name"
+										cx="50%"
+										cy="50%"
+										outerRadius={84}
+										label={({ name, percent }) => `${name} ${(((percent ?? 0) as number) * 100).toFixed(0)}%`}>
+										{chartTopScannerShare.map((_, index) => (
+											<Cell
+												key={`slice-${index}`}
+												fill={['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#dbeafe'][index % 6]}
+											/>
+										))}
+									</Pie>
+									<Tooltip formatter={value => [`${value}`, 'Scans']} />
+									<Legend />
+								</PieChart>
 							</ResponsiveContainer>
 						</CardContent>
 					</Card>
@@ -441,11 +497,7 @@ export default function DashboardPage() {
 												</Badge>
 											</td>
 											<td className="px-4 py-2 text-right">
-												{guest.scanCount >= 1 ? (
-													<Badge variant="success">Scanned</Badge>
-												) : (
-													<Badge variant="secondary">Pending</Badge>
-												)}
+												{guest.scanCount >= 1 ? <Badge variant="success">Scanned</Badge> : <Badge variant="secondary">Pending</Badge>}
 											</td>
 										</tr>
 									))}

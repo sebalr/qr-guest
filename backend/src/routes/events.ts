@@ -6,9 +6,9 @@ import { requireRole } from '../middleware/roles';
 const router = Router();
 
 router.use(authMiddleware);
-router.use(requireRole(['owner', 'admin']));
 
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+// Read access is also available to scanners.
+router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const events = await prisma.event.findMany({
 		where: { tenantId: req.user!.tenantId },
 		orderBy: { createdAt: 'desc' },
@@ -16,7 +16,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 	res.json({ data: events });
 });
 
-router.get('/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/:id', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	const event = await prisma.event.findFirst({
 		where: { id: eventId, tenantId: req.user!.tenantId },
@@ -28,7 +28,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 	res.json({ data: event });
 });
 
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	try {
 		// Validate user and tenant
 		if (!req.user || !req.user.tenantId) {

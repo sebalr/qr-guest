@@ -5,10 +5,12 @@ import {
 	AdminEvent,
 	AdminTenant,
 	AdminUser,
+	createAdminUserApi,
 	downgradeTenantApi,
 	getAdminEventsApi,
 	getAdminTenantsApi,
 	getAdminUsersApi,
+	ManageableUserRole,
 	updateUserRoleApi,
 	upgradeTenantApi,
 } from '../api';
@@ -19,8 +21,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, LogOut, Building2, Users, Calendar, Star, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-const ROLE_OPTIONS = ['owner', 'admin', 'scanner'];
+const ROLE_OPTIONS: ManageableUserRole[] = ['admin', 'scanner'];
 
 export default function SuperAdminPage() {
 	const navigate = useNavigate();
@@ -32,6 +36,12 @@ export default function SuperAdminPage() {
 	const [error, setError] = useState('');
 	const [roleSaving, setRoleSaving] = useState<Record<string, boolean>>({});
 	const [planSaving, setPlanSaving] = useState<Record<string, boolean>>({});
+	const [createEmail, setCreateEmail] = useState('');
+	const [createPassword, setCreatePassword] = useState('');
+	const [createRole, setCreateRole] = useState<ManageableUserRole>('scanner');
+	const [creatingUser, setCreatingUser] = useState(false);
+	const isSuperAdmin = user?.isSuperAdmin === true;
+	const canManageUsers = user?.role === 'owner' || user?.role === 'admin' || isSuperAdmin;
 
 	const summary = useMemo(() => {
 		const proTenants = tenants.filter(t => t.plan === 'pro').length;
@@ -44,20 +54,24 @@ export default function SuperAdminPage() {
 	}, [tenants, users, events]);
 
 	useEffect(() => {
-		if (!user?.isSuperAdmin) {
+		if (!canManageUsers) {
 			navigate('/events', { replace: true });
 			return;
 		}
 
-		Promise.all([getAdminTenantsApi(), getAdminEventsApi(), getAdminUsersApi()])
+		const requests = isSuperAdmin
+			? Promise.all([getAdminTenantsApi(), getAdminEventsApi(), getAdminUsersApi()])
+			: Promise.all([Promise.resolve(null), Promise.resolve(null), getAdminUsersApi()]);
+
+		requests
 			.then(([tenantRes, eventRes, userRes]) => {
-				setTenants(tenantRes.data.data);
-				setEvents(eventRes.data.data);
+				setTenants(tenantRes?.data.data ?? []);
+				setEvents(eventRes?.data.data ?? []);
 				setUsers(userRes.data.data);
 			})
 			.catch(() => setError('Failed to load super admin data.'))
 			.finally(() => setLoading(false));
-	}, [navigate, user?.isSuperAdmin]);
+	}, [canManageUsers, isSuperAdmin, navigate]);
 
 	async function updatePlan(tenantId: string, nextPlan: 'pro' | 'free') {
 		setPlanSaving(prev => ({ ...prev, [tenantId]: true }));
@@ -74,7 +88,7 @@ export default function SuperAdminPage() {
 		}
 	}
 
-	async function updateRole(userId: string, role: string) {
+	async function updateRole(userId: string, role: ManageableUserRole) {
 		setRoleSaving(prev => ({ ...prev, [userId]: true }));
 		try {
 			const updated = (await updateUserRoleApi(userId, role)).data.data;
@@ -86,10 +100,26 @@ export default function SuperAdminPage() {
 		}
 	}
 
+	async function handleCreateUser() {
+		setError('');
+		setCreatingUser(true);
+		try {
+			const created = (await createAdminUserApi(createEmail, createPassword, createRole)).data.data;
+			setUsers(prev => [created, ...prev]);
+			setCreateEmail('');
+			setCreatePassword('');
+			setCreateRole('scanner');
+		} catch {
+			setError('Failed to create user. Ensure email is unique and password has at least 8 characters.');
+		} finally {
+			setCreatingUser(false);
+		}
+	}
+
 	if (loading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
-				<p className="text-muted-foreground">Loading super admin dashboard…</p>
+				<p className="text-muted-foreground">Loading user management…</p>
 			</div>
 		);
 	}
@@ -107,8 +137,10 @@ export default function SuperAdminPage() {
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
 						<div>
-							<h1 className="font-bold text-lg">Super Admin</h1>
-							<p className="text-xs text-slate-400">Global tenant, event and user management</p>
+							<h1 className="font-bold text-lg">{isSuperAdmin ? 'Super Admin' : 'User Management'}</h1>
+							<p className="text-xs text-slate-400">
+								{isSuperAdmin ? 'Global tenant, event and user management' : 'Manage users and scanning roles in your tenant'}
+							</p>
 						</div>
 					</div>
 					<Button
@@ -130,102 +162,159 @@ export default function SuperAdminPage() {
 					</Alert>
 				)}
 
-				{/* Summary stats */}
-				<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-					<Card>
-						<CardContent className="pt-6">
-							<div className="flex items-center gap-3">
-								<div className="p-2 rounded-lg bg-blue-50">
-									<Building2 className="h-5 w-5 text-blue-600" />
+				{isSuperAdmin && (
+					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+						<Card>
+							<CardContent className="pt-6">
+								<div className="flex items-center gap-3">
+									<div className="p-2 rounded-lg bg-blue-50">
+										<Building2 className="h-5 w-5 text-blue-600" />
+									</div>
+									<div>
+										<p className="text-2xl font-bold">{summary.tenants}</p>
+										<p className="text-xs text-muted-foreground">Tenants</p>
+									</div>
 								</div>
-								<div>
-									<p className="text-2xl font-bold">{summary.tenants}</p>
-									<p className="text-xs text-muted-foreground">Tenants</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className="pt-6">
+								<div className="flex items-center gap-3">
+									<div className="p-2 rounded-lg bg-purple-50">
+										<Users className="h-5 w-5 text-purple-600" />
+									</div>
+									<div>
+										<p className="text-2xl font-bold">{summary.users}</p>
+										<p className="text-xs text-muted-foreground">Users</p>
+									</div>
 								</div>
-							</div>
-						</CardContent>
-					</Card>
-					<Card>
-						<CardContent className="pt-6">
-							<div className="flex items-center gap-3">
-								<div className="p-2 rounded-lg bg-purple-50">
-									<Users className="h-5 w-5 text-purple-600" />
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className="pt-6">
+								<div className="flex items-center gap-3">
+									<div className="p-2 rounded-lg bg-green-50">
+										<Calendar className="h-5 w-5 text-green-600" />
+									</div>
+									<div>
+										<p className="text-2xl font-bold">{summary.events}</p>
+										<p className="text-xs text-muted-foreground">Events</p>
+									</div>
 								</div>
-								<div>
-									<p className="text-2xl font-bold">{summary.users}</p>
-									<p className="text-xs text-muted-foreground">Users</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className="pt-6">
+								<div className="flex items-center gap-3">
+									<div className="p-2 rounded-lg bg-amber-50">
+										<Star className="h-5 w-5 text-amber-600" />
+									</div>
+									<div>
+										<p className="text-2xl font-bold">{summary.proTenants}</p>
+										<p className="text-xs text-muted-foreground">Pro Tenants</p>
+									</div>
 								</div>
-							</div>
-						</CardContent>
-					</Card>
-					<Card>
-						<CardContent className="pt-6">
-							<div className="flex items-center gap-3">
-								<div className="p-2 rounded-lg bg-green-50">
-									<Calendar className="h-5 w-5 text-green-600" />
-								</div>
-								<div>
-									<p className="text-2xl font-bold">{summary.events}</p>
-									<p className="text-xs text-muted-foreground">Events</p>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-					<Card>
-						<CardContent className="pt-6">
-							<div className="flex items-center gap-3">
-								<div className="p-2 rounded-lg bg-amber-50">
-									<Star className="h-5 w-5 text-amber-600" />
-								</div>
-								<div>
-									<p className="text-2xl font-bold">{summary.proTenants}</p>
-									<p className="text-xs text-muted-foreground">Pro Tenants</p>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				</div>
+							</CardContent>
+						</Card>
+					</div>
+				)}
 
-				{/* Tenants table */}
+				{/* Tenant user creation */}
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-base">Tenants &amp; Plans</CardTitle>
+						<CardTitle className="text-base">Create User</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Tenant</TableHead>
-									<TableHead>Plan</TableHead>
-									<TableHead>Users</TableHead>
-									<TableHead>Events</TableHead>
-									<TableHead>Actions</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{tenants.map(tenant => (
-									<TableRow key={tenant.id}>
-										<TableCell className="font-medium">{tenant.name}</TableCell>
-										<TableCell>
-											<Badge variant={tenant.plan === 'pro' ? 'default' : 'secondary'}>{tenant.plan}</Badge>
-										</TableCell>
-										<TableCell>{tenant._count.users}</TableCell>
-										<TableCell>{tenant._count.events}</TableCell>
-										<TableCell>
-											<Button
-												size="sm"
-												variant={tenant.plan === 'pro' ? 'outline' : 'default'}
-												disabled={planSaving[tenant.id]}
-												onClick={() => updatePlan(tenant.id, tenant.plan === 'pro' ? 'free' : 'pro')}>
-												{planSaving[tenant.id] ? 'Saving…' : tenant.plan === 'pro' ? 'Downgrade' : 'Upgrade to Pro'}
-											</Button>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+						<div className="grid md:grid-cols-4 gap-3 items-end">
+							<div className="space-y-2 md:col-span-2">
+								<Label>Email</Label>
+								<Input
+									type="email"
+									value={createEmail}
+									onChange={e => setCreateEmail(e.target.value)}
+									placeholder="user@company.com"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Password</Label>
+								<Input
+									type="password"
+									value={createPassword}
+									onChange={e => setCreatePassword(e.target.value)}
+									placeholder="min 8 chars"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Role</Label>
+								<Select
+									value={createRole}
+									onValueChange={value => setCreateRole(value as ManageableUserRole)}>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{ROLE_OPTIONS.map(role => (
+											<SelectItem
+												key={role}
+												value={role}>
+												{role}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+						<div className="mt-4">
+							<Button
+								onClick={handleCreateUser}
+								disabled={creatingUser || !createEmail || !createPassword || createPassword.length < 8}>
+								{creatingUser ? 'Creating…' : 'Create User'}
+							</Button>
+						</div>
 					</CardContent>
 				</Card>
+
+				{isSuperAdmin && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Tenants &amp; Plans</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Tenant</TableHead>
+										<TableHead>Plan</TableHead>
+										<TableHead>Users</TableHead>
+										<TableHead>Events</TableHead>
+										<TableHead>Actions</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{tenants.map(tenant => (
+										<TableRow key={tenant.id}>
+											<TableCell className="font-medium">{tenant.name}</TableCell>
+											<TableCell>
+												<Badge variant={tenant.plan === 'pro' ? 'default' : 'secondary'}>{tenant.plan}</Badge>
+											</TableCell>
+											<TableCell>{tenant._count.users}</TableCell>
+											<TableCell>{tenant._count.events}</TableCell>
+											<TableCell>
+												<Button
+													size="sm"
+													variant={tenant.plan === 'pro' ? 'outline' : 'default'}
+													disabled={planSaving[tenant.id]}
+													onClick={() => updatePlan(tenant.id, tenant.plan === 'pro' ? 'free' : 'pro')}>
+													{planSaving[tenant.id] ? 'Saving…' : tenant.plan === 'pro' ? 'Downgrade' : 'Upgrade to Pro'}
+												</Button>
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</CardContent>
+					</Card>
+				)}
 
 				{/* Users table */}
 				<Card>
@@ -252,26 +341,37 @@ export default function SuperAdminPage() {
 											<Badge variant={entry.tenant.plan === 'pro' ? 'default' : 'secondary'}>{entry.tenant.plan}</Badge>
 										</TableCell>
 										<TableCell>
-											<Select
-												value={entry.role}
-												disabled={roleSaving[entry.id] || entry.isSuperAdmin}
-												onValueChange={value => updateRole(entry.id, value)}>
-												<SelectTrigger className="w-32">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													{ROLE_OPTIONS.map(role => (
-														<SelectItem
-															key={role}
-															value={role}>
-															{role}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
+											{entry.role === 'owner' ? (
+												<>
+													<Badge variant="secondary">owner</Badge>
+													<p className="text-xs text-muted-foreground mt-1">Owner is immutable</p>
+												</>
+											) : (
+												<Select
+													value={entry.role as ManageableUserRole}
+													disabled={roleSaving[entry.id] || entry.isSuperAdmin}
+													onValueChange={value => updateRole(entry.id, value as ManageableUserRole)}>
+													<SelectTrigger className="w-32">
+														<SelectValue />
+													</SelectTrigger>
+													<SelectContent>
+														{ROLE_OPTIONS.map(role => (
+															<SelectItem
+																key={role}
+																value={role}>
+																{role}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											)}
 										</TableCell>
 										<TableCell>
-											{entry.isSuperAdmin ? <Badge variant="default">Yes</Badge> : <span className="text-muted-foreground text-xs">No</span>}
+											{entry.isSuperAdmin ? (
+												<Badge variant="default">Yes</Badge>
+											) : (
+												<span className="text-muted-foreground text-xs">No</span>
+											)}
 										</TableCell>
 									</TableRow>
 								))}
@@ -280,40 +380,40 @@ export default function SuperAdminPage() {
 					</CardContent>
 				</Card>
 
-				{/* Events list */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base">All Events</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="space-y-2">
-							{events.map(event => (
-								<div
-									key={event.id}
-									className="border rounded-lg px-4 py-3 flex justify-between items-center">
-									<div className="min-w-0">
-										<p className="font-medium truncate">{event.name}</p>
-										<p className="text-xs text-muted-foreground mt-0.5">
-											{event.tenant.name} ·{' '}
-											<Badge
-												variant={event.tenant.plan === 'pro' ? 'default' : 'secondary'}
-												className="text-[10px] py-0">
-												{event.tenant.plan}
-											</Badge>{' '}
-											· {new Date(event.startsAt).toLocaleString()}
-										</p>
+				{isSuperAdmin && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">All Events</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="space-y-2">
+								{events.map(event => (
+									<div
+										key={event.id}
+										className="border rounded-lg px-4 py-3 flex justify-between items-center">
+										<div className="min-w-0">
+											<p className="font-medium truncate">{event.name}</p>
+											<p className="text-xs text-muted-foreground mt-0.5">
+												{event.tenant.name} ·{' '}
+												<Badge
+													variant={event.tenant.plan === 'pro' ? 'default' : 'secondary'}
+													className="text-[10px] py-0">
+													{event.tenant.plan}
+												</Badge>{' '}
+												· {new Date(event.startsAt).toLocaleString()}
+											</p>
+										</div>
+										<div className="text-right text-xs text-muted-foreground shrink-0 ml-4">
+											<p>{event._count.tickets} tickets</p>
+											<p>{event._count.scans} scans</p>
+										</div>
 									</div>
-									<div className="text-right text-xs text-muted-foreground shrink-0 ml-4">
-										<p>{event._count.tickets} tickets</p>
-										<p>{event._count.scans} scans</p>
-									</div>
-								</div>
-							))}
-						</div>
-					</CardContent>
-				</Card>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				)}
 			</main>
 		</div>
 	);
 }
-
