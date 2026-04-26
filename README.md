@@ -26,11 +26,43 @@ backend/    — Node.js/Express API (TypeScript + Prisma + PostgreSQL)
 
 ```bash
 cp .env.example .env   # edit secrets
-docker compose up -d
+docker compose up -d db db-bootstrap
+cd backend
+cp .env.example .env   # local backend env for npm scripts
+npm install
+npm run prisma:migrate
+cd ..
+docker compose up -d backend frontend
 ```
 
 - Frontend: http://localhost:80
 - Backend API: http://localhost:3000
+
+### Local Setup (Recommended Order)
+
+Use this order to avoid role/bootstrap timing issues:
+
+```bash
+# 1) Start postgres and role bootstrap
+docker compose up -d db db-bootstrap
+
+# 2) Run migrations from host (uses backend/.env)
+cd backend
+npm install
+npm run prisma:migrate
+
+# 3) Start backend and frontend
+cd ..
+docker compose up -d backend frontend
+```
+
+To fully reset local data and start clean:
+
+```bash
+docker compose down -v --remove-orphans
+docker compose up -d db db-bootstrap
+cd backend && npm run prisma:migrate
+```
 
 ### Development
 
@@ -96,6 +128,65 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 | `FRONTEND_URL`      | Public frontend URL used in verification links |
 | `RESEND_API_KEY`    | Resend API key for auth emails                 |
 | `RESEND_FROM_EMAIL` | Verified sender address used for auth emails   |
+| `APP_DB_USER`       | Runtime DB role used by backend in Docker      |
+| `APP_DB_PASSWORD`   | Runtime DB role password in Docker             |
+
+## Coolify Production Setup
+
+Production compose file: [docker-compose.coolify.yml](docker-compose.coolify.yml)
+
+The production setup assumes an external PostgreSQL instance managed by Coolify or your provider.
+
+### 1) Create an RLS-safe app role in production DB
+
+Run this SQL once on your production database (replace password):
+
+```sql
+DO $$
+BEGIN
+	IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'qrguest_app') THEN
+		CREATE ROLE qrguest_app LOGIN PASSWORD 'REPLACE_WITH_STRONG_PASSWORD';
+	ELSE
+		ALTER ROLE qrguest_app WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_PASSWORD';
+	END IF;
+END
+$$;
+
+ALTER ROLE qrguest_app NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
+GRANT CONNECT, CREATE, TEMPORARY ON DATABASE qrguest TO qrguest_app;
+GRANT USAGE, CREATE ON SCHEMA public TO qrguest_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO qrguest_app;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO qrguest_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qrguest_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO qrguest_app;
+```
+
+### 2) Configure Coolify environment variables
+
+Set at least:
+
+- `DATABASE_URL=postgresql://qrguest_app:<password>@<host>:<port>/qrguest`
+- `JWT_SECRET=<strong-secret>`
+- `QR_SECRET=<strong-secret>`
+- `FRONTEND_URL=<public-frontend-url>`
+- `RESEND_API_KEY=<resend-key>`
+- `RESEND_FROM_EMAIL=<verified-email>`
+
+### 3) Run migrations in production
+
+Use the migrate service before (or during) release:
+
+```bash
+docker compose -f docker-compose.coolify.yml run --rm migrate
+```
+
+If Coolify deploys from compose services, run the `migrate` service as a one-shot job before deploying/restarting `backend`.
+
+### 4) Start app services in production
+
+```bash
+docker compose -f docker-compose.coolify.yml up -d backend frontend
+```
 
 ## Prisma Fresh Start (Pre-Production)
 
@@ -119,35 +210,26 @@ Notes:
 
 - This is destructive and should only be used before production.
 - The current baseline is a single initial migration in [backend/prisma/migrations](backend/prisma/migrations).
-- Tenant records are created at signup and each tenant schema is initialized after registration.
+- Tenant records are created at signup.
+- Tenant isolation is implemented in shared tables via `tenant_id` + PostgreSQL RLS policies.
 
-## Tenant Schema Migrations
+## Multi-Tenant Isolation
 
-This project uses dynamic tenant schemas (`tenant_<tenantId>`). Prisma migrations update `public`, but tenant schemas are migrated with SQL files in [backend/prisma/tenant-migrations](backend/prisma/tenant-migrations).
+All tenant-owned data lives in shared tables in `public`, with a required `tenant_id` column and PostgreSQL Row Level Security policies on:
 
-```bash
-cd backend
+- `events`
+- `tickets`
+- `scans`
+- `guests`
+- `sync_state`
+- `device_event_debug_data`
 
-# Preview what would run per tenant schema
-npm run tenant:migrate:dry
+The API sets request-scoped DB context (`app.current_tenant_id` and `app.bypass_rls`) inside transactions.
+Only super admins can request RLS bypass.
 
-# Apply tenant migrations to all discovered tenant_* schemas
-npm run tenant:migrate
-```
+Important: the backend runtime must not connect as a PostgreSQL superuser (or any role with `BYPASSRLS`), otherwise Postgres ignores RLS and tenants can see each other data.
 
-Optional targeting:
-
-```bash
-cd backend
-npm run tenant:migrate -- --schema tenant_<tenant-id>
-```
-
-When adding a column to tenant tables:
-
-1. Add a new ordered SQL file in [backend/prisma/tenant-migrations](backend/prisma/tenant-migrations) (example: `0002_add_some_column.sql`).
-2. Use idempotent SQL (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`) where possible.
-3. Run `npm run tenant:migrate` to apply it to existing tenants.
-4. New signups will automatically get all tenant migration files during tenant initialization.
+In Docker Compose, a `db-bootstrap` service ensures the app role exists and has `NOBYPASSRLS` on every startup, including when reusing an existing Postgres volume.
 
 ### Frontend
 

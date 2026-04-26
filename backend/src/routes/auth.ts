@@ -4,8 +4,13 @@ import jwt from 'jsonwebtoken';
 
 import { getAccountStatus } from '../lib/accountStatus';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../lib/authEmails';
-import { initializeSingleTenantSchema } from '../lib/tenantMigrations/runner';
-import { AUTH_TOKEN_TYPES, consumeUserAuthToken, findActiveUserAuthToken, issueUserAuthToken } from '../lib/userAuthTokens';
+import {
+	AUTH_TOKEN_TYPES,
+	consumeUserAuthToken,
+	findActiveUserAuthToken,
+	findUserAuthToken,
+	issueUserAuthToken,
+} from '../lib/userAuthTokens';
 import prisma from '../prisma';
 
 const router = Router();
@@ -97,14 +102,6 @@ async function verifyRecaptchaEnterprise(token: string | undefined, action: stri
 		return false;
 	}
 }
-
-async function initializeTenantSchema(tenantId: string): Promise<void> {
-	const summary = await initializeSingleTenantSchema(tenantId);
-	if (summary.failed.length > 0) {
-		throw new Error(`Failed to initialize tenant schema: ${summary.failed[0].error}`);
-	}
-}
-
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
 	const { tenantName, email, password, recaptchaToken } = req.body as {
 		tenantName?: string;
@@ -154,8 +151,6 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
 			return { tenant: createdTenant, user: createdUser };
 		});
-
-		await initializeTenantSchema(tenant.id);
 
 		const verification = await issueUserAuthToken({
 			userId: user.id,
@@ -304,6 +299,12 @@ router.post('/verify-email', async (req: Request, res: Response): Promise<void> 
 
 	const tokenRecord = await findActiveUserAuthToken(token, AUTH_TOKEN_TYPES.emailVerification);
 	if (!tokenRecord) {
+		const existingToken = await findUserAuthToken(token);
+		if (existingToken?.type === AUTH_TOKEN_TYPES.emailVerification && existingToken.user.emailVerifiedAt) {
+			res.json({ data: { message: 'Email is already verified. You can sign in.' } });
+			return;
+		}
+
 		res.status(400).json({ error: 'Invalid or expired verification token' });
 		return;
 	}
@@ -436,6 +437,15 @@ router.post('/select-tenant', async (req: Request, res: Response): Promise<void>
 		if (!userTenant) {
 			res.status(403).json({ error: 'User does not have access to this tenant' });
 			return;
+		}
+
+		if (process.env.LOG_TENANT_DB_DEBUG === '1') {
+			console.log('[auth:select-tenant] issuing token', {
+				userId: userTenant.user.id,
+				tenantId: userTenant.tenantId,
+				role: userTenant.role,
+				isSuperAdmin: userTenant.user.isSuperAdmin,
+			});
 		}
 
 		res.json({

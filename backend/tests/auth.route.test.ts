@@ -62,6 +62,18 @@ vi.mock('../src/lib/authEmails', () => ({
 	sendPasswordResetEmail: emailMocks.sendPasswordResetEmail,
 }));
 
+vi.mock('../src/lib/tenantMigrations/runner', () => ({
+	initializeSingleTenantSchema: vi.fn(async () => ({
+		dryRun: false,
+		schemasDiscovered: 1,
+		schemasTargeted: 1,
+		migrationsDiscovered: 1,
+		applied: 1,
+		skipped: 0,
+		failed: [],
+	})),
+}));
+
 import authRouter from '../src/routes/auth';
 
 function createApp() {

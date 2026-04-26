@@ -33,6 +33,16 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
 	try {
 		const payload = jwt.verify(token, secret) as JwtPayload;
+		if (process.env.LOG_TENANT_DB_DEBUG === '1') {
+			console.log('[auth] token payload', {
+				path: req.path,
+				method: req.method,
+				userId: payload.userId,
+				tenantId: payload.tenantId,
+				role: payload.role,
+				isSuperAdmin: payload.isSuperAdmin,
+			});
+		}
 		req.user = payload;
 		next();
 	} catch {

@@ -6,6 +6,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: qrguest
+      APP_DB_USER: ${APP_DB_USER:-qrguest_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-qrguest_app}
     volumes:
       - postgres_data:/var/lib/postgresql
     ports:
@@ -16,13 +18,31 @@ services:
       timeout: 5s
       retries: 5
 
+  db-bootstrap:
+    image: postgres:18-alpine
+    restart: 'no'
+    environment:
+      PGPASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: qrguest
+      PGHOST: db
+      PGPORT: 5432
+      APP_DB_USER: ${APP_DB_USER:-qrguest_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-qrguest_app}
+    volumes:
+      - ./db/init/01-create-app-role.sh:/bootstrap/01-create-app-role.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh /bootstrap/01-create-app-role.sh
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/qrguest
+      DATABASE_URL: postgresql://${APP_DB_USER:-qrguest_app}:${APP_DB_PASSWORD:-qrguest_app}@db:5432/qrguest
       JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret}
       QR_SECRET: ${QR_SECRET:-change_me_qr_secret}
       PORT: 3000
@@ -31,7 +51,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+      db-bootstrap:
+        condition: service_completed_successfully
+    command: sh -c "DATABASE_URL=postgresql://postgres:postgres@db:5432/qrguest npx prisma migrate deploy && node dist/index.js"
 
   frontend:
     build:

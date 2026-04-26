@@ -19,6 +19,13 @@ vi.mock('../src/prisma', () => ({
 		syncState: { upsert: prismaMocks.syncStateUpsert },
 		$transaction: prismaMocks.transaction,
 	},
+	getPrismaForTenant: vi.fn(async () => ({
+		event: { findFirst: prismaMocks.eventFindFirst },
+		ticket: { findMany: prismaMocks.ticketFindMany },
+		scan: { upsert: prismaMocks.scanUpsert, findMany: prismaMocks.scanFindMany },
+		syncState: { upsert: prismaMocks.syncStateUpsert },
+		$transaction: prismaMocks.transaction,
+	})),
 }));
 
 vi.mock('../src/middleware/auth', () => ({

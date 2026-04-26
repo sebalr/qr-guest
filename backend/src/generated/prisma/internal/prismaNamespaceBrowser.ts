@@ -127,6 +127,7 @@ export type UserTenantScalarFieldEnum = (typeof UserTenantScalarFieldEnum)[keyof
 
 export const EventScalarFieldEnum = {
   id: 'id',
+  tenantId: 'tenantId',
   name: 'name',
   description: 'description',
   imageUrl: 'imageUrl',
@@ -141,6 +142,7 @@ export type EventScalarFieldEnum = (typeof EventScalarFieldEnum)[keyof typeof Ev
 
 export const TicketScalarFieldEnum = {
   id: 'id',
+  tenantId: 'tenantId',
   eventId: 'eventId',
   guestId: 'guestId',
   name: 'name',
@@ -155,6 +157,7 @@ export type TicketScalarFieldEnum = (typeof TicketScalarFieldEnum)[keyof typeof 
 
 export const ScanScalarFieldEnum = {
   id: 'id',
+  tenantId: 'tenantId',
   ticketId: 'ticketId',
   eventId: 'eventId',
   deviceId: 'deviceId',
@@ -169,6 +172,7 @@ export type ScanScalarFieldEnum = (typeof ScanScalarFieldEnum)[keyof typeof Scan
 
 export const DeviceEventDebugDataScalarFieldEnum = {
   id: 'id',
+  tenantId: 'tenantId',
   eventId: 'eventId',
   deviceId: 'deviceId',
   userId: 'userId',
@@ -180,6 +184,7 @@ export type DeviceEventDebugDataScalarFieldEnum = (typeof DeviceEventDebugDataSc
 
 
 export const SyncStateScalarFieldEnum = {
+  tenantId: 'tenantId',
   deviceId: 'deviceId',
   eventId: 'eventId',
   lastTicketVersion: 'lastTicketVersion',
@@ -191,6 +196,7 @@ export type SyncStateScalarFieldEnum = (typeof SyncStateScalarFieldEnum)[keyof t
 
 export const GuestScalarFieldEnum = {
   id: 'id',
+  tenantId: 'tenantId',
   name: 'name',
   createdAt: 'createdAt'
 } as const

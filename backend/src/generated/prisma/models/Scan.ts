@@ -26,6 +26,7 @@ export type AggregateScan = {
 
 export type ScanMinAggregateOutputType = {
   id: string | null
+  tenantId: string | null
   ticketId: string | null
   eventId: string | null
   deviceId: string | null
@@ -37,6 +38,7 @@ export type ScanMinAggregateOutputType = {
 
 export type ScanMaxAggregateOutputType = {
   id: string | null
+  tenantId: string | null
   ticketId: string | null
   eventId: string | null
   deviceId: string | null
@@ -48,6 +50,7 @@ export type ScanMaxAggregateOutputType = {
 
 export type ScanCountAggregateOutputType = {
   id: number
+  tenantId: number
   ticketId: number
   eventId: number
   deviceId: number
@@ -61,6 +64,7 @@ export type ScanCountAggregateOutputType = {
 
 export type ScanMinAggregateInputType = {
   id?: true
+  tenantId?: true
   ticketId?: true
   eventId?: true
   deviceId?: true
@@ -72,6 +76,7 @@ export type ScanMinAggregateInputType = {
 
 export type ScanMaxAggregateInputType = {
   id?: true
+  tenantId?: true
   ticketId?: true
   eventId?: true
   deviceId?: true
@@ -83,6 +88,7 @@ export type ScanMaxAggregateInputType = {
 
 export type ScanCountAggregateInputType = {
   id?: true
+  tenantId?: true
   ticketId?: true
   eventId?: true
   deviceId?: true
@@ -167,6 +173,7 @@ export type ScanGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 
 export type ScanGroupByOutputType = {
   id: string
+  tenantId: string
   ticketId: string
   eventId: string
   deviceId: string
@@ -199,6 +206,7 @@ export type ScanWhereInput = {
   OR?: Prisma.ScanWhereInput[]
   NOT?: Prisma.ScanWhereInput | Prisma.ScanWhereInput[]
   id?: Prisma.StringFilter<"Scan"> | string
+  tenantId?: Prisma.StringFilter<"Scan"> | string
   ticketId?: Prisma.StringFilter<"Scan"> | string
   eventId?: Prisma.StringFilter<"Scan"> | string
   deviceId?: Prisma.StringFilter<"Scan"> | string
@@ -206,6 +214,7 @@ export type ScanWhereInput = {
   dedupeKey?: Prisma.StringNullableFilter<"Scan"> | string | null
   scannedAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
+  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>
   event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -213,6 +222,7 @@ export type ScanWhereInput = {
 
 export type ScanOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   ticketId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
@@ -220,6 +230,7 @@ export type ScanOrderByWithRelationInput = {
   dedupeKey?: Prisma.SortOrderInput | Prisma.SortOrder
   scannedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  tenant?: Prisma.TenantOrderByWithRelationInput
   ticket?: Prisma.TicketOrderByWithRelationInput
   event?: Prisma.EventOrderByWithRelationInput
   user?: Prisma.UserOrderByWithRelationInput
@@ -227,23 +238,28 @@ export type ScanOrderByWithRelationInput = {
 
 export type ScanWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  dedupeKey?: string
+  id_tenantId?: Prisma.ScanIdTenantIdCompoundUniqueInput
+  tenantId_dedupeKey?: Prisma.ScanTenantIdDedupeKeyCompoundUniqueInput
   AND?: Prisma.ScanWhereInput | Prisma.ScanWhereInput[]
   OR?: Prisma.ScanWhereInput[]
   NOT?: Prisma.ScanWhereInput | Prisma.ScanWhereInput[]
+  tenantId?: Prisma.StringFilter<"Scan"> | string
   ticketId?: Prisma.StringFilter<"Scan"> | string
   eventId?: Prisma.StringFilter<"Scan"> | string
   deviceId?: Prisma.StringFilter<"Scan"> | string
   userId?: Prisma.StringFilter<"Scan"> | string
+  dedupeKey?: Prisma.StringNullableFilter<"Scan"> | string | null
   scannedAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
+  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>
   event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-}, "id" | "dedupeKey">
+}, "id" | "id_tenantId" | "tenantId_dedupeKey">
 
 export type ScanOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   ticketId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
@@ -261,6 +277,7 @@ export type ScanScalarWhereWithAggregatesInput = {
   OR?: Prisma.ScanScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ScanScalarWhereWithAggregatesInput | Prisma.ScanScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Scan"> | string
+  tenantId?: Prisma.StringWithAggregatesFilter<"Scan"> | string
   ticketId?: Prisma.StringWithAggregatesFilter<"Scan"> | string
   eventId?: Prisma.StringWithAggregatesFilter<"Scan"> | string
   deviceId?: Prisma.StringWithAggregatesFilter<"Scan"> | string
@@ -276,6 +293,7 @@ export type ScanCreateInput = {
   dedupeKey?: string | null
   scannedAt: Date | string
   createdAt?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutScansInput
   ticket: Prisma.TicketCreateNestedOneWithoutScansInput
   event: Prisma.EventCreateNestedOneWithoutScansInput
   user: Prisma.UserCreateNestedOneWithoutScansInput
@@ -283,6 +301,7 @@ export type ScanCreateInput = {
 
 export type ScanUncheckedCreateInput = {
   id?: string
+  tenantId: string
   ticketId: string
   eventId: string
   deviceId: string
@@ -298,6 +317,7 @@ export type ScanUpdateInput = {
   dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scannedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutScansNestedInput
   ticket?: Prisma.TicketUpdateOneRequiredWithoutScansNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutScansNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutScansNestedInput
@@ -305,6 +325,7 @@ export type ScanUpdateInput = {
 
 export type ScanUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   ticketId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -316,6 +337,7 @@ export type ScanUncheckedUpdateInput = {
 
 export type ScanCreateManyInput = {
   id?: string
+  tenantId: string
   ticketId: string
   eventId: string
   deviceId: string
@@ -335,6 +357,7 @@ export type ScanUpdateManyMutationInput = {
 
 export type ScanUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   ticketId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -354,8 +377,19 @@ export type ScanOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type ScanIdTenantIdCompoundUniqueInput = {
+  id: string
+  tenantId: string
+}
+
+export type ScanTenantIdDedupeKeyCompoundUniqueInput = {
+  tenantId: string
+  dedupeKey: string
+}
+
 export type ScanCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   ticketId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
@@ -367,6 +401,7 @@ export type ScanCountOrderByAggregateInput = {
 
 export type ScanMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   ticketId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
@@ -378,6 +413,7 @@ export type ScanMaxOrderByAggregateInput = {
 
 export type ScanMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   ticketId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
@@ -385,6 +421,48 @@ export type ScanMinOrderByAggregateInput = {
   dedupeKey?: Prisma.SortOrder
   scannedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type ScanCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.ScanCreateWithoutTenantInput, Prisma.ScanUncheckedCreateWithoutTenantInput> | Prisma.ScanCreateWithoutTenantInput[] | Prisma.ScanUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.ScanCreateOrConnectWithoutTenantInput | Prisma.ScanCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.ScanCreateManyTenantInputEnvelope
+  connect?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+}
+
+export type ScanUncheckedCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.ScanCreateWithoutTenantInput, Prisma.ScanUncheckedCreateWithoutTenantInput> | Prisma.ScanCreateWithoutTenantInput[] | Prisma.ScanUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.ScanCreateOrConnectWithoutTenantInput | Prisma.ScanCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.ScanCreateManyTenantInputEnvelope
+  connect?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+}
+
+export type ScanUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.ScanCreateWithoutTenantInput, Prisma.ScanUncheckedCreateWithoutTenantInput> | Prisma.ScanCreateWithoutTenantInput[] | Prisma.ScanUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.ScanCreateOrConnectWithoutTenantInput | Prisma.ScanCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.ScanUpsertWithWhereUniqueWithoutTenantInput | Prisma.ScanUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.ScanCreateManyTenantInputEnvelope
+  set?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  disconnect?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  delete?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  connect?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  update?: Prisma.ScanUpdateWithWhereUniqueWithoutTenantInput | Prisma.ScanUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.ScanUpdateManyWithWhereWithoutTenantInput | Prisma.ScanUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.ScanScalarWhereInput | Prisma.ScanScalarWhereInput[]
+}
+
+export type ScanUncheckedUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.ScanCreateWithoutTenantInput, Prisma.ScanUncheckedCreateWithoutTenantInput> | Prisma.ScanCreateWithoutTenantInput[] | Prisma.ScanUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.ScanCreateOrConnectWithoutTenantInput | Prisma.ScanCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.ScanUpsertWithWhereUniqueWithoutTenantInput | Prisma.ScanUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.ScanCreateManyTenantInputEnvelope
+  set?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  disconnect?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  delete?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  connect?: Prisma.ScanWhereUniqueInput | Prisma.ScanWhereUniqueInput[]
+  update?: Prisma.ScanUpdateWithWhereUniqueWithoutTenantInput | Prisma.ScanUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.ScanUpdateManyWithWhereWithoutTenantInput | Prisma.ScanUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.ScanScalarWhereInput | Prisma.ScanScalarWhereInput[]
 }
 
 export type ScanCreateNestedManyWithoutUserInput = {
@@ -513,7 +591,7 @@ export type ScanUncheckedUpdateManyWithoutTicketNestedInput = {
   deleteMany?: Prisma.ScanScalarWhereInput | Prisma.ScanScalarWhereInput[]
 }
 
-export type ScanCreateWithoutUserInput = {
+export type ScanCreateWithoutTenantInput = {
   id?: string
   deviceId: string
   dedupeKey?: string | null
@@ -521,10 +599,75 @@ export type ScanCreateWithoutUserInput = {
   createdAt?: Date | string
   ticket: Prisma.TicketCreateNestedOneWithoutScansInput
   event: Prisma.EventCreateNestedOneWithoutScansInput
+  user: Prisma.UserCreateNestedOneWithoutScansInput
+}
+
+export type ScanUncheckedCreateWithoutTenantInput = {
+  id?: string
+  ticketId: string
+  eventId: string
+  deviceId: string
+  userId: string
+  dedupeKey?: string | null
+  scannedAt: Date | string
+  createdAt?: Date | string
+}
+
+export type ScanCreateOrConnectWithoutTenantInput = {
+  where: Prisma.ScanWhereUniqueInput
+  create: Prisma.XOR<Prisma.ScanCreateWithoutTenantInput, Prisma.ScanUncheckedCreateWithoutTenantInput>
+}
+
+export type ScanCreateManyTenantInputEnvelope = {
+  data: Prisma.ScanCreateManyTenantInput | Prisma.ScanCreateManyTenantInput[]
+  skipDuplicates?: boolean
+}
+
+export type ScanUpsertWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.ScanWhereUniqueInput
+  update: Prisma.XOR<Prisma.ScanUpdateWithoutTenantInput, Prisma.ScanUncheckedUpdateWithoutTenantInput>
+  create: Prisma.XOR<Prisma.ScanCreateWithoutTenantInput, Prisma.ScanUncheckedCreateWithoutTenantInput>
+}
+
+export type ScanUpdateWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.ScanWhereUniqueInput
+  data: Prisma.XOR<Prisma.ScanUpdateWithoutTenantInput, Prisma.ScanUncheckedUpdateWithoutTenantInput>
+}
+
+export type ScanUpdateManyWithWhereWithoutTenantInput = {
+  where: Prisma.ScanScalarWhereInput
+  data: Prisma.XOR<Prisma.ScanUpdateManyMutationInput, Prisma.ScanUncheckedUpdateManyWithoutTenantInput>
+}
+
+export type ScanScalarWhereInput = {
+  AND?: Prisma.ScanScalarWhereInput | Prisma.ScanScalarWhereInput[]
+  OR?: Prisma.ScanScalarWhereInput[]
+  NOT?: Prisma.ScanScalarWhereInput | Prisma.ScanScalarWhereInput[]
+  id?: Prisma.StringFilter<"Scan"> | string
+  tenantId?: Prisma.StringFilter<"Scan"> | string
+  ticketId?: Prisma.StringFilter<"Scan"> | string
+  eventId?: Prisma.StringFilter<"Scan"> | string
+  deviceId?: Prisma.StringFilter<"Scan"> | string
+  userId?: Prisma.StringFilter<"Scan"> | string
+  dedupeKey?: Prisma.StringNullableFilter<"Scan"> | string | null
+  scannedAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
+  createdAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
+}
+
+export type ScanCreateWithoutUserInput = {
+  id?: string
+  deviceId: string
+  dedupeKey?: string | null
+  scannedAt: Date | string
+  createdAt?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutScansInput
+  ticket: Prisma.TicketCreateNestedOneWithoutScansInput
+  event: Prisma.EventCreateNestedOneWithoutScansInput
 }
 
 export type ScanUncheckedCreateWithoutUserInput = {
   id?: string
+  tenantId: string
   ticketId: string
   eventId: string
   deviceId: string
@@ -559,26 +702,13 @@ export type ScanUpdateManyWithWhereWithoutUserInput = {
   data: Prisma.XOR<Prisma.ScanUpdateManyMutationInput, Prisma.ScanUncheckedUpdateManyWithoutUserInput>
 }
 
-export type ScanScalarWhereInput = {
-  AND?: Prisma.ScanScalarWhereInput | Prisma.ScanScalarWhereInput[]
-  OR?: Prisma.ScanScalarWhereInput[]
-  NOT?: Prisma.ScanScalarWhereInput | Prisma.ScanScalarWhereInput[]
-  id?: Prisma.StringFilter<"Scan"> | string
-  ticketId?: Prisma.StringFilter<"Scan"> | string
-  eventId?: Prisma.StringFilter<"Scan"> | string
-  deviceId?: Prisma.StringFilter<"Scan"> | string
-  userId?: Prisma.StringFilter<"Scan"> | string
-  dedupeKey?: Prisma.StringNullableFilter<"Scan"> | string | null
-  scannedAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
-  createdAt?: Prisma.DateTimeFilter<"Scan"> | Date | string
-}
-
 export type ScanCreateWithoutEventInput = {
   id?: string
   deviceId: string
   dedupeKey?: string | null
   scannedAt: Date | string
   createdAt?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutScansInput
   ticket: Prisma.TicketCreateNestedOneWithoutScansInput
   user: Prisma.UserCreateNestedOneWithoutScansInput
 }
@@ -625,6 +755,7 @@ export type ScanCreateWithoutTicketInput = {
   dedupeKey?: string | null
   scannedAt: Date | string
   createdAt?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutScansInput
   event: Prisma.EventCreateNestedOneWithoutScansInput
   user: Prisma.UserCreateNestedOneWithoutScansInput
 }
@@ -665,8 +796,53 @@ export type ScanUpdateManyWithWhereWithoutTicketInput = {
   data: Prisma.XOR<Prisma.ScanUpdateManyMutationInput, Prisma.ScanUncheckedUpdateManyWithoutTicketInput>
 }
 
+export type ScanCreateManyTenantInput = {
+  id?: string
+  ticketId: string
+  eventId: string
+  deviceId: string
+  userId: string
+  dedupeKey?: string | null
+  scannedAt: Date | string
+  createdAt?: Date | string
+}
+
+export type ScanUpdateWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scannedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutScansNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutScansNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutScansNestedInput
+}
+
+export type ScanUncheckedUpdateWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ticketId?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scannedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type ScanUncheckedUpdateManyWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ticketId?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scannedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type ScanCreateManyUserInput = {
   id?: string
+  tenantId: string
   ticketId: string
   eventId: string
   deviceId: string
@@ -681,12 +857,14 @@ export type ScanUpdateWithoutUserInput = {
   dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scannedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutScansNestedInput
   ticket?: Prisma.TicketUpdateOneRequiredWithoutScansNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutScansNestedInput
 }
 
 export type ScanUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   ticketId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -697,6 +875,7 @@ export type ScanUncheckedUpdateWithoutUserInput = {
 
 export type ScanUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   ticketId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -721,6 +900,7 @@ export type ScanUpdateWithoutEventInput = {
   dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scannedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutScansNestedInput
   ticket?: Prisma.TicketUpdateOneRequiredWithoutScansNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutScansNestedInput
 }
@@ -761,6 +941,7 @@ export type ScanUpdateWithoutTicketInput = {
   dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scannedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutScansNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutScansNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutScansNestedInput
 }
@@ -789,6 +970,7 @@ export type ScanUncheckedUpdateManyWithoutTicketInput = {
 
 export type ScanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenantId?: boolean
   ticketId?: boolean
   eventId?: boolean
   deviceId?: boolean
@@ -796,6 +978,7 @@ export type ScanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   dedupeKey?: boolean
   scannedAt?: boolean
   createdAt?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -803,6 +986,7 @@ export type ScanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
 
 export type ScanSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenantId?: boolean
   ticketId?: boolean
   eventId?: boolean
   deviceId?: boolean
@@ -810,6 +994,7 @@ export type ScanSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   dedupeKey?: boolean
   scannedAt?: boolean
   createdAt?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -817,6 +1002,7 @@ export type ScanSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 
 export type ScanSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenantId?: boolean
   ticketId?: boolean
   eventId?: boolean
   deviceId?: boolean
@@ -824,6 +1010,7 @@ export type ScanSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   dedupeKey?: boolean
   scannedAt?: boolean
   createdAt?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -831,6 +1018,7 @@ export type ScanSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 
 export type ScanSelectScalar = {
   id?: boolean
+  tenantId?: boolean
   ticketId?: boolean
   eventId?: boolean
   deviceId?: boolean
@@ -840,18 +1028,21 @@ export type ScanSelectScalar = {
   createdAt?: boolean
 }
 
-export type ScanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ticketId" | "eventId" | "deviceId" | "userId" | "dedupeKey" | "scannedAt" | "createdAt", ExtArgs["result"]["scan"]>
+export type ScanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "ticketId" | "eventId" | "deviceId" | "userId" | "dedupeKey" | "scannedAt" | "createdAt", ExtArgs["result"]["scan"]>
 export type ScanInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type ScanIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type ScanIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -860,12 +1051,14 @@ export type ScanIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $ScanPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Scan"
   objects: {
+    tenant: Prisma.$TenantPayload<ExtArgs>
     ticket: Prisma.$TicketPayload<ExtArgs>
     event: Prisma.$EventPayload<ExtArgs>
     user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    tenantId: string
     ticketId: string
     eventId: string
     deviceId: string
@@ -1267,6 +1460,7 @@ readonly fields: ScanFieldRefs;
  */
 export interface Prisma__ScanClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  tenant<T extends Prisma.TenantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TenantDefaultArgs<ExtArgs>>): Prisma.Prisma__TenantClient<runtime.Types.Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   ticket<T extends Prisma.TicketDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TicketDefaultArgs<ExtArgs>>): Prisma.Prisma__TicketClient<runtime.Types.Result.GetResult<Prisma.$TicketPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   event<T extends Prisma.EventDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EventDefaultArgs<ExtArgs>>): Prisma.Prisma__EventClient<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
@@ -1300,6 +1494,7 @@ export interface Prisma__ScanClient<T, Null = never, ExtArgs extends runtime.Typ
  */
 export interface ScanFieldRefs {
   readonly id: Prisma.FieldRef<"Scan", 'String'>
+  readonly tenantId: Prisma.FieldRef<"Scan", 'String'>
   readonly ticketId: Prisma.FieldRef<"Scan", 'String'>
   readonly eventId: Prisma.FieldRef<"Scan", 'String'>
   readonly deviceId: Prisma.FieldRef<"Scan", 'String'>

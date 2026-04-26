@@ -31,9 +31,11 @@ export default function SuperAdminPage() {
 	const navigate = useNavigate();
 	const { user, logout } = useAuth();
 	const [tenants, setTenants] = useState<AdminTenant[]>([]);
+	const [selectedTenantId, setSelectedTenantId] = useState('');
 	const [events, setEvents] = useState<AdminEvent[]>([]);
 	const [users, setUsers] = useState<AdminUser[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [tenantDataLoading, setTenantDataLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [roleSaving, setRoleSaving] = useState<Record<string, boolean>>({});
 	const [planSaving, setPlanSaving] = useState<Record<string, boolean>>({});
@@ -42,6 +44,7 @@ export default function SuperAdminPage() {
 	const [creatingUser, setCreatingUser] = useState(false);
 	const isSuperAdmin = user?.isSuperAdmin === true;
 	const canManageUsers = user?.role === 'owner' || user?.role === 'admin' || isSuperAdmin;
+	const selectedTenant = useMemo(() => tenants.find(t => t.id === selectedTenantId) ?? null, [tenants, selectedTenantId]);
 
 	const summary = useMemo(() => {
 		const proTenants = tenants.filter(t => t.plan === 'pro').length;
@@ -59,19 +62,44 @@ export default function SuperAdminPage() {
 			return;
 		}
 
-		const requests = isSuperAdmin
-			? Promise.all([getAdminTenantsApi(), getAdminEventsApi(), getAdminUsersApi()])
-			: Promise.all([Promise.resolve(null), Promise.resolve(null), getAdminUsersApi()]);
+		if (isSuperAdmin) {
+			setLoading(true);
+			setError('');
+			getAdminTenantsApi()
+				.then(tenantRes => {
+					const loadedTenants = tenantRes.data.data;
+					setTenants(loadedTenants);
+					setSelectedTenantId(prev => prev || loadedTenants[0]?.id || '');
+				})
+				.catch(() => setError('Failed to load super admin data.'))
+				.finally(() => setLoading(false));
+			return;
+		}
 
-		requests
-			.then(([tenantRes, eventRes, userRes]) => {
-				setTenants(tenantRes?.data.data ?? []);
-				setEvents(eventRes?.data.data ?? []);
+		setLoading(true);
+		setError('');
+		getAdminUsersApi()
+			.then(userRes => {
 				setUsers(userRes.data.data);
+				setEvents([]);
 			})
 			.catch(() => setError('Failed to load super admin data.'))
 			.finally(() => setLoading(false));
 	}, [canManageUsers, isSuperAdmin, navigate]);
+
+	useEffect(() => {
+		if (!isSuperAdmin || !selectedTenantId) return;
+
+		setTenantDataLoading(true);
+		setError('');
+		Promise.all([getAdminUsersApi(selectedTenantId), getAdminEventsApi(selectedTenantId)])
+			.then(([userRes, eventRes]) => {
+				setUsers(userRes.data.data);
+				setEvents(eventRes.data.data);
+			})
+			.catch(() => setError('Failed to load tenant data.'))
+			.finally(() => setTenantDataLoading(false));
+	}, [isSuperAdmin, selectedTenantId]);
 
 	async function updatePlan(tenantId: string, nextPlan: 'pro' | 'free') {
 		setPlanSaving(prev => ({ ...prev, [tenantId]: true }));
@@ -91,7 +119,7 @@ export default function SuperAdminPage() {
 	async function updateRole(userId: string, role: ManageableUserRole) {
 		setRoleSaving(prev => ({ ...prev, [userId]: true }));
 		try {
-			const updated = (await updateUserRoleApi(userId, role)).data.data;
+			const updated = (await updateUserRoleApi(userId, role, isSuperAdmin ? selectedTenantId : undefined)).data.data;
 			setUsers(prev => prev.map(u => (u.id === userId ? { ...u, role: updated.role } : u)));
 		} catch {
 			setError('Failed to update user role.');
@@ -102,9 +130,13 @@ export default function SuperAdminPage() {
 
 	async function handleCreateUser() {
 		setError('');
+		if (isSuperAdmin && !selectedTenantId) {
+			setError('Select a tenant before creating a user.');
+			return;
+		}
 		setCreatingUser(true);
 		try {
-			const created = (await createAdminUserApi(createEmail, createRole)).data.data;
+			const created = (await createAdminUserApi(createEmail, createRole, isSuperAdmin ? selectedTenantId : undefined)).data.data;
 			setUsers(prev => [created, ...prev]);
 			setCreateEmail('');
 			setCreateRole('scanner');
@@ -225,10 +257,44 @@ export default function SuperAdminPage() {
 					</div>
 				)}
 
+				{isSuperAdmin && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Selected Tenant</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="grid md:grid-cols-3 gap-3 items-end">
+								<div className="space-y-2 md:col-span-2">
+									<Label>Tenant</Label>
+									<Select
+										value={selectedTenantId}
+										onValueChange={setSelectedTenantId}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select tenant" />
+										</SelectTrigger>
+										<SelectContent>
+											{tenants.map(tenant => (
+												<SelectItem
+													key={tenant.id}
+													value={tenant.id}>
+													{tenant.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="text-sm text-muted-foreground">
+									{tenantDataLoading ? 'Loading tenant data…' : (selectedTenant?.name ?? 'No tenant selected')}
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				)}
+
 				{/* Tenant user creation */}
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-base">Create User</CardTitle>
+						<CardTitle className="text-base">Create User{isSuperAdmin && selectedTenant ? ` for ${selectedTenant.name}` : ''}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="grid md:grid-cols-4 gap-3 items-end">
@@ -264,7 +330,7 @@ export default function SuperAdminPage() {
 						<div className="mt-4">
 							<Button
 								onClick={handleCreateUser}
-								disabled={creatingUser || !createEmail}>
+								disabled={creatingUser || !createEmail || (isSuperAdmin && !selectedTenantId)}>
 								{creatingUser ? 'Creating…' : 'Send Invitation'}
 							</Button>
 						</div>
@@ -386,7 +452,7 @@ export default function SuperAdminPage() {
 				{isSuperAdmin && (
 					<Card>
 						<CardHeader>
-							<CardTitle className="text-base">All Events</CardTitle>
+							<CardTitle className="text-base">Events{selectedTenant ? ` in ${selectedTenant.name}` : ''}</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<div className="space-y-2">

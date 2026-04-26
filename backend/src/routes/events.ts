@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { getPrismaForTenant } from '../prisma';
+import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
+import { withRls } from '../prisma';
 
 const router = Router();
 
@@ -9,33 +10,62 @@ router.use(authMiddleware);
 
 // Read access is also available to scanners.
 router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
-	const events = await tenantPrisma.event.findMany({
-		orderBy: { createdAt: 'desc' },
-	});
-	res.json({ data: events });
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const events = await withRls(context, async tenantPrisma => {
+			return tenantPrisma.event.findMany({
+				orderBy: { createdAt: 'desc' },
+			});
+		});
+
+		res.json({ data: events });
+	} catch (error) {
+		console.error('Error listing events:', error);
+		res.status(500).json({ error: 'Failed to load events' });
+	}
 });
 
 router.get('/:id', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
-	const event = await tenantPrisma.event.findFirst({
-		where: { id: eventId },
-	});
-	if (!event) {
-		res.status(404).json({ error: 'Event not found' });
+
+	if (!eventId) {
+		res.status(400).json({ error: 'event id is required' });
 		return;
 	}
-	res.json({ data: event });
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const event = await withRls(context, async tenantPrisma => {
+			return tenantPrisma.event.findFirst({
+				where: { id: eventId },
+			});
+		});
+		if (!event) {
+			res.status(404).json({ error: 'Event not found' });
+			return;
+		}
+
+		res.json({ data: event });
+	} catch (error) {
+		console.error('Error fetching event:', error);
+		res.status(500).json({ error: 'Failed to load event' });
+	}
 });
 
 router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	try {
-		// Validate user and tenant
-		if (!req.user || !req.user.tenantId) {
-			res.status(401).json({ error: 'Unauthorized: No user or tenant information' });
-			return;
-		}
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
 
 		const { name, description, imageUrl } = req.body;
 		const startsAt = req.body.startsAt ?? req.body.starts_at;
@@ -60,15 +90,17 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 			return;
 		}
 
-		const tenantPrisma = await getPrismaForTenant(req.user.tenantId);
-		const event = await tenantPrisma.event.create({
-			data: {
-				name,
-				...(description ? { description } : {}),
-				...(imageUrl ? { imageUrl } : {}),
-				...(startDate ? { startsAt: startDate } : {}),
-				...(endDate ? { endsAt: endDate } : {}),
-			},
+		const event = await withRls(context, async tenantPrisma => {
+			return tenantPrisma.event.create({
+				data: {
+					tenantId: context.tenantId,
+					name,
+					description: description ?? null,
+					imageUrl: imageUrl ?? null,
+					startsAt: startDate ?? null,
+					endsAt: endDate ?? null,
+				},
+			});
 		});
 
 		res.status(201).json({ data: event });

@@ -233,13 +233,18 @@ export const syncApi = (payload: SyncPayload) => api.post<{ data: SyncResponse }
 
 // Super admin
 export const getAdminTenantsApi = () => api.get<{ data: AdminTenant[] }>('/admin/tenants');
-export const getAdminEventsApi = () => api.get<{ data: AdminEvent[] }>('/admin/events');
-export const getAdminUsersApi = () => api.get<{ data: AdminUser[] }>('/admin/users');
-export const createAdminUserApi = (email: string, role: ManageableUserRole) =>
-	api.post<{ data: AdminUser }>('/admin/users', { email, role });
+export const getAdminEventsApi = (tenantId: string) => api.get<{ data: AdminEvent[] }>('/admin/events', { params: { tenantId } });
+export const getAdminUsersApi = (tenantId?: string) =>
+	tenantId ? api.get<{ data: AdminUser[] }>('/admin/users', { params: { tenantId } }) : api.get<{ data: AdminUser[] }>('/admin/users');
+export const createAdminUserApi = (email: string, role: ManageableUserRole, tenantId?: string) =>
+	tenantId
+		? api.post<{ data: AdminUser }>('/admin/users', { email, role, tenantId })
+		: api.post<{ data: AdminUser }>('/admin/users', { email, role });
 export const upgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/upgrade`);
 export const downgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/downgrade`);
-export const updateUserRoleApi = (userId: string, role: ManageableUserRole) =>
-	api.patch<{ data: AdminUser }>(`/admin/users/${userId}/role`, { role });
+export const updateUserRoleApi = (userId: string, role: ManageableUserRole, tenantId?: string) =>
+	tenantId
+		? api.patch<{ data: AdminUser }>(`/admin/users/${userId}/role`, { role, tenantId })
+		: api.patch<{ data: AdminUser }>(`/admin/users/${userId}/role`, { role });
 
 export default api;

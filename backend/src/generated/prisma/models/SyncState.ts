@@ -35,6 +35,7 @@ export type SyncStateSumAggregateOutputType = {
 }
 
 export type SyncStateMinAggregateOutputType = {
+  tenantId: string | null
   deviceId: string | null
   eventId: string | null
   lastTicketVersion: number | null
@@ -42,6 +43,7 @@ export type SyncStateMinAggregateOutputType = {
 }
 
 export type SyncStateMaxAggregateOutputType = {
+  tenantId: string | null
   deviceId: string | null
   eventId: string | null
   lastTicketVersion: number | null
@@ -49,6 +51,7 @@ export type SyncStateMaxAggregateOutputType = {
 }
 
 export type SyncStateCountAggregateOutputType = {
+  tenantId: number
   deviceId: number
   eventId: number
   lastTicketVersion: number
@@ -66,6 +69,7 @@ export type SyncStateSumAggregateInputType = {
 }
 
 export type SyncStateMinAggregateInputType = {
+  tenantId?: true
   deviceId?: true
   eventId?: true
   lastTicketVersion?: true
@@ -73,6 +77,7 @@ export type SyncStateMinAggregateInputType = {
 }
 
 export type SyncStateMaxAggregateInputType = {
+  tenantId?: true
   deviceId?: true
   eventId?: true
   lastTicketVersion?: true
@@ -80,6 +85,7 @@ export type SyncStateMaxAggregateInputType = {
 }
 
 export type SyncStateCountAggregateInputType = {
+  tenantId?: true
   deviceId?: true
   eventId?: true
   lastTicketVersion?: true
@@ -174,6 +180,7 @@ export type SyncStateGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
 }
 
 export type SyncStateGroupByOutputType = {
+  tenantId: string
   deviceId: string
   eventId: string
   lastTicketVersion: number
@@ -204,31 +211,41 @@ export type SyncStateWhereInput = {
   AND?: Prisma.SyncStateWhereInput | Prisma.SyncStateWhereInput[]
   OR?: Prisma.SyncStateWhereInput[]
   NOT?: Prisma.SyncStateWhereInput | Prisma.SyncStateWhereInput[]
+  tenantId?: Prisma.StringFilter<"SyncState"> | string
   deviceId?: Prisma.StringFilter<"SyncState"> | string
   eventId?: Prisma.StringFilter<"SyncState"> | string
   lastTicketVersion?: Prisma.IntFilter<"SyncState"> | number
   lastScanCursor?: Prisma.DateTimeFilter<"SyncState"> | Date | string
+  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
+  event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
 }
 
 export type SyncStateOrderByWithRelationInput = {
+  tenantId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   lastTicketVersion?: Prisma.SortOrder
   lastScanCursor?: Prisma.SortOrder
+  tenant?: Prisma.TenantOrderByWithRelationInput
+  event?: Prisma.EventOrderByWithRelationInput
 }
 
 export type SyncStateWhereUniqueInput = Prisma.AtLeast<{
-  deviceId_eventId?: Prisma.SyncStateDeviceIdEventIdCompoundUniqueInput
+  tenantId_deviceId_eventId?: Prisma.SyncStateTenantIdDeviceIdEventIdCompoundUniqueInput
   AND?: Prisma.SyncStateWhereInput | Prisma.SyncStateWhereInput[]
   OR?: Prisma.SyncStateWhereInput[]
   NOT?: Prisma.SyncStateWhereInput | Prisma.SyncStateWhereInput[]
+  tenantId?: Prisma.StringFilter<"SyncState"> | string
   deviceId?: Prisma.StringFilter<"SyncState"> | string
   eventId?: Prisma.StringFilter<"SyncState"> | string
   lastTicketVersion?: Prisma.IntFilter<"SyncState"> | number
   lastScanCursor?: Prisma.DateTimeFilter<"SyncState"> | Date | string
-}, "deviceId_eventId">
+  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
+  event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
+}, "tenantId_deviceId_eventId">
 
 export type SyncStateOrderByWithAggregationInput = {
+  tenantId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   lastTicketVersion?: Prisma.SortOrder
@@ -244,6 +261,7 @@ export type SyncStateScalarWhereWithAggregatesInput = {
   AND?: Prisma.SyncStateScalarWhereWithAggregatesInput | Prisma.SyncStateScalarWhereWithAggregatesInput[]
   OR?: Prisma.SyncStateScalarWhereWithAggregatesInput[]
   NOT?: Prisma.SyncStateScalarWhereWithAggregatesInput | Prisma.SyncStateScalarWhereWithAggregatesInput[]
+  tenantId?: Prisma.StringWithAggregatesFilter<"SyncState"> | string
   deviceId?: Prisma.StringWithAggregatesFilter<"SyncState"> | string
   eventId?: Prisma.StringWithAggregatesFilter<"SyncState"> | string
   lastTicketVersion?: Prisma.IntWithAggregatesFilter<"SyncState"> | number
@@ -252,12 +270,14 @@ export type SyncStateScalarWhereWithAggregatesInput = {
 
 export type SyncStateCreateInput = {
   deviceId: string
-  eventId: string
   lastTicketVersion?: number
   lastScanCursor?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutSyncStatesInput
+  event: Prisma.EventCreateNestedOneWithoutSyncStatesInput
 }
 
 export type SyncStateUncheckedCreateInput = {
+  tenantId: string
   deviceId: string
   eventId: string
   lastTicketVersion?: number
@@ -266,12 +286,14 @@ export type SyncStateUncheckedCreateInput = {
 
 export type SyncStateUpdateInput = {
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
-  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
   lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutSyncStatesNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutSyncStatesNestedInput
 }
 
 export type SyncStateUncheckedUpdateInput = {
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
@@ -279,6 +301,7 @@ export type SyncStateUncheckedUpdateInput = {
 }
 
 export type SyncStateCreateManyInput = {
+  tenantId: string
   deviceId: string
   eventId: string
   lastTicketVersion?: number
@@ -287,24 +310,36 @@ export type SyncStateCreateManyInput = {
 
 export type SyncStateUpdateManyMutationInput = {
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
-  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
   lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type SyncStateUncheckedUpdateManyInput = {
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
   lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type SyncStateDeviceIdEventIdCompoundUniqueInput = {
+export type SyncStateListRelationFilter = {
+  every?: Prisma.SyncStateWhereInput
+  some?: Prisma.SyncStateWhereInput
+  none?: Prisma.SyncStateWhereInput
+}
+
+export type SyncStateOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
+export type SyncStateTenantIdDeviceIdEventIdCompoundUniqueInput = {
+  tenantId: string
   deviceId: string
   eventId: string
 }
 
 export type SyncStateCountOrderByAggregateInput = {
+  tenantId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   lastTicketVersion?: Prisma.SortOrder
@@ -316,6 +351,7 @@ export type SyncStateAvgOrderByAggregateInput = {
 }
 
 export type SyncStateMaxOrderByAggregateInput = {
+  tenantId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   lastTicketVersion?: Prisma.SortOrder
@@ -323,6 +359,7 @@ export type SyncStateMaxOrderByAggregateInput = {
 }
 
 export type SyncStateMinOrderByAggregateInput = {
+  tenantId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   lastTicketVersion?: Prisma.SortOrder
@@ -333,42 +370,295 @@ export type SyncStateSumOrderByAggregateInput = {
   lastTicketVersion?: Prisma.SortOrder
 }
 
+export type SyncStateCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutTenantInput, Prisma.SyncStateUncheckedCreateWithoutTenantInput> | Prisma.SyncStateCreateWithoutTenantInput[] | Prisma.SyncStateUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutTenantInput | Prisma.SyncStateCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.SyncStateCreateManyTenantInputEnvelope
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+}
+
+export type SyncStateUncheckedCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutTenantInput, Prisma.SyncStateUncheckedCreateWithoutTenantInput> | Prisma.SyncStateCreateWithoutTenantInput[] | Prisma.SyncStateUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutTenantInput | Prisma.SyncStateCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.SyncStateCreateManyTenantInputEnvelope
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+}
+
+export type SyncStateUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutTenantInput, Prisma.SyncStateUncheckedCreateWithoutTenantInput> | Prisma.SyncStateCreateWithoutTenantInput[] | Prisma.SyncStateUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutTenantInput | Prisma.SyncStateCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.SyncStateUpsertWithWhereUniqueWithoutTenantInput | Prisma.SyncStateUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.SyncStateCreateManyTenantInputEnvelope
+  set?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  disconnect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  delete?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  update?: Prisma.SyncStateUpdateWithWhereUniqueWithoutTenantInput | Prisma.SyncStateUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.SyncStateUpdateManyWithWhereWithoutTenantInput | Prisma.SyncStateUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.SyncStateScalarWhereInput | Prisma.SyncStateScalarWhereInput[]
+}
+
+export type SyncStateUncheckedUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutTenantInput, Prisma.SyncStateUncheckedCreateWithoutTenantInput> | Prisma.SyncStateCreateWithoutTenantInput[] | Prisma.SyncStateUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutTenantInput | Prisma.SyncStateCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.SyncStateUpsertWithWhereUniqueWithoutTenantInput | Prisma.SyncStateUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.SyncStateCreateManyTenantInputEnvelope
+  set?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  disconnect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  delete?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  update?: Prisma.SyncStateUpdateWithWhereUniqueWithoutTenantInput | Prisma.SyncStateUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.SyncStateUpdateManyWithWhereWithoutTenantInput | Prisma.SyncStateUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.SyncStateScalarWhereInput | Prisma.SyncStateScalarWhereInput[]
+}
+
+export type SyncStateCreateNestedManyWithoutEventInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutEventInput, Prisma.SyncStateUncheckedCreateWithoutEventInput> | Prisma.SyncStateCreateWithoutEventInput[] | Prisma.SyncStateUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutEventInput | Prisma.SyncStateCreateOrConnectWithoutEventInput[]
+  createMany?: Prisma.SyncStateCreateManyEventInputEnvelope
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+}
+
+export type SyncStateUncheckedCreateNestedManyWithoutEventInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutEventInput, Prisma.SyncStateUncheckedCreateWithoutEventInput> | Prisma.SyncStateCreateWithoutEventInput[] | Prisma.SyncStateUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutEventInput | Prisma.SyncStateCreateOrConnectWithoutEventInput[]
+  createMany?: Prisma.SyncStateCreateManyEventInputEnvelope
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+}
+
+export type SyncStateUpdateManyWithoutEventNestedInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutEventInput, Prisma.SyncStateUncheckedCreateWithoutEventInput> | Prisma.SyncStateCreateWithoutEventInput[] | Prisma.SyncStateUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutEventInput | Prisma.SyncStateCreateOrConnectWithoutEventInput[]
+  upsert?: Prisma.SyncStateUpsertWithWhereUniqueWithoutEventInput | Prisma.SyncStateUpsertWithWhereUniqueWithoutEventInput[]
+  createMany?: Prisma.SyncStateCreateManyEventInputEnvelope
+  set?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  disconnect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  delete?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  update?: Prisma.SyncStateUpdateWithWhereUniqueWithoutEventInput | Prisma.SyncStateUpdateWithWhereUniqueWithoutEventInput[]
+  updateMany?: Prisma.SyncStateUpdateManyWithWhereWithoutEventInput | Prisma.SyncStateUpdateManyWithWhereWithoutEventInput[]
+  deleteMany?: Prisma.SyncStateScalarWhereInput | Prisma.SyncStateScalarWhereInput[]
+}
+
+export type SyncStateUncheckedUpdateManyWithoutEventNestedInput = {
+  create?: Prisma.XOR<Prisma.SyncStateCreateWithoutEventInput, Prisma.SyncStateUncheckedCreateWithoutEventInput> | Prisma.SyncStateCreateWithoutEventInput[] | Prisma.SyncStateUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.SyncStateCreateOrConnectWithoutEventInput | Prisma.SyncStateCreateOrConnectWithoutEventInput[]
+  upsert?: Prisma.SyncStateUpsertWithWhereUniqueWithoutEventInput | Prisma.SyncStateUpsertWithWhereUniqueWithoutEventInput[]
+  createMany?: Prisma.SyncStateCreateManyEventInputEnvelope
+  set?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  disconnect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  delete?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  connect?: Prisma.SyncStateWhereUniqueInput | Prisma.SyncStateWhereUniqueInput[]
+  update?: Prisma.SyncStateUpdateWithWhereUniqueWithoutEventInput | Prisma.SyncStateUpdateWithWhereUniqueWithoutEventInput[]
+  updateMany?: Prisma.SyncStateUpdateManyWithWhereWithoutEventInput | Prisma.SyncStateUpdateManyWithWhereWithoutEventInput[]
+  deleteMany?: Prisma.SyncStateScalarWhereInput | Prisma.SyncStateScalarWhereInput[]
+}
+
+export type SyncStateCreateWithoutTenantInput = {
+  deviceId: string
+  lastTicketVersion?: number
+  lastScanCursor?: Date | string
+  event: Prisma.EventCreateNestedOneWithoutSyncStatesInput
+}
+
+export type SyncStateUncheckedCreateWithoutTenantInput = {
+  deviceId: string
+  eventId: string
+  lastTicketVersion?: number
+  lastScanCursor?: Date | string
+}
+
+export type SyncStateCreateOrConnectWithoutTenantInput = {
+  where: Prisma.SyncStateWhereUniqueInput
+  create: Prisma.XOR<Prisma.SyncStateCreateWithoutTenantInput, Prisma.SyncStateUncheckedCreateWithoutTenantInput>
+}
+
+export type SyncStateCreateManyTenantInputEnvelope = {
+  data: Prisma.SyncStateCreateManyTenantInput | Prisma.SyncStateCreateManyTenantInput[]
+  skipDuplicates?: boolean
+}
+
+export type SyncStateUpsertWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.SyncStateWhereUniqueInput
+  update: Prisma.XOR<Prisma.SyncStateUpdateWithoutTenantInput, Prisma.SyncStateUncheckedUpdateWithoutTenantInput>
+  create: Prisma.XOR<Prisma.SyncStateCreateWithoutTenantInput, Prisma.SyncStateUncheckedCreateWithoutTenantInput>
+}
+
+export type SyncStateUpdateWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.SyncStateWhereUniqueInput
+  data: Prisma.XOR<Prisma.SyncStateUpdateWithoutTenantInput, Prisma.SyncStateUncheckedUpdateWithoutTenantInput>
+}
+
+export type SyncStateUpdateManyWithWhereWithoutTenantInput = {
+  where: Prisma.SyncStateScalarWhereInput
+  data: Prisma.XOR<Prisma.SyncStateUpdateManyMutationInput, Prisma.SyncStateUncheckedUpdateManyWithoutTenantInput>
+}
+
+export type SyncStateScalarWhereInput = {
+  AND?: Prisma.SyncStateScalarWhereInput | Prisma.SyncStateScalarWhereInput[]
+  OR?: Prisma.SyncStateScalarWhereInput[]
+  NOT?: Prisma.SyncStateScalarWhereInput | Prisma.SyncStateScalarWhereInput[]
+  tenantId?: Prisma.StringFilter<"SyncState"> | string
+  deviceId?: Prisma.StringFilter<"SyncState"> | string
+  eventId?: Prisma.StringFilter<"SyncState"> | string
+  lastTicketVersion?: Prisma.IntFilter<"SyncState"> | number
+  lastScanCursor?: Prisma.DateTimeFilter<"SyncState"> | Date | string
+}
+
+export type SyncStateCreateWithoutEventInput = {
+  deviceId: string
+  lastTicketVersion?: number
+  lastScanCursor?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutSyncStatesInput
+}
+
+export type SyncStateUncheckedCreateWithoutEventInput = {
+  deviceId: string
+  lastTicketVersion?: number
+  lastScanCursor?: Date | string
+}
+
+export type SyncStateCreateOrConnectWithoutEventInput = {
+  where: Prisma.SyncStateWhereUniqueInput
+  create: Prisma.XOR<Prisma.SyncStateCreateWithoutEventInput, Prisma.SyncStateUncheckedCreateWithoutEventInput>
+}
+
+export type SyncStateCreateManyEventInputEnvelope = {
+  data: Prisma.SyncStateCreateManyEventInput | Prisma.SyncStateCreateManyEventInput[]
+  skipDuplicates?: boolean
+}
+
+export type SyncStateUpsertWithWhereUniqueWithoutEventInput = {
+  where: Prisma.SyncStateWhereUniqueInput
+  update: Prisma.XOR<Prisma.SyncStateUpdateWithoutEventInput, Prisma.SyncStateUncheckedUpdateWithoutEventInput>
+  create: Prisma.XOR<Prisma.SyncStateCreateWithoutEventInput, Prisma.SyncStateUncheckedCreateWithoutEventInput>
+}
+
+export type SyncStateUpdateWithWhereUniqueWithoutEventInput = {
+  where: Prisma.SyncStateWhereUniqueInput
+  data: Prisma.XOR<Prisma.SyncStateUpdateWithoutEventInput, Prisma.SyncStateUncheckedUpdateWithoutEventInput>
+}
+
+export type SyncStateUpdateManyWithWhereWithoutEventInput = {
+  where: Prisma.SyncStateScalarWhereInput
+  data: Prisma.XOR<Prisma.SyncStateUpdateManyMutationInput, Prisma.SyncStateUncheckedUpdateManyWithoutEventInput>
+}
+
+export type SyncStateCreateManyTenantInput = {
+  deviceId: string
+  eventId: string
+  lastTicketVersion?: number
+  lastScanCursor?: Date | string
+}
+
+export type SyncStateUpdateWithoutTenantInput = {
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  event?: Prisma.EventUpdateOneRequiredWithoutSyncStatesNestedInput
+}
+
+export type SyncStateUncheckedUpdateWithoutTenantInput = {
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type SyncStateUncheckedUpdateManyWithoutTenantInput = {
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type SyncStateCreateManyEventInput = {
+  deviceId: string
+  lastTicketVersion?: number
+  lastScanCursor?: Date | string
+}
+
+export type SyncStateUpdateWithoutEventInput = {
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutSyncStatesNestedInput
+}
+
+export type SyncStateUncheckedUpdateWithoutEventInput = {
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type SyncStateUncheckedUpdateManyWithoutEventInput = {
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastTicketVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  lastScanCursor?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 
 
 export type SyncStateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  tenantId?: boolean
   deviceId?: boolean
   eventId?: boolean
   lastTicketVersion?: boolean
   lastScanCursor?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["syncState"]>
 
 export type SyncStateSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  tenantId?: boolean
   deviceId?: boolean
   eventId?: boolean
   lastTicketVersion?: boolean
   lastScanCursor?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["syncState"]>
 
 export type SyncStateSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  tenantId?: boolean
   deviceId?: boolean
   eventId?: boolean
   lastTicketVersion?: boolean
   lastScanCursor?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["syncState"]>
 
 export type SyncStateSelectScalar = {
+  tenantId?: boolean
   deviceId?: boolean
   eventId?: boolean
   lastTicketVersion?: boolean
   lastScanCursor?: boolean
 }
 
-export type SyncStateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"deviceId" | "eventId" | "lastTicketVersion" | "lastScanCursor", ExtArgs["result"]["syncState"]>
+export type SyncStateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"tenantId" | "deviceId" | "eventId" | "lastTicketVersion" | "lastScanCursor", ExtArgs["result"]["syncState"]>
+export type SyncStateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+}
+export type SyncStateIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+}
+export type SyncStateIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+}
 
 export type $SyncStatePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SyncState"
-  objects: {}
+  objects: {
+    tenant: Prisma.$TenantPayload<ExtArgs>
+    event: Prisma.$EventPayload<ExtArgs>
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
+    tenantId: string
     deviceId: string
     eventId: string
     lastTicketVersion: number
@@ -456,8 +746,8 @@ export interface SyncStateDelegate<ExtArgs extends runtime.Types.Extensions.Inte
    * // Get first 10 SyncStates
    * const syncStates = await prisma.syncState.findMany({ take: 10 })
    * 
-   * // Only select the `deviceId`
-   * const syncStateWithDeviceIdOnly = await prisma.syncState.findMany({ select: { deviceId: true } })
+   * // Only select the `tenantId`
+   * const syncStateWithTenantIdOnly = await prisma.syncState.findMany({ select: { tenantId: true } })
    * 
    */
   findMany<T extends SyncStateFindManyArgs>(args?: Prisma.SelectSubset<T, SyncStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SyncStatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -501,9 +791,9 @@ export interface SyncStateDelegate<ExtArgs extends runtime.Types.Extensions.Inte
    *   ]
    * })
    * 
-   * // Create many SyncStates and only return the `deviceId`
-   * const syncStateWithDeviceIdOnly = await prisma.syncState.createManyAndReturn({
-   *   select: { deviceId: true },
+   * // Create many SyncStates and only return the `tenantId`
+   * const syncStateWithTenantIdOnly = await prisma.syncState.createManyAndReturn({
+   *   select: { tenantId: true },
    *   data: [
    *     // ... provide data here
    *   ]
@@ -592,9 +882,9 @@ export interface SyncStateDelegate<ExtArgs extends runtime.Types.Extensions.Inte
    *   ]
    * })
    * 
-   * // Update zero or more SyncStates and only return the `deviceId`
-   * const syncStateWithDeviceIdOnly = await prisma.syncState.updateManyAndReturn({
-   *   select: { deviceId: true },
+   * // Update zero or more SyncStates and only return the `tenantId`
+   * const syncStateWithTenantIdOnly = await prisma.syncState.updateManyAndReturn({
+   *   select: { tenantId: true },
    *   where: {
    *     // ... provide filter here
    *   },
@@ -767,6 +1057,8 @@ readonly fields: SyncStateFieldRefs;
  */
 export interface Prisma__SyncStateClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  tenant<T extends Prisma.TenantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TenantDefaultArgs<ExtArgs>>): Prisma.Prisma__TenantClient<runtime.Types.Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  event<T extends Prisma.EventDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EventDefaultArgs<ExtArgs>>): Prisma.Prisma__EventClient<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -796,6 +1088,7 @@ export interface Prisma__SyncStateClient<T, Null = never, ExtArgs extends runtim
  * Fields of the SyncState model
  */
 export interface SyncStateFieldRefs {
+  readonly tenantId: Prisma.FieldRef<"SyncState", 'String'>
   readonly deviceId: Prisma.FieldRef<"SyncState", 'String'>
   readonly eventId: Prisma.FieldRef<"SyncState", 'String'>
   readonly lastTicketVersion: Prisma.FieldRef<"SyncState", 'Int'>
@@ -817,6 +1110,10 @@ export type SyncStateFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
+  /**
    * Filter, which SyncState to fetch.
    */
   where: Prisma.SyncStateWhereUniqueInput
@@ -835,6 +1132,10 @@ export type SyncStateFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extensi
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
+  /**
    * Filter, which SyncState to fetch.
    */
   where: Prisma.SyncStateWhereUniqueInput
@@ -852,6 +1153,10 @@ export type SyncStateFindFirstArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Omit specific fields from the SyncState
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
   /**
    * Filter, which SyncState to fetch.
    */
@@ -901,6 +1206,10 @@ export type SyncStateFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensio
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
+  /**
    * Filter, which SyncState to fetch.
    */
   where?: Prisma.SyncStateWhereInput
@@ -948,6 +1257,10 @@ export type SyncStateFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Omit specific fields from the SyncState
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
   /**
    * Filter, which SyncStates to fetch.
    */
@@ -997,6 +1310,10 @@ export type SyncStateCreateArgs<ExtArgs extends runtime.Types.Extensions.Interna
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
+  /**
    * The data needed to create a SyncState.
    */
   data: Prisma.XOR<Prisma.SyncStateCreateInput, Prisma.SyncStateUncheckedCreateInput>
@@ -1030,6 +1347,10 @@ export type SyncStateCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exten
    */
   data: Prisma.SyncStateCreateManyInput | Prisma.SyncStateCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1044,6 +1365,10 @@ export type SyncStateUpdateArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Omit specific fields from the SyncState
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
   /**
    * The data needed to update a SyncState.
    */
@@ -1096,6 +1421,10 @@ export type SyncStateUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Exten
    * Limit how many SyncStates to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1110,6 +1439,10 @@ export type SyncStateUpsertArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Omit specific fields from the SyncState
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
   /**
    * The filter to search for the SyncState to update in case it exists.
    */
@@ -1136,6 +1469,10 @@ export type SyncStateDeleteArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Omit specific fields from the SyncState
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
   /**
    * Filter which SyncState to delete.
    */
@@ -1168,4 +1505,8 @@ export type SyncStateDefaultArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Omit specific fields from the SyncState
    */
   omit?: Prisma.SyncStateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncStateInclude<ExtArgs> | null
 }

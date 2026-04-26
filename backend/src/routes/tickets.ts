@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { getPrismaForTenant } from '../prisma';
+import { resolveRlsContext } from '../lib/tenantContext';
 import prisma from '../prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
+import { withRls } from '../prisma';
 
 const router = Router();
 
@@ -23,19 +24,13 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const event = await tenantPrisma.event.findFirst({
-		where: { id: eventId },
-	});
-	if (!event) {
-		res.status(404).json({ error: 'Event not found' });
-		return;
-	}
-
-	const tenant = await prisma.tenant.findUnique({ where: { id: req.user!.tenantId } });
+	const tenant = await prisma.tenant.findUnique({ where: { id: context.tenantId } });
 	if (tenant?.plan === 'free') {
-		const existing = await tenantPrisma.ticket.count({ where: { eventId } });
+		const existing = await withRls(context, async tenantPrisma => {
+			return tenantPrisma.ticket.count({ where: { eventId } });
+		});
 		if (existing >= 10) {
 			res.status(403).json({ error: 'Free plan allows a maximum of 10 tickets per event.' });
 			return;
@@ -45,36 +40,58 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 	let resolvedGuestId: string;
 	let resolvedName: string;
 
-	if (guestId) {
-		// Use existing guest - verify it belongs to the same tenant
-		const guest = await tenantPrisma.guest.findFirst({
-			where: { id: guestId },
+	const ticket = await withRls(context, async tenantPrisma => {
+		const event = await tenantPrisma.event.findFirst({
+			where: { id: eventId },
 		});
-		if (!guest) {
-			res.status(404).json({ error: 'Guest not found' });
-			return;
+		if (!event) {
+			res.status(404).json({ error: 'Event not found' });
+			return null;
 		}
-		resolvedGuestId = guest.id;
-		resolvedName = guest.name;
-	} else {
-		// Find or create a guest by name within this tenant
-		const trimmedName = name!.trim();
-		let guest = await tenantPrisma.guest.findFirst({
-			where: { name: { equals: trimmedName, mode: 'insensitive' } },
-		});
-		if (!guest) {
-			guest = await tenantPrisma.guest.create({
-				data: { name: trimmedName },
-			});
-		}
-		resolvedGuestId = guest.id;
-		resolvedName = guest.name;
-	}
 
-	const ticket = await tenantPrisma.ticket.create({
-		data: { eventId, guestId: resolvedGuestId, name: resolvedName },
+		if (guestId) {
+			const guest = await tenantPrisma.guest.findFirst({
+				where: { id: guestId },
+			});
+			if (!guest) {
+				res.status(404).json({ error: 'Guest not found' });
+				return null;
+			}
+			resolvedGuestId = guest.id;
+			resolvedName = guest.name;
+		} else {
+			const trimmedName = name!.trim();
+			let guest = await tenantPrisma.guest.findFirst({
+				where: { name: { equals: trimmedName, mode: 'insensitive' } },
+			});
+			if (!guest) {
+				guest = await tenantPrisma.guest.create({
+					data: {
+						tenantId: context.tenantId,
+						name: trimmedName,
+					},
+				});
+			}
+			resolvedGuestId = guest.id;
+			resolvedName = guest.name;
+		}
+
+		const createdTicket = await tenantPrisma.ticket.create({
+			data: {
+				tenantId: context.tenantId,
+				eventId,
+				guestId: resolvedGuestId,
+				name: resolvedName,
+			},
+		});
+
+		await tenantPrisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
+		return createdTicket;
 	});
-	await tenantPrisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
+
+	if (!ticket) {
+		return;
+	}
 
 	res.status(201).json({ data: ticket });
 });
@@ -94,19 +111,13 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const event = await tenantPrisma.event.findFirst({
-		where: { id: eventId },
-	});
-	if (!event) {
-		res.status(404).json({ error: 'Event not found' });
-		return;
-	}
-
-	const tenant = await prisma.tenant.findUnique({ where: { id: req.user!.tenantId } });
+	const tenant = await prisma.tenant.findUnique({ where: { id: context.tenantId } });
 	if (tenant?.plan === 'free') {
-		const existing = await tenantPrisma.ticket.count({ where: { eventId } });
+		const existing = await withRls(context, async tenantPrisma => {
+			return tenantPrisma.ticket.count({ where: { eventId } });
+		});
 		if (existing + tickets.length > 10) {
 			res.status(403).json({
 				error: `Free plan allows a maximum of 10 tickets per event. Current: ${existing}`,
@@ -115,28 +126,48 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		}
 	}
 
-	const created = await tenantPrisma.$transaction(async tx => {
-		const results = [];
-		for (const t of tickets) {
-			const trimmedName = t.name.trim();
-			let guest = await tx.guest.findFirst({
-				where: { name: { equals: trimmedName, mode: 'insensitive' } },
-			});
-			if (!guest) {
-				guest = await tx.guest.create({
-					data: { name: trimmedName },
-				});
-			}
-			const ticket = await tx.ticket.create({
-				data: { eventId, guestId: guest.id, name: guest.name },
-			});
-			results.push(ticket);
+	const created = await withRls(context, async tenantPrisma => {
+		const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+		if (!event) {
+			res.status(404).json({ error: 'Event not found' });
+			return null;
 		}
+
+		const results = await tenantPrisma.$transaction(async tx => {
+			const createdTickets = [];
+			for (const t of tickets) {
+				const trimmedName = t.name.trim();
+				let guest = await tx.guest.findFirst({
+					where: { name: { equals: trimmedName, mode: 'insensitive' } },
+				});
+				if (!guest) {
+					guest = await tx.guest.create({
+						data: {
+							tenantId: context.tenantId,
+							name: trimmedName,
+						},
+					});
+				}
+				const ticket = await tx.ticket.create({
+					data: {
+						tenantId: context.tenantId,
+						eventId,
+						guestId: guest.id,
+						name: guest.name,
+					},
+				});
+				createdTickets.push(ticket);
+			}
+			return createdTickets;
+		});
+
+		await tenantPrisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
 		return results;
 	});
 
-	// Bump event version so sync clients pick up the new tickets
-	await tenantPrisma.event.update({ where: { id: eventId }, data: { version: { increment: 1 } } });
+	if (!created) {
+		return;
+	}
 
 	res.status(201).json({ data: created });
 });
@@ -149,21 +180,25 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const event = await tenantPrisma.event.findFirst({
-		where: { id: eventId },
+	const ticketsData = await withRls(context, async tenantPrisma => {
+		const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+		if (!event) {
+			res.status(404).json({ error: 'Event not found' });
+			return null;
+		}
+
+		return tenantPrisma.ticket.findMany({
+			where: { eventId },
+			include: { _count: { select: { scans: true } } },
+			orderBy: { createdAt: 'asc' },
+		});
 	});
-	if (!event) {
-		res.status(404).json({ error: 'Event not found' });
+
+	if (!ticketsData) {
 		return;
 	}
-
-	const ticketsData = await tenantPrisma.ticket.findMany({
-		where: { eventId },
-		include: { _count: { select: { scans: true } } },
-		orderBy: { createdAt: 'asc' },
-	});
 
 	const result = ticketsData.map(t => ({
 		id: t.id,
@@ -188,23 +223,29 @@ router.get('/tickets/:id/scans', requireRole(['owner', 'admin', 'scanner']), asy
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const ticket = await tenantPrisma.ticket.findFirst({
-		where: { id: ticketId },
-		include: { event: true },
+	const scans = await withRls(context, async tenantPrisma => {
+		const ticket = await tenantPrisma.ticket.findFirst({
+			where: { id: ticketId },
+			include: { event: true },
+		});
+
+		if (!ticket) {
+			res.status(404).json({ error: 'Ticket not found' });
+			return null;
+		}
+
+		return tenantPrisma.scan.findMany({
+			where: { ticketId: ticket.id, eventId: ticket.eventId },
+			orderBy: { scannedAt: 'desc' },
+			include: { user: { select: { id: true, email: true } } },
+		});
 	});
 
-	if (!ticket) {
-		res.status(404).json({ error: 'Ticket not found' });
+	if (!scans) {
 		return;
 	}
-
-	const scans = await tenantPrisma.scan.findMany({
-		where: { ticketId: ticket.id, eventId: ticket.eventId },
-		orderBy: { scannedAt: 'desc' },
-		include: { user: { select: { id: true, email: true } } },
-	});
 
 	res.json({
 		data: scans.map(scan => ({
@@ -225,27 +266,33 @@ router.post('/tickets/:id/cancel', requireRole(['owner', 'admin']), async (req: 
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const ticket = await tenantPrisma.ticket.findFirst({
-		where: { id: ticketId },
-		include: { event: true },
+	const updated = await withRls(context, async tenantPrisma => {
+		const ticket = await tenantPrisma.ticket.findFirst({
+			where: { id: ticketId },
+			include: { event: true },
+		});
+
+		if (!ticket) {
+			res.status(404).json({ error: 'Ticket not found' });
+			return null;
+		}
+
+		if (ticket.status === 'cancelled') {
+			res.status(400).json({ error: 'Ticket is already cancelled' });
+			return null;
+		}
+
+		return tenantPrisma.ticket.update({
+			where: { id: ticketId },
+			data: { status: 'cancelled', version: { increment: 1 } },
+		});
 	});
 
-	if (!ticket) {
-		res.status(404).json({ error: 'Ticket not found' });
+	if (!updated) {
 		return;
 	}
-
-	if (ticket.status === 'cancelled') {
-		res.status(400).json({ error: 'Ticket is already cancelled' });
-		return;
-	}
-
-	const updated = await tenantPrisma.ticket.update({
-		where: { id: ticketId },
-		data: { status: 'cancelled', version: { increment: 1 } },
-	});
 
 	res.json({ data: updated });
 });
@@ -258,11 +305,13 @@ router.get('/tickets/:id/qr', requireRole(['owner', 'admin']), async (req: Reque
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const ticket = await tenantPrisma.ticket.findFirst({
-		where: { id: ticketId },
-		include: { event: true },
+	const ticket = await withRls(context, async tenantPrisma => {
+		return tenantPrisma.ticket.findFirst({
+			where: { id: ticketId },
+			include: { event: true },
+		});
 	});
 
 	if (!ticket) {

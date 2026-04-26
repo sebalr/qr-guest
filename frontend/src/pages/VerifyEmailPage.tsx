@@ -20,10 +20,20 @@ export default function VerifyEmailPage() {
 			return;
 		}
 
+		const storageKey = `verify-email:${token}`;
+		const existing = sessionStorage.getItem(storageKey);
+		if (existing === 'success') {
+			setStatus('success');
+			setMessage('Email is already verified. You can sign in.');
+			return;
+		}
+		sessionStorage.setItem(storageKey, 'pending');
+
 		verifyEmailApi(token)
 			.then(res => {
 				setStatus('success');
 				setMessage(res.data.data.message);
+				sessionStorage.setItem(storageKey, 'success');
 			})
 			.catch(err => {
 				setStatus('error');
@@ -32,6 +42,7 @@ export default function VerifyEmailPage() {
 				} else {
 					setMessage('Unable to verify this email.');
 				}
+				sessionStorage.removeItem(storageKey);
 			});
 	}, [token]);
 

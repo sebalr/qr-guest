@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
-import { getPrismaForTenant } from '../prisma';
+import { Prisma } from '../generated/prisma/client';
+import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
+import { withRls } from '../prisma';
 
 const router = Router();
 
@@ -30,32 +32,44 @@ router.post('/device-event-debug', async (req: Request, res: Response): Promise<
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
+	const rowId = randomUUID();
+	const debugPayload = (payload ?? {}) as Prisma.InputJsonValue;
 
-	const event = await tenantPrisma.event.findFirst({
-		where: { id: normalizedEventId },
-		select: { id: true },
+	const created = await withRls(context, async tenantPrisma => {
+		const event = await tenantPrisma.event.findFirst({
+			where: { id: normalizedEventId },
+			select: { id: true },
+		});
+
+		if (!event) {
+			res.status(404).json({ error: 'Event not found' });
+			return null;
+		}
+
+		return tenantPrisma.deviceEventDebugData.create({
+			data: {
+				id: rowId,
+				tenantId: context.tenantId,
+				eventId: normalizedEventId,
+				deviceId: normalizedDeviceId,
+				userId: req.user!.userId,
+				payload: debugPayload,
+			},
+			select: { createdAt: true },
+		});
 	});
 
-	if (!event) {
-		res.status(404).json({ error: 'Event not found' });
+	if (!created) {
 		return;
 	}
-
-	const rowId = randomUUID();
-	const payloadText = JSON.stringify(payload ?? {});
-
-	await tenantPrisma.$executeRaw`
-		INSERT INTO device_event_debug_data (id, event_id, device_id, user_id, payload)
-		VALUES (${rowId}, ${normalizedEventId}, ${normalizedDeviceId}, ${req.user!.userId}, CAST(${payloadText} AS jsonb))
-	`;
 
 	res.status(201).json({
 		data: {
 			id: rowId,
 			eventId: normalizedEventId,
 			deviceId: normalizedDeviceId,
-			createdAt: new Date().toISOString(),
+			createdAt: created.createdAt.toISOString(),
 		},
 	});
 });
@@ -94,66 +108,71 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const ticket = await tenantPrisma.ticket.findFirst({
-		where: { id: ticketId, eventId },
-		include: { event: true },
-	});
-
-	if (!ticket) {
-		res.status(404).json({ error: 'Ticket not found' });
-		return;
-	}
-
-	if (ticket.status === 'cancelled') {
-		res.status(422).json({ error: 'Ticket is cancelled' });
-		return;
-	}
-
-	const existingScans = await tenantPrisma.scan.findMany({
-		where: { ticketId, eventId },
-		orderBy: { scannedAt: 'asc' },
-	});
-
-	if (existingScans.length > 0 && confirmed !== true) {
-		res.status(409).json({
-			error: 'Ticket has already been scanned',
-			data: { existingScans },
+	const scan = await withRls(context, async tenantPrisma => {
+		const ticket = await tenantPrisma.ticket.findFirst({
+			where: { id: ticketId, eventId },
+			include: { event: true },
 		});
-		return;
-	}
 
-	const dedupeKey = confirmed === true ? null : `${eventId}:${ticketId}`;
+		if (!ticket) {
+			res.status(404).json({ error: 'Ticket not found' });
+			return null;
+		}
 
-	const scanId = bodyId ?? randomUUID();
+		if (ticket.status === 'cancelled') {
+			res.status(422).json({ error: 'Ticket is cancelled' });
+			return null;
+		}
 
-	let scan;
-	try {
-		scan = await tenantPrisma.scan.create({
-			data: {
-				id: scanId,
-				ticketId,
-				eventId,
-				deviceId,
-				userId: req.user!.userId,
-				scannedAt: scannedAtDate,
-				dedupeKey,
-			},
+		const existingScans = await tenantPrisma.scan.findMany({
+			where: { ticketId, eventId },
+			orderBy: { scannedAt: 'asc' },
 		});
-	} catch (error) {
-		if (isUniqueConstraintError(error) && confirmed !== true) {
-			const latestScans = await tenantPrisma.scan.findMany({
-				where: { ticketId, eventId },
-				orderBy: { scannedAt: 'asc' },
-			});
+
+		if (existingScans.length > 0 && confirmed !== true) {
 			res.status(409).json({
 				error: 'Ticket has already been scanned',
-				data: { existingScans: latestScans },
+				data: { existingScans },
 			});
-			return;
+			return null;
 		}
-		throw error;
+
+		const dedupeKey = confirmed === true ? null : `${eventId}:${ticketId}`;
+		const scanId = bodyId ?? randomUUID();
+
+		try {
+			return await tenantPrisma.scan.create({
+				data: {
+					id: scanId,
+					tenantId: context.tenantId,
+					ticketId,
+					eventId,
+					deviceId,
+					userId: req.user!.userId,
+					scannedAt: scannedAtDate,
+					dedupeKey,
+				},
+			});
+		} catch (error) {
+			if (isUniqueConstraintError(error) && confirmed !== true) {
+				const latestScans = await tenantPrisma.scan.findMany({
+					where: { ticketId, eventId },
+					orderBy: { scannedAt: 'asc' },
+				});
+				res.status(409).json({
+					error: 'Ticket has already been scanned',
+					data: { existingScans: latestScans },
+				});
+				return null;
+			}
+			throw error;
+		}
+	});
+
+	if (!scan) {
+		return;
 	}
 
 	res.status(201).json({ data: scan });

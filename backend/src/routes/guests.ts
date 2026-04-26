@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { getPrismaForTenant } from '../prisma';
+import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
+import { withRls } from '../prisma';
 
 const router = Router();
 
@@ -18,21 +19,23 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 	// Limit query length to prevent overly expensive LIKE queries
 	const q = rawQ.slice(0, 100);
 
-	const tenantPrisma = await getPrismaForTenant(req.user!.tenantId);
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const guests = await tenantPrisma.guest.findMany({
-		where: {
-			...(q ? { name: { contains: q, mode: 'insensitive' } } : {}),
-		},
-		include: {
-			tickets: {
-				include: { event: { select: { id: true, name: true } } },
-				orderBy: { createdAt: 'desc' },
-				take: 3,
+	const guests = await withRls(context, async tenantPrisma => {
+		return tenantPrisma.guest.findMany({
+			where: {
+				...(q ? { name: { contains: q, mode: 'insensitive' } } : {}),
 			},
-		},
-		orderBy: { name: 'asc' },
-		take: 20,
+			include: {
+				tickets: {
+					include: { event: { select: { id: true, name: true } } },
+					orderBy: { createdAt: 'desc' },
+					take: 3,
+				},
+			},
+			orderBy: { name: 'asc' },
+			take: 20,
+		});
 	});
 
 	const result = guests.map(g => ({

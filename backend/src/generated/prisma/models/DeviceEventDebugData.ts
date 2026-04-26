@@ -26,6 +26,7 @@ export type AggregateDeviceEventDebugData = {
 
 export type DeviceEventDebugDataMinAggregateOutputType = {
   id: string | null
+  tenantId: string | null
   eventId: string | null
   deviceId: string | null
   userId: string | null
@@ -34,6 +35,7 @@ export type DeviceEventDebugDataMinAggregateOutputType = {
 
 export type DeviceEventDebugDataMaxAggregateOutputType = {
   id: string | null
+  tenantId: string | null
   eventId: string | null
   deviceId: string | null
   userId: string | null
@@ -42,6 +44,7 @@ export type DeviceEventDebugDataMaxAggregateOutputType = {
 
 export type DeviceEventDebugDataCountAggregateOutputType = {
   id: number
+  tenantId: number
   eventId: number
   deviceId: number
   userId: number
@@ -53,6 +56,7 @@ export type DeviceEventDebugDataCountAggregateOutputType = {
 
 export type DeviceEventDebugDataMinAggregateInputType = {
   id?: true
+  tenantId?: true
   eventId?: true
   deviceId?: true
   userId?: true
@@ -61,6 +65,7 @@ export type DeviceEventDebugDataMinAggregateInputType = {
 
 export type DeviceEventDebugDataMaxAggregateInputType = {
   id?: true
+  tenantId?: true
   eventId?: true
   deviceId?: true
   userId?: true
@@ -69,6 +74,7 @@ export type DeviceEventDebugDataMaxAggregateInputType = {
 
 export type DeviceEventDebugDataCountAggregateInputType = {
   id?: true
+  tenantId?: true
   eventId?: true
   deviceId?: true
   userId?: true
@@ -151,6 +157,7 @@ export type DeviceEventDebugDataGroupByArgs<ExtArgs extends runtime.Types.Extens
 
 export type DeviceEventDebugDataGroupByOutputType = {
   id: string
+  tenantId: string
   eventId: string
   deviceId: string
   userId: string
@@ -181,20 +188,26 @@ export type DeviceEventDebugDataWhereInput = {
   OR?: Prisma.DeviceEventDebugDataWhereInput[]
   NOT?: Prisma.DeviceEventDebugDataWhereInput | Prisma.DeviceEventDebugDataWhereInput[]
   id?: Prisma.StringFilter<"DeviceEventDebugData"> | string
+  tenantId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   eventId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   deviceId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   userId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   payload?: Prisma.JsonFilter<"DeviceEventDebugData">
   createdAt?: Prisma.DateTimeFilter<"DeviceEventDebugData"> | Date | string
+  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
+  event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
 }
 
 export type DeviceEventDebugDataOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  tenant?: Prisma.TenantOrderByWithRelationInput
+  event?: Prisma.EventOrderByWithRelationInput
 }
 
 export type DeviceEventDebugDataWhereUniqueInput = Prisma.AtLeast<{
@@ -202,15 +215,19 @@ export type DeviceEventDebugDataWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.DeviceEventDebugDataWhereInput | Prisma.DeviceEventDebugDataWhereInput[]
   OR?: Prisma.DeviceEventDebugDataWhereInput[]
   NOT?: Prisma.DeviceEventDebugDataWhereInput | Prisma.DeviceEventDebugDataWhereInput[]
+  tenantId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   eventId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   deviceId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   userId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
   payload?: Prisma.JsonFilter<"DeviceEventDebugData">
   createdAt?: Prisma.DateTimeFilter<"DeviceEventDebugData"> | Date | string
+  tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
+  event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
 }, "id">
 
 export type DeviceEventDebugDataOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -226,6 +243,7 @@ export type DeviceEventDebugDataScalarWhereWithAggregatesInput = {
   OR?: Prisma.DeviceEventDebugDataScalarWhereWithAggregatesInput[]
   NOT?: Prisma.DeviceEventDebugDataScalarWhereWithAggregatesInput | Prisma.DeviceEventDebugDataScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"DeviceEventDebugData"> | string
+  tenantId?: Prisma.StringWithAggregatesFilter<"DeviceEventDebugData"> | string
   eventId?: Prisma.StringWithAggregatesFilter<"DeviceEventDebugData"> | string
   deviceId?: Prisma.StringWithAggregatesFilter<"DeviceEventDebugData"> | string
   userId?: Prisma.StringWithAggregatesFilter<"DeviceEventDebugData"> | string
@@ -235,15 +253,17 @@ export type DeviceEventDebugDataScalarWhereWithAggregatesInput = {
 
 export type DeviceEventDebugDataCreateInput = {
   id: string
-  eventId: string
   deviceId: string
   userId: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutDeviceDebugEventsInput
+  event: Prisma.EventCreateNestedOneWithoutDebugDataInput
 }
 
 export type DeviceEventDebugDataUncheckedCreateInput = {
   id: string
+  tenantId: string
   eventId: string
   deviceId: string
   userId: string
@@ -253,15 +273,17 @@ export type DeviceEventDebugDataUncheckedCreateInput = {
 
 export type DeviceEventDebugDataUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutDeviceDebugEventsNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutDebugDataNestedInput
 }
 
 export type DeviceEventDebugDataUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -271,6 +293,7 @@ export type DeviceEventDebugDataUncheckedUpdateInput = {
 
 export type DeviceEventDebugDataCreateManyInput = {
   id: string
+  tenantId: string
   eventId: string
   deviceId: string
   userId: string
@@ -280,7 +303,6 @@ export type DeviceEventDebugDataCreateManyInput = {
 
 export type DeviceEventDebugDataUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -289,6 +311,7 @@ export type DeviceEventDebugDataUpdateManyMutationInput = {
 
 export type DeviceEventDebugDataUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
   eventId?: Prisma.StringFieldUpdateOperationsInput | string
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -296,8 +319,19 @@ export type DeviceEventDebugDataUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type DeviceEventDebugDataListRelationFilter = {
+  every?: Prisma.DeviceEventDebugDataWhereInput
+  some?: Prisma.DeviceEventDebugDataWhereInput
+  none?: Prisma.DeviceEventDebugDataWhereInput
+}
+
+export type DeviceEventDebugDataOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
 export type DeviceEventDebugDataCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -307,6 +341,7 @@ export type DeviceEventDebugDataCountOrderByAggregateInput = {
 
 export type DeviceEventDebugDataMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -315,43 +350,307 @@ export type DeviceEventDebugDataMaxOrderByAggregateInput = {
 
 export type DeviceEventDebugDataMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenantId?: Prisma.SortOrder
   eventId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
+export type DeviceEventDebugDataCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput> | Prisma.DeviceEventDebugDataCreateWithoutTenantInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyTenantInputEnvelope
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+}
+
+export type DeviceEventDebugDataUncheckedCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput> | Prisma.DeviceEventDebugDataCreateWithoutTenantInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyTenantInputEnvelope
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+}
+
+export type DeviceEventDebugDataUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput> | Prisma.DeviceEventDebugDataCreateWithoutTenantInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutTenantInput | Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyTenantInputEnvelope
+  set?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  disconnect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  delete?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  update?: Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutTenantInput | Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutTenantInput | Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.DeviceEventDebugDataScalarWhereInput | Prisma.DeviceEventDebugDataScalarWhereInput[]
+}
+
+export type DeviceEventDebugDataUncheckedUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput> | Prisma.DeviceEventDebugDataCreateWithoutTenantInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutTenantInput | Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyTenantInputEnvelope
+  set?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  disconnect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  delete?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  update?: Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutTenantInput | Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutTenantInput | Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.DeviceEventDebugDataScalarWhereInput | Prisma.DeviceEventDebugDataScalarWhereInput[]
+}
+
+export type DeviceEventDebugDataCreateNestedManyWithoutEventInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput> | Prisma.DeviceEventDebugDataCreateWithoutEventInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyEventInputEnvelope
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+}
+
+export type DeviceEventDebugDataUncheckedCreateNestedManyWithoutEventInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput> | Prisma.DeviceEventDebugDataCreateWithoutEventInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyEventInputEnvelope
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+}
+
+export type DeviceEventDebugDataUpdateManyWithoutEventNestedInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput> | Prisma.DeviceEventDebugDataCreateWithoutEventInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput[]
+  upsert?: Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutEventInput | Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutEventInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyEventInputEnvelope
+  set?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  disconnect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  delete?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  update?: Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutEventInput | Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutEventInput[]
+  updateMany?: Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutEventInput | Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutEventInput[]
+  deleteMany?: Prisma.DeviceEventDebugDataScalarWhereInput | Prisma.DeviceEventDebugDataScalarWhereInput[]
+}
+
+export type DeviceEventDebugDataUncheckedUpdateManyWithoutEventNestedInput = {
+  create?: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput> | Prisma.DeviceEventDebugDataCreateWithoutEventInput[] | Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput[]
+  connectOrCreate?: Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput | Prisma.DeviceEventDebugDataCreateOrConnectWithoutEventInput[]
+  upsert?: Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutEventInput | Prisma.DeviceEventDebugDataUpsertWithWhereUniqueWithoutEventInput[]
+  createMany?: Prisma.DeviceEventDebugDataCreateManyEventInputEnvelope
+  set?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  disconnect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  delete?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  connect?: Prisma.DeviceEventDebugDataWhereUniqueInput | Prisma.DeviceEventDebugDataWhereUniqueInput[]
+  update?: Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutEventInput | Prisma.DeviceEventDebugDataUpdateWithWhereUniqueWithoutEventInput[]
+  updateMany?: Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutEventInput | Prisma.DeviceEventDebugDataUpdateManyWithWhereWithoutEventInput[]
+  deleteMany?: Prisma.DeviceEventDebugDataScalarWhereInput | Prisma.DeviceEventDebugDataScalarWhereInput[]
+}
+
+export type DeviceEventDebugDataCreateWithoutTenantInput = {
+  id: string
+  deviceId: string
+  userId: string
+  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  event: Prisma.EventCreateNestedOneWithoutDebugDataInput
+}
+
+export type DeviceEventDebugDataUncheckedCreateWithoutTenantInput = {
+  id: string
+  eventId: string
+  deviceId: string
+  userId: string
+  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+}
+
+export type DeviceEventDebugDataCreateOrConnectWithoutTenantInput = {
+  where: Prisma.DeviceEventDebugDataWhereUniqueInput
+  create: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput>
+}
+
+export type DeviceEventDebugDataCreateManyTenantInputEnvelope = {
+  data: Prisma.DeviceEventDebugDataCreateManyTenantInput | Prisma.DeviceEventDebugDataCreateManyTenantInput[]
+  skipDuplicates?: boolean
+}
+
+export type DeviceEventDebugDataUpsertWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.DeviceEventDebugDataWhereUniqueInput
+  update: Prisma.XOR<Prisma.DeviceEventDebugDataUpdateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedUpdateWithoutTenantInput>
+  create: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutTenantInput>
+}
+
+export type DeviceEventDebugDataUpdateWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.DeviceEventDebugDataWhereUniqueInput
+  data: Prisma.XOR<Prisma.DeviceEventDebugDataUpdateWithoutTenantInput, Prisma.DeviceEventDebugDataUncheckedUpdateWithoutTenantInput>
+}
+
+export type DeviceEventDebugDataUpdateManyWithWhereWithoutTenantInput = {
+  where: Prisma.DeviceEventDebugDataScalarWhereInput
+  data: Prisma.XOR<Prisma.DeviceEventDebugDataUpdateManyMutationInput, Prisma.DeviceEventDebugDataUncheckedUpdateManyWithoutTenantInput>
+}
+
+export type DeviceEventDebugDataScalarWhereInput = {
+  AND?: Prisma.DeviceEventDebugDataScalarWhereInput | Prisma.DeviceEventDebugDataScalarWhereInput[]
+  OR?: Prisma.DeviceEventDebugDataScalarWhereInput[]
+  NOT?: Prisma.DeviceEventDebugDataScalarWhereInput | Prisma.DeviceEventDebugDataScalarWhereInput[]
+  id?: Prisma.StringFilter<"DeviceEventDebugData"> | string
+  tenantId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
+  eventId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
+  deviceId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
+  userId?: Prisma.StringFilter<"DeviceEventDebugData"> | string
+  payload?: Prisma.JsonFilter<"DeviceEventDebugData">
+  createdAt?: Prisma.DateTimeFilter<"DeviceEventDebugData"> | Date | string
+}
+
+export type DeviceEventDebugDataCreateWithoutEventInput = {
+  id: string
+  deviceId: string
+  userId: string
+  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutDeviceDebugEventsInput
+}
+
+export type DeviceEventDebugDataUncheckedCreateWithoutEventInput = {
+  id: string
+  deviceId: string
+  userId: string
+  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+}
+
+export type DeviceEventDebugDataCreateOrConnectWithoutEventInput = {
+  where: Prisma.DeviceEventDebugDataWhereUniqueInput
+  create: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput>
+}
+
+export type DeviceEventDebugDataCreateManyEventInputEnvelope = {
+  data: Prisma.DeviceEventDebugDataCreateManyEventInput | Prisma.DeviceEventDebugDataCreateManyEventInput[]
+  skipDuplicates?: boolean
+}
+
+export type DeviceEventDebugDataUpsertWithWhereUniqueWithoutEventInput = {
+  where: Prisma.DeviceEventDebugDataWhereUniqueInput
+  update: Prisma.XOR<Prisma.DeviceEventDebugDataUpdateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedUpdateWithoutEventInput>
+  create: Prisma.XOR<Prisma.DeviceEventDebugDataCreateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedCreateWithoutEventInput>
+}
+
+export type DeviceEventDebugDataUpdateWithWhereUniqueWithoutEventInput = {
+  where: Prisma.DeviceEventDebugDataWhereUniqueInput
+  data: Prisma.XOR<Prisma.DeviceEventDebugDataUpdateWithoutEventInput, Prisma.DeviceEventDebugDataUncheckedUpdateWithoutEventInput>
+}
+
+export type DeviceEventDebugDataUpdateManyWithWhereWithoutEventInput = {
+  where: Prisma.DeviceEventDebugDataScalarWhereInput
+  data: Prisma.XOR<Prisma.DeviceEventDebugDataUpdateManyMutationInput, Prisma.DeviceEventDebugDataUncheckedUpdateManyWithoutEventInput>
+}
+
+export type DeviceEventDebugDataCreateManyTenantInput = {
+  id: string
+  eventId: string
+  deviceId: string
+  userId: string
+  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+}
+
+export type DeviceEventDebugDataUpdateWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  event?: Prisma.EventUpdateOneRequiredWithoutDebugDataNestedInput
+}
+
+export type DeviceEventDebugDataUncheckedUpdateWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type DeviceEventDebugDataUncheckedUpdateManyWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type DeviceEventDebugDataCreateManyEventInput = {
+  id: string
+  deviceId: string
+  userId: string
+  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+}
+
+export type DeviceEventDebugDataUpdateWithoutEventInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutDeviceDebugEventsNestedInput
+}
+
+export type DeviceEventDebugDataUncheckedUpdateWithoutEventInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type DeviceEventDebugDataUncheckedUpdateManyWithoutEventInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 
 
 export type DeviceEventDebugDataSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenantId?: boolean
   eventId?: boolean
   deviceId?: boolean
   userId?: boolean
   payload?: boolean
   createdAt?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["deviceEventDebugData"]>
 
 export type DeviceEventDebugDataSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenantId?: boolean
   eventId?: boolean
   deviceId?: boolean
   userId?: boolean
   payload?: boolean
   createdAt?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["deviceEventDebugData"]>
 
 export type DeviceEventDebugDataSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenantId?: boolean
   eventId?: boolean
   deviceId?: boolean
   userId?: boolean
   payload?: boolean
   createdAt?: boolean
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["deviceEventDebugData"]>
 
 export type DeviceEventDebugDataSelectScalar = {
   id?: boolean
+  tenantId?: boolean
   eventId?: boolean
   deviceId?: boolean
   userId?: boolean
@@ -359,13 +658,29 @@ export type DeviceEventDebugDataSelectScalar = {
   createdAt?: boolean
 }
 
-export type DeviceEventDebugDataOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "eventId" | "deviceId" | "userId" | "payload" | "createdAt", ExtArgs["result"]["deviceEventDebugData"]>
+export type DeviceEventDebugDataOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "eventId" | "deviceId" | "userId" | "payload" | "createdAt", ExtArgs["result"]["deviceEventDebugData"]>
+export type DeviceEventDebugDataInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+}
+export type DeviceEventDebugDataIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+}
+export type DeviceEventDebugDataIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+}
 
 export type $DeviceEventDebugDataPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "DeviceEventDebugData"
-  objects: {}
+  objects: {
+    tenant: Prisma.$TenantPayload<ExtArgs>
+    event: Prisma.$EventPayload<ExtArgs>
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    tenantId: string
     eventId: string
     deviceId: string
     userId: string
@@ -765,6 +1080,8 @@ readonly fields: DeviceEventDebugDataFieldRefs;
  */
 export interface Prisma__DeviceEventDebugDataClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  tenant<T extends Prisma.TenantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TenantDefaultArgs<ExtArgs>>): Prisma.Prisma__TenantClient<runtime.Types.Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  event<T extends Prisma.EventDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EventDefaultArgs<ExtArgs>>): Prisma.Prisma__EventClient<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -795,6 +1112,7 @@ export interface Prisma__DeviceEventDebugDataClient<T, Null = never, ExtArgs ext
  */
 export interface DeviceEventDebugDataFieldRefs {
   readonly id: Prisma.FieldRef<"DeviceEventDebugData", 'String'>
+  readonly tenantId: Prisma.FieldRef<"DeviceEventDebugData", 'String'>
   readonly eventId: Prisma.FieldRef<"DeviceEventDebugData", 'String'>
   readonly deviceId: Prisma.FieldRef<"DeviceEventDebugData", 'String'>
   readonly userId: Prisma.FieldRef<"DeviceEventDebugData", 'String'>
@@ -817,6 +1135,10 @@ export type DeviceEventDebugDataFindUniqueArgs<ExtArgs extends runtime.Types.Ext
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
+  /**
    * Filter, which DeviceEventDebugData to fetch.
    */
   where: Prisma.DeviceEventDebugDataWhereUniqueInput
@@ -835,6 +1157,10 @@ export type DeviceEventDebugDataFindUniqueOrThrowArgs<ExtArgs extends runtime.Ty
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
+  /**
    * Filter, which DeviceEventDebugData to fetch.
    */
   where: Prisma.DeviceEventDebugDataWhereUniqueInput
@@ -852,6 +1178,10 @@ export type DeviceEventDebugDataFindFirstArgs<ExtArgs extends runtime.Types.Exte
    * Omit specific fields from the DeviceEventDebugData
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
   /**
    * Filter, which DeviceEventDebugData to fetch.
    */
@@ -901,6 +1231,10 @@ export type DeviceEventDebugDataFindFirstOrThrowArgs<ExtArgs extends runtime.Typ
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
+  /**
    * Filter, which DeviceEventDebugData to fetch.
    */
   where?: Prisma.DeviceEventDebugDataWhereInput
@@ -948,6 +1282,10 @@ export type DeviceEventDebugDataFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Omit specific fields from the DeviceEventDebugData
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
   /**
    * Filter, which DeviceEventDebugData to fetch.
    */
@@ -997,6 +1335,10 @@ export type DeviceEventDebugDataCreateArgs<ExtArgs extends runtime.Types.Extensi
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
+  /**
    * The data needed to create a DeviceEventDebugData.
    */
   data: Prisma.XOR<Prisma.DeviceEventDebugDataCreateInput, Prisma.DeviceEventDebugDataUncheckedCreateInput>
@@ -1030,6 +1372,10 @@ export type DeviceEventDebugDataCreateManyAndReturnArgs<ExtArgs extends runtime.
    */
   data: Prisma.DeviceEventDebugDataCreateManyInput | Prisma.DeviceEventDebugDataCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1044,6 +1390,10 @@ export type DeviceEventDebugDataUpdateArgs<ExtArgs extends runtime.Types.Extensi
    * Omit specific fields from the DeviceEventDebugData
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
   /**
    * The data needed to update a DeviceEventDebugData.
    */
@@ -1096,6 +1446,10 @@ export type DeviceEventDebugDataUpdateManyAndReturnArgs<ExtArgs extends runtime.
    * Limit how many DeviceEventDebugData to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1110,6 +1464,10 @@ export type DeviceEventDebugDataUpsertArgs<ExtArgs extends runtime.Types.Extensi
    * Omit specific fields from the DeviceEventDebugData
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
   /**
    * The filter to search for the DeviceEventDebugData to update in case it exists.
    */
@@ -1136,6 +1494,10 @@ export type DeviceEventDebugDataDeleteArgs<ExtArgs extends runtime.Types.Extensi
    * Omit specific fields from the DeviceEventDebugData
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
   /**
    * Filter which DeviceEventDebugData to delete.
    */
@@ -1168,4 +1530,8 @@ export type DeviceEventDebugDataDefaultArgs<ExtArgs extends runtime.Types.Extens
    * Omit specific fields from the DeviceEventDebugData
    */
   omit?: Prisma.DeviceEventDebugDataOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceEventDebugDataInclude<ExtArgs> | null
 }

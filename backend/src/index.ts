@@ -10,6 +10,7 @@ import syncRouter from './routes/sync';
 import adminRouter from './routes/admin';
 import statsRouter from './routes/stats';
 import guestsRouter from './routes/guests';
+import { assertRlsSafeDatabaseRole } from './prisma';
 
 const app = express();
 
@@ -26,18 +27,28 @@ app.use('/events', statsRouter);
 app.use('/guests', guestsRouter);
 
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok' });
+	res.json({ status: 'ok' });
 });
 
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+	console.error(err);
+	res.status(500).json({ error: 'Internal server error' });
 });
 
 const PORT = process.env.PORT ?? 3000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+
+async function startServer(): Promise<void> {
+	await assertRlsSafeDatabaseRole();
+
+	app.listen(PORT, () => {
+		console.log(`Server listening on port ${PORT}`);
+	});
+}
+
+startServer().catch(error => {
+	console.error('Failed to start server:', error);
+	process.exit(1);
 });
 
 export default app;

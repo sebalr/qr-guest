@@ -15,9 +15,7 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:reset": "prisma migrate reset --force",
     "prisma:status": "prisma migrate status",
-    "prisma:studio": "prisma studio",
-    "tenant:migrate": "tsx src/scripts/migrateTenantSchemas.ts",
-    "tenant:migrate:dry": "tsx src/scripts/migrateTenantSchemas.ts --dry-run"
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

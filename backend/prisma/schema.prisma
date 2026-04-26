@@ -11,11 +11,17 @@ datasource db {
 }
 
 model Tenant {
-  id           String        @id @default(uuid())
-  name         String
-  plan         String        @default("free")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  userTenants  UserTenant[]
+  id                String               @id @default(uuid())
+  name              String
+  plan              String               @default("free")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  userTenants       UserTenant[]
+  events            Event[]
+  tickets           Ticket[]
+  scans             Scan[]
+  guests            Guest[]
+  syncStates        SyncState[]
+  deviceDebugEvents DeviceEventDebugData[]
 
   @@map("tenants")
 }
@@ -62,22 +68,29 @@ model UserTenant {
 }
 
 model Event {
-  id          String    @id @default(uuid())
+  id          String                 @id @default(uuid())
+  tenantId    String                 @map("tenant_id")
   name        String
   description String?
-  imageUrl    String?   @map("image_url")
-  startsAt    DateTime? @map("starts_at")
-  endsAt      DateTime? @map("ends_at")
-  version     Int       @default(0)
-  createdAt   DateTime  @default(now()) @map("created_at")
+  imageUrl    String?                @map("image_url")
+  startsAt    DateTime?              @map("starts_at")
+  endsAt      DateTime?              @map("ends_at")
+  version     Int                    @default(0)
+  createdAt   DateTime               @default(now()) @map("created_at")
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tickets     Ticket[]
   scans       Scan[]
+  syncStates  SyncState[]
+  debugData   DeviceEventDebugData[]
 
+  @@unique([id, tenantId])
+  @@index([tenantId, createdAt])
   @@map("events")
 }
 
 model Ticket {
   id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
   eventId   String   @map("event_id")
   guestId   String?  @map("guest_id")
   name      String
@@ -85,56 +98,74 @@ model Ticket {
   version   Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  event     Event    @relation(fields: [eventId], references: [id])
-  guest     Guest?   @relation(fields: [guestId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  guest     Guest?   @relation(fields: [guestId, tenantId], references: [id, tenantId], onDelete: SetNull)
   scans     Scan[]
 
+  @@unique([id, tenantId])
+  @@index([tenantId, eventId, createdAt])
   @@map("tickets")
 }
 
 model Scan {
   id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
   ticketId  String   @map("ticket_id")
   eventId   String   @map("event_id")
   deviceId  String   @map("device_id")
   userId    String   @map("user_id")
-  dedupeKey String?  @unique @map("dedupe_key")
+  dedupeKey String?  @map("dedupe_key")
   scannedAt DateTime @map("scanned_at")
   createdAt DateTime @default(now()) @map("created_at")
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
-  event     Event    @relation(fields: [eventId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ticket    Ticket   @relation(fields: [ticketId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
+  @@unique([id, tenantId])
+  @@unique([tenantId, dedupeKey])
+  @@index([tenantId, eventId, createdAt])
   @@map("scans")
 }
 
 model DeviceEventDebugData {
   id        String   @id
+  tenantId  String   @map("tenant_id")
   eventId   String   @map("event_id")
   deviceId  String   @map("device_id")
   userId    String   @map("user_id")
   payload   Json
   createdAt DateTime @default(now()) @map("created_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: Cascade)
 
-  @@index([eventId, createdAt])
+  @@index([tenantId, eventId, createdAt])
   @@map("device_event_debug_data")
 }
 
 model SyncState {
+  tenantId          String   @map("tenant_id")
   deviceId          String   @map("device_id")
   eventId           String   @map("event_id")
   lastTicketVersion Int      @default(0) @map("last_ticket_version")
   lastScanCursor    DateTime @default(now()) @map("last_scan_cursor")
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event             Event    @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: Cascade)
 
-  @@id([deviceId, eventId])
+  @@id([tenantId, deviceId, eventId])
   @@map("sync_state")
 }
 
 model Guest {
   id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
   name      String
   createdAt DateTime @default(now()) @map("created_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tickets   Ticket[]
 
+  @@unique([id, tenantId])
+  @@index([tenantId, name])
   @@map("guests")
 }

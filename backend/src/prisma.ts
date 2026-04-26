@@ -8,46 +8,78 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-// Cache for tenant-specific Prisma clients
-const tenantClients = new Map<string, PrismaClient>();
-const tenantClientsInitialized = new Map<string, Promise<PrismaClient>>();
+interface DbRoleFlags {
+	role_name: string;
+	is_superuser: boolean;
+	can_bypass_rls: boolean;
+}
 
-/**
- * Get a Prisma client for a specific tenant schema
- * Caches clients to avoid creating new ones for each request
- * Each client is initialized with SET search_path to its tenant schema
- */
-export async function getPrismaForTenant(tenantId: string): Promise<PrismaClient> {
-	// Return cached client if available
-	if (tenantClients.has(tenantId)) {
-		return tenantClients.get(tenantId)!;
+export interface RlsContext {
+	tenantId: string;
+	bypassRls?: boolean;
+}
+
+function normalizeTenantId(tenantId: string): string {
+	const normalizedTenantId = tenantId.trim();
+	if (!normalizedTenantId) {
+		throw new Error('tenantId is required');
 	}
 
-	// Prevent race conditions during initialization
-	if (tenantClientsInitialized.has(tenantId)) {
-		return tenantClientsInitialized.get(tenantId)!;
+	return normalizedTenantId;
+}
+
+export async function withRls<T>(context: RlsContext, work: (tx: PrismaClient) => Promise<T>): Promise<T> {
+	const tenantId = normalizeTenantId(context.tenantId);
+	const bypassRls = context.bypassRls === true;
+
+	return prisma.$transaction(async tx => {
+		await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
+		await tx.$executeRaw`SELECT set_config('app.bypass_rls', ${bypassRls ? 'on' : 'off'}, true)`;
+
+		if (process.env.LOG_TENANT_DB_DEBUG === '1') {
+			const rows = await tx.$queryRaw<Array<{ tenant_id: string | null; bypass_rls: string | null }>>`
+				SELECT
+					current_setting('app.current_tenant_id', true) AS tenant_id,
+					current_setting('app.bypass_rls', true) AS bypass_rls
+			`;
+
+			console.log('[tenant-rls] transaction context', {
+				tenantId,
+				bypassRls,
+				dbTenantId: rows[0]?.tenant_id ?? null,
+				dbBypassRls: rows[0]?.bypass_rls ?? null,
+			});
+		}
+
+		return work(tx as unknown as PrismaClient);
+	});
+}
+
+export async function assertRlsSafeDatabaseRole(): Promise<void> {
+	if (process.env.SKIP_RLS_ROLE_CHECK === '1' || process.env.NODE_ENV === 'test') {
+		return;
 	}
 
-	// Initialize the client
-	const initPromise = (async () => {
-		const tenantAdapter = new PrismaPg({
-			connectionString: process.env.DATABASE_URL,
-		});
+	const rows = await prisma.$queryRaw<DbRoleFlags[]>`
+		SELECT
+			current_user AS role_name,
+			r.rolsuper AS is_superuser,
+			r.rolbypassrls AS can_bypass_rls
+		FROM pg_roles r
+		WHERE r.rolname = current_user
+	`;
 
-		const tenantClient = new PrismaClient({ adapter: tenantAdapter });
+	const role = rows[0];
+	if (!role) {
+		console.warn('[tenant-rls] unable to verify role flags for current_user');
+		return;
+	}
 
-		// Set the search_path to the tenant schema
-		// This is connection-level, so it persists for the lifetime of the connection
-		await tenantClient.$executeRawUnsafe(`SET search_path = 'tenant_${tenantId}', 'public'`);
-
-		tenantClients.set(tenantId, tenantClient);
-		tenantClientsInitialized.delete(tenantId);
-
-		return tenantClient;
-	})();
-
-	tenantClientsInitialized.set(tenantId, initPromise);
-	return initPromise;
+	if (role.is_superuser || role.can_bypass_rls) {
+		throw new Error(
+			`Unsafe database role "${role.role_name}" detected: role can bypass RLS. Use a non-superuser role with NOBYPASSRLS for application runtime.`,
+		);
+	}
 }
 
 export default prisma;

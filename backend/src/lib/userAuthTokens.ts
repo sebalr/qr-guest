@@ -65,6 +65,21 @@ export async function findActiveUserAuthToken(rawToken: string, type: AuthTokenT
 	return tokenRecord;
 }
 
+export async function findUserAuthToken(rawToken: string) {
+	return prisma.userAuthToken.findUnique({
+		where: { tokenHash: hashToken(rawToken) },
+		include: {
+			user: {
+				include: {
+					userTenants: {
+						include: { tenant: true },
+					},
+				},
+			},
+		},
+	});
+}
+
 export async function consumeUserAuthToken(tokenId: string) {
 	await prisma.userAuthToken.update({
 		where: { id: tokenId },

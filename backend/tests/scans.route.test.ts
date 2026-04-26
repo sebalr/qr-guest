@@ -13,6 +13,11 @@ vi.mock('../src/prisma', () => ({
 		ticket: { findFirst: prismaMocks.ticketFindFirst },
 		scan: { findMany: prismaMocks.scanFindMany, create: prismaMocks.scanCreate },
 	},
+	getPrismaForTenant: vi.fn(async () => ({
+		event: { findFirst: prismaMocks.ticketFindFirst },
+		ticket: { findFirst: prismaMocks.ticketFindFirst },
+		scan: { findMany: prismaMocks.scanFindMany, create: prismaMocks.scanCreate },
+	})),
 }));
 
 vi.mock('../src/middleware/auth', () => ({
