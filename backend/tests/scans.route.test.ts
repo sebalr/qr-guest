@@ -3,21 +3,22 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prismaMocks = vi.hoisted(() => ({
+	eventFindFirst: vi.fn(),
 	ticketFindFirst: vi.fn(),
 	scanFindMany: vi.fn(),
 	scanCreate: vi.fn(),
+	deviceEventDebugCreate: vi.fn(),
 }));
 
 vi.mock('../src/prisma', () => ({
-	default: {
-		ticket: { findFirst: prismaMocks.ticketFindFirst },
-		scan: { findMany: prismaMocks.scanFindMany, create: prismaMocks.scanCreate },
-	},
-	getPrismaForTenant: vi.fn(async () => ({
-		event: { findFirst: prismaMocks.ticketFindFirst },
-		ticket: { findFirst: prismaMocks.ticketFindFirst },
-		scan: { findMany: prismaMocks.scanFindMany, create: prismaMocks.scanCreate },
-	})),
+	withRls: vi.fn(async (_context: any, work: any) =>
+		work({
+			event: { findFirst: prismaMocks.eventFindFirst },
+			ticket: { findFirst: prismaMocks.ticketFindFirst },
+			scan: { findMany: prismaMocks.scanFindMany, create: prismaMocks.scanCreate },
+			deviceEventDebugData: { create: prismaMocks.deviceEventDebugCreate },
+		}),
+	),
 }));
 
 vi.mock('../src/middleware/auth', () => ({

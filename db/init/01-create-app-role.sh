@@ -3,6 +3,7 @@ set -eu
 
 APP_DB_USER="${APP_DB_USER:-qrguest_app}"
 APP_DB_PASSWORD="${APP_DB_PASSWORD:-qrguest_app}"
+APP_SHADOW_DB="${APP_SHADOW_DB:-qrguest_shadow}"
 PGHOST="${PGHOST:-localhost}"
 PGPORT="${PGPORT:-5432}"
 
@@ -26,3 +27,7 @@ GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO "${APP_DB_USER}
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "${APP_DB_USER}";
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO "${APP_DB_USER}";
 EOSQL
+
+if ! psql -v ON_ERROR_STOP=1 --host "$PGHOST" --port "$PGPORT" --username "$POSTGRES_USER" --dbname postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '${APP_SHADOW_DB}'" | grep -q 1; then
+  createdb --host "$PGHOST" --port "$PGPORT" --username "$POSTGRES_USER" "$APP_SHADOW_DB"
+fi

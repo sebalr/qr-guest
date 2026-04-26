@@ -20,6 +20,7 @@ model Tenant {
   tickets           Ticket[]
   scans             Scan[]
   guests            Guest[]
+  ticketTypes       TicketType[]
   syncStates        SyncState[]
   deviceDebugEvents DeviceEventDebugData[]
 
@@ -79,6 +80,7 @@ model Event {
   createdAt   DateTime               @default(now()) @map("created_at")
   tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tickets     Ticket[]
+  ticketTypes TicketType[]
   scans       Scan[]
   syncStates  SyncState[]
   debugData   DeviceEventDebugData[]
@@ -93,6 +95,7 @@ model Ticket {
   tenantId  String   @map("tenant_id")
   eventId   String   @map("event_id")
   guestId   String?  @map("guest_id")
+  ticketTypeId String? @map("ticket_type_id")
   name      String
   status    String   @default("active")
   version   Int      @default(0)
@@ -101,11 +104,30 @@ model Ticket {
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   event     Event    @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: Cascade)
   guest     Guest?   @relation(fields: [guestId, tenantId], references: [id, tenantId], onDelete: SetNull)
+  ticketType TicketType? @relation(fields: [ticketTypeId, tenantId], references: [id, tenantId], onDelete: SetNull)
   scans     Scan[]
 
   @@unique([id, tenantId])
   @@index([tenantId, eventId, createdAt])
   @@map("tickets")
+}
+
+model TicketType {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  eventId   String   @map("event_id")
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  version   Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tickets   Ticket[]
+
+  @@unique([id, tenantId])
+  @@index([eventId, tenantId])
+  @@map("ticket_types")
 }
 
 model Scan {

@@ -390,6 +390,7 @@ export const ModelName = {
   UserTenant: 'UserTenant',
   Event: 'Event',
   Ticket: 'Ticket',
+  TicketType: 'TicketType',
   Scan: 'Scan',
   DeviceEventDebugData: 'DeviceEventDebugData',
   SyncState: 'SyncState',
@@ -409,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tenant" | "user" | "userAuthToken" | "userTenant" | "event" | "ticket" | "scan" | "deviceEventDebugData" | "syncState" | "guest"
+    modelProps: "tenant" | "user" | "userAuthToken" | "userTenant" | "event" | "ticket" | "ticketType" | "scan" | "deviceEventDebugData" | "syncState" | "guest"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -857,6 +858,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TicketType: {
+      payload: Prisma.$TicketTypePayload<ExtArgs>
+      fields: Prisma.TicketTypeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TicketTypeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TicketTypeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>
+        }
+        findFirst: {
+          args: Prisma.TicketTypeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TicketTypeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>
+        }
+        findMany: {
+          args: Prisma.TicketTypeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>[]
+        }
+        create: {
+          args: Prisma.TicketTypeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>
+        }
+        createMany: {
+          args: Prisma.TicketTypeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TicketTypeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>[]
+        }
+        delete: {
+          args: Prisma.TicketTypeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>
+        }
+        update: {
+          args: Prisma.TicketTypeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>
+        }
+        deleteMany: {
+          args: Prisma.TicketTypeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TicketTypeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TicketTypeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>[]
+        }
+        upsert: {
+          args: Prisma.TicketTypeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketTypePayload>
+        }
+        aggregate: {
+          args: Prisma.TicketTypeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTicketType>
+        }
+        groupBy: {
+          args: Prisma.TicketTypeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TicketTypeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TicketTypeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TicketTypeCountAggregateOutputType> | number
+        }
+      }
+    }
     Scan: {
       payload: Prisma.$ScanPayload<ExtArgs>
       fields: Prisma.ScanFieldRefs
@@ -1258,6 +1333,7 @@ export const TicketScalarFieldEnum = {
   tenantId: 'tenantId',
   eventId: 'eventId',
   guestId: 'guestId',
+  ticketTypeId: 'ticketTypeId',
   name: 'name',
   status: 'status',
   version: 'version',
@@ -1266,6 +1342,20 @@ export const TicketScalarFieldEnum = {
 } as const
 
 export type TicketScalarFieldEnum = (typeof TicketScalarFieldEnum)[keyof typeof TicketScalarFieldEnum]
+
+
+export const TicketTypeScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  eventId: 'eventId',
+  name: 'name',
+  price: 'price',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TicketTypeScalarFieldEnum = (typeof TicketTypeScalarFieldEnum)[keyof typeof TicketTypeScalarFieldEnum]
 
 
 export const ScanScalarFieldEnum = {
@@ -1413,6 +1503,20 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'Decimal'
+ */
+export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal[]'
+ */
+export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -1555,6 +1659,7 @@ export type GlobalOmitConfig = {
   userTenant?: Prisma.UserTenantOmit
   event?: Prisma.EventOmit
   ticket?: Prisma.TicketOmit
+  ticketType?: Prisma.TicketTypeOmit
   scan?: Prisma.ScanOmit
   deviceEventDebugData?: Prisma.DeviceEventDebugDataOmit
   syncState?: Prisma.SyncStateOmit

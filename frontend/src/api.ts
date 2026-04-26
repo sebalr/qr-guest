@@ -24,10 +24,22 @@ export interface Ticket {
 	id: string;
 	eventId: string;
 	guestId?: string | null;
+	ticketTypeId?: string | null;
+	ticketType?: TicketType | null;
 	name: string;
 	status: string;
 	version: number;
 	scanCount?: number;
+}
+
+export interface TicketType {
+	id: string;
+	eventId: string;
+	name: string;
+	price: number;
+	version: number;
+	createdAt: string;
+	updatedAt: string;
 }
 
 export interface Guest {
@@ -74,6 +86,7 @@ export interface SyncResponse {
 		name: string;
 		status: string;
 		version: number;
+		ticketTypeId?: string | null;
 	}[];
 	scanUpdates: RemoteScan[];
 	newTicketVersion: number;
@@ -193,15 +206,27 @@ export const createEventApi = (data: { name: string; startsAt?: string; endsAt?:
 	api.post<{ data: Event }>('/events', data);
 
 export const getEventApi = (id: string) => api.get<{ data: Event }>(`/events/${id}`);
+export const getEventTicketTypesApi = (eventId: string) => api.get<{ data: TicketType[] }>(`/events/${eventId}/ticket-types`);
+export const createEventTicketTypeApi = (eventId: string, data: { name: string; price: number }) =>
+	api.post<{ data: TicketType }>(`/events/${eventId}/ticket-types`, data);
+export const updateEventTicketTypeApi = (ticketTypeId: string, data: { name?: string; price?: number }) =>
+	api.patch<{ data: TicketType }>(`/events/ticket-types/${ticketTypeId}`, data);
+export const deleteEventTicketTypeApi = (ticketTypeId: string) =>
+	api.delete<{ data: { id: string } }>(`/events/ticket-types/${ticketTypeId}`);
 
 // Tickets
 export const getTicketsApi = (eventId: string) => api.get<{ data: Ticket[] }>(`/events/${eventId}/tickets`);
 
-export const addTicketsApi = (eventId: string, names: string[]) =>
-	api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: names.map(name => ({ name })) });
+export const addTicketsApi = (eventId: string, tickets: Array<string | { name: string; ticketTypeId?: string }>) => {
+	const normalized = tickets.map(t => (typeof t === 'string' ? { name: t } : t));
+	return api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: normalized });
+};
 
-export const createTicketApi = (eventId: string, data: { name?: string; guestId?: string }) =>
+export const createTicketApi = (eventId: string, data: { name?: string; guestId?: string; ticketTypeId?: string }) =>
 	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data);
+
+export const updateTicketApi = (ticketId: string, data: { ticketTypeId: string | null }) =>
+	api.patch<{ data: Ticket }>(`/tickets/${ticketId}`, data);
 
 export const cancelTicketApi = (ticketId: string) => api.post<{ data: Ticket }>(`/tickets/${ticketId}/cancel`);
 export const getTicketScansApi = (ticketId: string) => api.get<{ data: TicketScanDetail[] }>(`/tickets/${ticketId}/scans`);

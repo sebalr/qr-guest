@@ -3,15 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
 	getEventApi,
+	getEventTicketTypesApi,
+	createEventTicketTypeApi,
+	updateEventTicketTypeApi,
+	deleteEventTicketTypeApi,
 	getTicketsApi,
 	addTicketsApi,
 	createTicketApi,
+	updateTicketApi,
 	cancelTicketApi,
 	getTicketQRApi,
 	searchGuestsApi,
 	getTicketScansApi,
 	Event,
 	Ticket,
+	TicketType,
 	Guest,
 	TicketScanDetail,
 } from '../api';
@@ -25,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -60,6 +67,7 @@ export default function EventDetailPage() {
 	const canManageTickets = user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin';
 	const [event, setEvent] = useState<Event | null>(null);
 	const [tickets, setTickets] = useState<Ticket[]>([]);
+	const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	// Bulk add
@@ -67,11 +75,13 @@ export default function EventDetailPage() {
 	const [showBulk, setShowBulk] = useState(false);
 	const [adding, setAdding] = useState(false);
 	const [bulkError, setBulkError] = useState('');
+	const [bulkTicketTypeId, setBulkTicketTypeId] = useState<string>('none');
 
 	// Single add – guest search
 	const [singleName, setSingleName] = useState('');
 	const [addingSingle, setAddingSingle] = useState(false);
 	const [singleError, setSingleError] = useState('');
+	const [singleTicketTypeId, setSingleTicketTypeId] = useState<string>('none');
 	const [guestSuggestions, setGuestSuggestions] = useState<Guest[]>([]);
 	const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
 	const [showSuggestions, setShowSuggestions] = useState(false);
@@ -96,17 +106,29 @@ export default function EventDetailPage() {
 	const [cancelTargetTicketId, setCancelTargetTicketId] = useState<string | null>(null);
 	const [cancelingTicket, setCancelingTicket] = useState(false);
 	const [errorDialogMessage, setErrorDialogMessage] = useState<string | null>(null);
+	const [newTicketTypeName, setNewTicketTypeName] = useState('');
+	const [newTicketTypePrice, setNewTicketTypePrice] = useState('');
+	const [ticketTypeError, setTicketTypeError] = useState('');
+	const [savingTicketType, setSavingTicketType] = useState(false);
+	const [editingTicketTypeId, setEditingTicketTypeId] = useState<string | null>(null);
+	const [editingTicketTypeName, setEditingTicketTypeName] = useState('');
+	const [editingTicketTypePrice, setEditingTicketTypePrice] = useState('');
+	const [updatingTicketType, setUpdatingTicketType] = useState(false);
+	const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+	const [editingTicketTypeSelection, setEditingTicketTypeSelection] = useState<string>('none');
+	const [updatingTicket, setUpdatingTicket] = useState(false);
 	const compactListRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
 		if (!id) return;
 		setHasManualGuestListViewSelection(false);
 		setGuestListView('full');
-		Promise.all([getEventApi(id), getTicketsApi(id)])
-			.then(([evRes, tkRes]) => {
+		Promise.all([getEventApi(id), getTicketsApi(id), getEventTicketTypesApi(id)])
+			.then(([evRes, tkRes, typeRes]) => {
 				setEvent(evRes.data.data);
 				const tks = tkRes.data.data;
 				setTickets(tks);
+				setTicketTypes(typeRes.data.data);
 				db.tickets.bulkPut(
 					tks.map(t => ({
 						id: t.id,
@@ -186,7 +208,10 @@ export default function EventDetailPage() {
 		setSingleError('');
 		setAddingSingle(true);
 		try {
-			const payload = selectedGuest ? { guestId: selectedGuest.id } : { name: singleName.trim() };
+			const payload = {
+				...(selectedGuest ? { guestId: selectedGuest.id } : { name: singleName.trim() }),
+				...(singleTicketTypeId !== 'none' ? { ticketTypeId: singleTicketTypeId } : {}),
+			};
 			const res = await createTicketApi(id, payload);
 			const newTicket = res.data.data;
 			setTickets(prev => [...prev, newTicket]);
@@ -198,6 +223,7 @@ export default function EventDetailPage() {
 				version: newTicket.version,
 			});
 			setSingleName('');
+			setSingleTicketTypeId('none');
 			setSelectedGuest(null);
 			setGuestSuggestions([]);
 		} catch {
@@ -222,7 +248,11 @@ export default function EventDetailPage() {
 			return;
 		}
 		try {
-			const res = await addTicketsApi(id, names);
+			const payload = names.map(name => ({
+				name,
+				...(bulkTicketTypeId !== 'none' ? { ticketTypeId: bulkTicketTypeId } : {}),
+			}));
+			const res = await addTicketsApi(id, payload);
 			const newTickets = res.data.data;
 			setTickets(prev => [...prev, ...newTickets]);
 			db.tickets.bulkPut(
@@ -235,11 +265,115 @@ export default function EventDetailPage() {
 				})),
 			);
 			setBulkNames('');
+			setBulkTicketTypeId('none');
 			setShowBulk(false);
 		} catch {
 			setBulkError('Failed to add tickets.');
 		} finally {
 			setAdding(false);
+		}
+	}
+
+	async function handleCreateTicketType(e: FormEvent) {
+		e.preventDefault();
+		if (!id) return;
+		setTicketTypeError('');
+		setSavingTicketType(true);
+		const name = newTicketTypeName.trim();
+		const price = Number(newTicketTypePrice);
+
+		if (!name) {
+			setTicketTypeError('Ticket type name is required.');
+			setSavingTicketType(false);
+			return;
+		}
+		if (!Number.isFinite(price) || price < 0) {
+			setTicketTypeError('Price must be a valid non-negative number.');
+			setSavingTicketType(false);
+			return;
+		}
+
+		try {
+			const res = await createEventTicketTypeApi(id, { name, price });
+			setTicketTypes(prev => [...prev, res.data.data]);
+			setNewTicketTypeName('');
+			setNewTicketTypePrice('');
+		} catch {
+			setTicketTypeError('Failed to create ticket type.');
+		} finally {
+			setSavingTicketType(false);
+		}
+	}
+
+	function startEditTicketType(type: TicketType) {
+		setEditingTicketTypeId(type.id);
+		setEditingTicketTypeName(type.name);
+		setEditingTicketTypePrice(type.price.toFixed(2));
+		setTicketTypeError('');
+	}
+
+	async function handleSaveEditedTicketType() {
+		if (!editingTicketTypeId) return;
+		setTicketTypeError('');
+		setUpdatingTicketType(true);
+		const name = editingTicketTypeName.trim();
+		const price = Number(editingTicketTypePrice);
+
+		if (!name) {
+			setTicketTypeError('Ticket type name is required.');
+			setUpdatingTicketType(false);
+			return;
+		}
+		if (!Number.isFinite(price) || price < 0) {
+			setTicketTypeError('Price must be a valid non-negative number.');
+			setUpdatingTicketType(false);
+			return;
+		}
+
+		try {
+			const res = await updateEventTicketTypeApi(editingTicketTypeId, { name, price });
+			const updatedType = res.data.data;
+			setTicketTypes(prev => prev.map(t => (t.id === editingTicketTypeId ? res.data.data : t)));
+			setTickets(prev => prev.map(t => (t.ticketTypeId === editingTicketTypeId ? { ...t, ticketType: updatedType } : t)));
+			setEditingTicketTypeId(null);
+			setEditingTicketTypeName('');
+			setEditingTicketTypePrice('');
+		} catch {
+			setTicketTypeError('Failed to update ticket type.');
+		} finally {
+			setUpdatingTicketType(false);
+		}
+	}
+
+	async function handleDeleteTicketType(ticketTypeId: string) {
+		try {
+			await deleteEventTicketTypeApi(ticketTypeId);
+			setTicketTypes(prev => prev.filter(t => t.id !== ticketTypeId));
+			setTickets(prev => prev.map(t => (t.ticketTypeId === ticketTypeId ? { ...t, ticketTypeId: null, ticketType: null } : t)));
+		} catch {
+			setTicketTypeError('Failed to delete ticket type.');
+		}
+	}
+
+	function openEditTicketDialog(ticket: Ticket) {
+		setEditingTicket(ticket);
+		setEditingTicketTypeSelection(ticket.ticketTypeId ?? 'none');
+	}
+
+	async function handleSaveTicketTypeForTicket() {
+		if (!editingTicket) return;
+		setUpdatingTicket(true);
+		try {
+			const res = await updateTicketApi(editingTicket.id, {
+				ticketTypeId: editingTicketTypeSelection === 'none' ? null : editingTicketTypeSelection,
+			});
+			const updated = res.data.data;
+			setTickets(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+			setEditingTicket(null);
+		} catch {
+			setErrorDialogMessage('Failed to update ticket type.');
+		} finally {
+			setUpdatingTicket(false);
 		}
 	}
 
@@ -507,6 +641,85 @@ export default function EventDetailPage() {
 					</Card>
 				)}
 
+				{canManageTickets && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Ticket Types</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<form
+								onSubmit={handleCreateTicketType}
+								className="grid gap-3 md:grid-cols-[1fr_160px_auto] items-end">
+								<div className="space-y-1">
+									<Label htmlFor="new-ticket-type-name">Name</Label>
+									<Input
+										id="new-ticket-type-name"
+										placeholder="VIP"
+										value={newTicketTypeName}
+										onChange={e => setNewTicketTypeName(e.target.value)}
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label htmlFor="new-ticket-type-price">Price</Label>
+									<Input
+										id="new-ticket-type-price"
+										type="number"
+										inputMode="decimal"
+										min="0"
+										step="0.01"
+										placeholder="49.90"
+										value={newTicketTypePrice}
+										onChange={e => setNewTicketTypePrice(e.target.value)}
+									/>
+								</div>
+								<Button
+									type="submit"
+									disabled={savingTicketType}>
+									{savingTicketType ? 'Saving…' : 'Add Type'}
+								</Button>
+							</form>
+
+							{ticketTypeError && (
+								<Alert variant="destructive">
+									<AlertCircle className="h-4 w-4" />
+									<AlertDescription>{ticketTypeError}</AlertDescription>
+								</Alert>
+							)}
+
+							{ticketTypes.length === 0 ? (
+								<p className="text-sm text-muted-foreground">No ticket types configured yet.</p>
+							) : (
+								<div className="space-y-2">
+									{ticketTypes.map(type => (
+										<div
+											key={type.id}
+											className="rounded-lg border p-3 flex items-center justify-between gap-3">
+											<div>
+												<p className="font-medium">{type.name}</p>
+												<p className="text-xs text-muted-foreground">${type.price.toFixed(2)}</p>
+											</div>
+											<div className="flex gap-2">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => startEditTicketType(type)}>
+													Edit
+												</Button>
+												<Button
+													variant="destructive"
+													size="sm"
+													onClick={() => handleDeleteTicketType(type.id)}>
+													Delete
+												</Button>
+											</div>
+										</div>
+									))}
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				)}
+
 				{/* Single guest add with autocomplete */}
 				{canManageTickets && (
 					<form
@@ -530,6 +743,26 @@ export default function EventDetailPage() {
 								)}
 							</div>
 							{singleError && <p className="text-xs text-destructive">{singleError}</p>}
+							<div className="space-y-1">
+								<Label className="text-xs text-muted-foreground">Ticket type</Label>
+								<Select
+									value={singleTicketTypeId}
+									onValueChange={setSingleTicketTypeId}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select ticket type" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="none">No type</SelectItem>
+										{ticketTypes.map(type => (
+											<SelectItem
+												key={type.id}
+												value={type.id}>
+												{type.name} (${type.price.toFixed(2)})
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 
 							{/* Suggestions dropdown */}
 							{showSuggestions && guestSuggestions.length > 0 && (
@@ -643,6 +876,26 @@ export default function EventDetailPage() {
 										placeholder={'Alice Smith\nBob Jones\nCarol White'}
 									/>
 								</div>
+								<div className="space-y-2">
+									<Label>Ticket Type (applies to all)</Label>
+									<Select
+										value={bulkTicketTypeId}
+										onValueChange={setBulkTicketTypeId}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select ticket type" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">No type</SelectItem>
+											{ticketTypes.map(type => (
+												<SelectItem
+													key={type.id}
+													value={type.id}>
+													{type.name} (${type.price.toFixed(2)})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
 								{bulkError && (
 									<Alert variant="destructive">
 										<AlertCircle className="h-4 w-4" />
@@ -710,6 +963,7 @@ export default function EventDetailPage() {
 														</div>
 														<div className="flex items-center gap-1.5 flex-wrap">
 															<Badge variant={ticket.status === 'active' ? 'success' : 'destructive'}>{ticket.status}</Badge>
+															{ticket.ticketType ? <Badge variant="outline">{ticket.ticketType.name}</Badge> : null}
 															{scanCounts[ticket.id] ? (
 																<button
 																	type="button"
@@ -721,6 +975,12 @@ export default function EventDetailPage() {
 														</div>
 														{canManageTickets && ticket.status === 'active' && (
 															<div className="mt-auto pt-1 flex gap-1.5 flex-wrap">
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onClick={() => openEditTicketDialog(ticket)}>
+																	Type
+																</Button>
 																<Button
 																	variant="outline"
 																	size="sm"
@@ -769,6 +1029,7 @@ export default function EventDetailPage() {
 												<p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{ticket.id}</p>
 												<div className="flex flex-wrap gap-1.5 mt-2">
 													<Badge variant={ticket.status === 'active' ? 'success' : 'destructive'}>{ticket.status}</Badge>
+													{ticket.ticketType ? <Badge variant="outline">{ticket.ticketType.name}</Badge> : null}
 													{scanCounts[ticket.id] ? (
 														<button
 															type="button"
@@ -781,6 +1042,14 @@ export default function EventDetailPage() {
 											</div>
 										</div>
 										<div className="flex gap-2 shrink-0 flex-wrap justify-end">
+											{canManageTickets && ticket.status === 'active' && (
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => openEditTicketDialog(ticket)}>
+													Type
+												</Button>
+											)}
 											{canManageTickets && ticket.status === 'active' && (
 												<Button
 													variant="outline"
@@ -892,6 +1161,106 @@ export default function EventDetailPage() {
 							disabled={cancelingTicket}
 							onClick={handleCancelConfirmed}>
 							{cancelingTicket ? 'Cancelling…' : 'Cancel Ticket'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={!!editingTicketTypeId}
+				onOpenChange={open => {
+					if (!open && !updatingTicketType) {
+						setEditingTicketTypeId(null);
+						setEditingTicketTypeName('');
+						setEditingTicketTypePrice('');
+					}
+				}}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Edit Ticket Type</DialogTitle>
+						<DialogDescription>Update ticket type name and price.</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="space-y-1">
+							<Label htmlFor="edit-ticket-type-name">Name</Label>
+							<Input
+								id="edit-ticket-type-name"
+								value={editingTicketTypeName}
+								onChange={e => setEditingTicketTypeName(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-1">
+							<Label htmlFor="edit-ticket-type-price">Price</Label>
+							<Input
+								id="edit-ticket-type-price"
+								type="number"
+								inputMode="decimal"
+								min="0"
+								step="0.01"
+								value={editingTicketTypePrice}
+								onChange={e => setEditingTicketTypePrice(e.target.value)}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							disabled={updatingTicketType}
+							onClick={() => setEditingTicketTypeId(null)}>
+							Cancel
+						</Button>
+						<Button
+							disabled={updatingTicketType}
+							onClick={handleSaveEditedTicketType}>
+							{updatingTicketType ? 'Saving…' : 'Save'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={!!editingTicket}
+				onOpenChange={open => {
+					if (!open && !updatingTicket) {
+						setEditingTicket(null);
+					}
+				}}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Change Ticket Type</DialogTitle>
+						<DialogDescription>{editingTicket ? `${editingTicket.name} (${editingTicket.id})` : ''}</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-2">
+						<Label>Ticket Type</Label>
+						<Select
+							value={editingTicketTypeSelection}
+							onValueChange={setEditingTicketTypeSelection}>
+							<SelectTrigger>
+								<SelectValue placeholder="Select ticket type" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="none">No type</SelectItem>
+								{ticketTypes.map(type => (
+									<SelectItem
+										key={type.id}
+										value={type.id}>
+										{type.name} (${type.price.toFixed(2)})
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							disabled={updatingTicket}
+							onClick={() => setEditingTicket(null)}>
+							Cancel
+						</Button>
+						<Button
+							disabled={updatingTicket}
+							onClick={handleSaveTicketTypeForTicket}>
+							{updatingTicket ? 'Saving…' : 'Save'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

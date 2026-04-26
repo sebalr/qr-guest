@@ -119,17 +119,18 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 
 ### Backend
 
-| Variable            | Description                                    |
-| ------------------- | ---------------------------------------------- |
-| `DATABASE_URL`      | PostgreSQL connection string                   |
-| `JWT_SECRET`        | Secret for auth JWTs                           |
-| `QR_SECRET`         | Secret for QR ticket JWTs                      |
-| `PORT`              | HTTP port (default: 3000)                      |
-| `FRONTEND_URL`      | Public frontend URL used in verification links |
-| `RESEND_API_KEY`    | Resend API key for auth emails                 |
-| `RESEND_FROM_EMAIL` | Verified sender address used for auth emails   |
-| `APP_DB_USER`       | Runtime DB role used by backend in Docker      |
-| `APP_DB_PASSWORD`   | Runtime DB role password in Docker             |
+| Variable              | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| `DATABASE_URL`        | PostgreSQL connection string                   |
+| `SHADOW_DATABASE_URL` | Shadow DB connection for `prisma migrate dev`  |
+| `JWT_SECRET`          | Secret for auth JWTs                           |
+| `QR_SECRET`           | Secret for QR ticket JWTs                      |
+| `PORT`                | HTTP port (default: 3000)                      |
+| `FRONTEND_URL`        | Public frontend URL used in verification links |
+| `RESEND_API_KEY`      | Resend API key for auth emails                 |
+| `RESEND_FROM_EMAIL`   | Verified sender address used for auth emails   |
+| `APP_DB_USER`         | Runtime DB role used by backend in Docker      |
+| `APP_DB_PASSWORD`     | Runtime DB role password in Docker             |
 
 ## Coolify Production Setup
 
@@ -137,40 +138,77 @@ Production compose file: [docker-compose.coolify.yml](docker-compose.coolify.yml
 
 The production setup assumes an external PostgreSQL instance managed by Coolify or your provider.
 
-### 1) Create an RLS-safe app role in production DB
+Security goal in production:
 
-Run this SQL once on your production database (replace password):
+- backend runtime uses a low-privilege role (`qrguest_app`)
+- migrations run with a separate elevated role (`qrguest_migrator`) used only by the one-shot migrate job
+- no shadow DB credentials are stored in production runtime services
+
+### 1) Create production DB roles
+
+Create a low-privilege runtime role and a separate migrator role.
+
+Run this SQL once on your production database (replace passwords):
 
 ```sql
 DO $$
 BEGIN
 	IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'qrguest_app') THEN
-		CREATE ROLE qrguest_app LOGIN PASSWORD 'REPLACE_WITH_STRONG_PASSWORD';
+		CREATE ROLE qrguest_app LOGIN PASSWORD 'REPLACE_WITH_STRONG_RUNTIME_PASSWORD';
 	ELSE
-		ALTER ROLE qrguest_app WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_PASSWORD';
+		ALTER ROLE qrguest_app WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_RUNTIME_PASSWORD';
+	END IF;
+
+	IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'qrguest_migrator') THEN
+		CREATE ROLE qrguest_migrator LOGIN PASSWORD 'REPLACE_WITH_STRONG_MIGRATOR_PASSWORD';
+	ELSE
+		ALTER ROLE qrguest_migrator WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_MIGRATOR_PASSWORD';
 	END IF;
 END
 $$;
 
 ALTER ROLE qrguest_app NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
-GRANT CONNECT, CREATE, TEMPORARY ON DATABASE qrguest TO qrguest_app;
-GRANT USAGE, CREATE ON SCHEMA public TO qrguest_app;
+ALTER ROLE qrguest_migrator NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
+
+GRANT CONNECT ON DATABASE qrguest TO qrguest_app;
+GRANT CONNECT, CREATE, TEMPORARY ON DATABASE qrguest TO qrguest_migrator;
+
+GRANT USAGE ON SCHEMA public TO qrguest_app;
+GRANT USAGE, CREATE ON SCHEMA public TO qrguest_migrator;
+
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO qrguest_app;
 GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO qrguest_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qrguest_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO qrguest_app;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO qrguest_migrator;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO qrguest_migrator;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+	GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qrguest_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+	GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO qrguest_app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+	GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qrguest_migrator;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+	GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO qrguest_migrator;
 ```
 
 ### 2) Configure Coolify environment variables
 
 Set at least:
 
-- `DATABASE_URL=postgresql://qrguest_app:<password>@<host>:<port>/qrguest`
+- `DATABASE_URL=postgresql://qrguest_app:<runtime-password>@<host>:<port>/qrguest`
+- `MIGRATION_DATABASE_URL=postgresql://qrguest_migrator:<migrator-password>@<host>:<port>/qrguest`
 - `JWT_SECRET=<strong-secret>`
 - `QR_SECRET=<strong-secret>`
 - `FRONTEND_URL=<public-frontend-url>`
 - `RESEND_API_KEY=<resend-key>`
 - `RESEND_FROM_EMAIL=<verified-email>`
+
+Production note:
+
+- Do not set `SHADOW_DATABASE_URL` in production. It is only for local `prisma migrate dev` workflows.
+- Keep runtime and migration credentials separate to reduce blast radius.
 
 ### 3) Run migrations in production
 
@@ -181,6 +219,8 @@ docker compose -f docker-compose.coolify.yml run --rm migrate
 ```
 
 If Coolify deploys from compose services, run the `migrate` service as a one-shot job before deploying/restarting `backend`.
+
+The migrate service should use `MIGRATION_DATABASE_URL` while backend uses `DATABASE_URL`.
 
 ### 4) Start app services in production
 

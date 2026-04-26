@@ -57,6 +57,7 @@ export const ModelName = {
   UserTenant: 'UserTenant',
   Event: 'Event',
   Ticket: 'Ticket',
+  TicketType: 'TicketType',
   Scan: 'Scan',
   DeviceEventDebugData: 'DeviceEventDebugData',
   SyncState: 'SyncState',
@@ -145,6 +146,7 @@ export const TicketScalarFieldEnum = {
   tenantId: 'tenantId',
   eventId: 'eventId',
   guestId: 'guestId',
+  ticketTypeId: 'ticketTypeId',
   name: 'name',
   status: 'status',
   version: 'version',
@@ -153,6 +155,20 @@ export const TicketScalarFieldEnum = {
 } as const
 
 export type TicketScalarFieldEnum = (typeof TicketScalarFieldEnum)[keyof typeof TicketScalarFieldEnum]
+
+
+export const TicketTypeScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  eventId: 'eventId',
+  name: 'name',
+  price: 'price',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TicketTypeScalarFieldEnum = (typeof TicketTypeScalarFieldEnum)[keyof typeof TicketTypeScalarFieldEnum]
 
 
 export const ScanScalarFieldEnum = {

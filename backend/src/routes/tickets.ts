@@ -10,6 +10,20 @@ const router = Router();
 
 router.use(authMiddleware);
 
+async function resolveTicketTypeForEvent(
+	tenantPrisma: Parameters<Parameters<typeof withRls>[1]>[0],
+	eventId: string,
+	ticketTypeId?: string | null,
+) {
+	if (!ticketTypeId) return null;
+	return tenantPrisma.ticketType.findFirst({
+		where: {
+			id: ticketTypeId,
+			eventId,
+		},
+	});
+}
+
 // Single ticket create - owner/admin only
 router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -18,7 +32,7 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 		return;
 	}
 
-	const { name, guestId } = req.body as { name?: string; guestId?: string };
+	const { name, guestId, ticketTypeId } = req.body as { name?: string; guestId?: string; ticketTypeId?: string };
 	if (!guestId && (!name || !name.trim())) {
 		res.status(400).json({ error: 'name or guestId is required' });
 		return;
@@ -76,12 +90,22 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 			resolvedName = guest.name;
 		}
 
+		const trimmedTicketTypeId = typeof ticketTypeId === 'string' ? ticketTypeId.trim() : '';
+		if (trimmedTicketTypeId) {
+			const ticketType = await resolveTicketTypeForEvent(tenantPrisma, eventId, trimmedTicketTypeId);
+			if (!ticketType) {
+				res.status(400).json({ error: 'ticketTypeId does not belong to this event' });
+				return null;
+			}
+		}
+
 		const createdTicket = await tenantPrisma.ticket.create({
 			data: {
 				tenantId: context.tenantId,
 				eventId,
 				guestId: resolvedGuestId,
 				name: resolvedName,
+				...(trimmedTicketTypeId ? { ticketTypeId: trimmedTicketTypeId } : {}),
 			},
 		});
 
@@ -103,8 +127,13 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		res.status(400).json({ error: 'Invalid event id' });
 		return;
 	}
-	const body = req.body as { tickets?: { name: string }[]; names?: string[] };
-	const tickets = Array.isArray(body.tickets) ? body.tickets : Array.isArray(body.names) ? body.names.map(name => ({ name })) : [];
+	type BulkTicketInput = { name: string; ticketTypeId?: string };
+	const body = req.body as { tickets?: BulkTicketInput[]; names?: string[] };
+	const tickets: BulkTicketInput[] = Array.isArray(body.tickets)
+		? body.tickets
+		: Array.isArray(body.names)
+			? body.names.map(name => ({ name }))
+			: [];
 
 	if (!Array.isArray(tickets) || tickets.length === 0) {
 		res.status(400).json({ error: 'tickets must be a non-empty array' });
@@ -133,10 +162,33 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 			return null;
 		}
 
+		const providedTypeIds = Array.from(
+			new Set(tickets.map(t => (typeof t.ticketTypeId === 'string' ? t.ticketTypeId.trim() : '')).filter(id => id.length > 0)),
+		);
+
+		if (providedTypeIds.length > 0) {
+			const validTypes = await tenantPrisma.ticketType.findMany({
+				where: {
+					eventId,
+					id: { in: providedTypeIds },
+				},
+				select: { id: true },
+			});
+
+			if (validTypes.length !== providedTypeIds.length) {
+				res.status(400).json({ error: 'One or more ticketTypeId values do not belong to this event' });
+				return null;
+			}
+		}
+
 		const results = await tenantPrisma.$transaction(async tx => {
 			const createdTickets = [];
 			for (const t of tickets) {
 				const trimmedName = t.name.trim();
+				if (!trimmedName) {
+					continue;
+				}
+				const trimmedTicketTypeId = typeof t.ticketTypeId === 'string' ? t.ticketTypeId.trim() : '';
 				let guest = await tx.guest.findFirst({
 					where: { name: { equals: trimmedName, mode: 'insensitive' } },
 				});
@@ -154,6 +206,7 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 						eventId,
 						guestId: guest.id,
 						name: guest.name,
+						...(trimmedTicketTypeId ? { ticketTypeId: trimmedTicketTypeId } : {}),
 					},
 				});
 				createdTickets.push(ticket);
@@ -191,7 +244,10 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 
 		return tenantPrisma.ticket.findMany({
 			where: { eventId },
-			include: { _count: { select: { scans: true } } },
+			include: {
+				ticketType: true,
+				_count: { select: { scans: true } },
+			},
 			orderBy: { createdAt: 'asc' },
 		});
 	});
@@ -204,6 +260,14 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		id: t.id,
 		eventId: t.eventId,
 		guestId: t.guestId,
+		ticketTypeId: t.ticketTypeId,
+		ticketType: t.ticketType
+			? {
+					id: t.ticketType.id,
+					name: t.ticketType.name,
+					price: Number(t.ticketType.price),
+				}
+			: null,
 		name: t.name,
 		status: t.status,
 		version: t.version,
@@ -213,6 +277,78 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 	}));
 
 	res.json({ data: result });
+});
+
+router.patch('/tickets/:id', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	if (!ticketId) {
+		res.status(400).json({ error: 'Invalid ticket id' });
+		return;
+	}
+
+	if (!Object.prototype.hasOwnProperty.call(req.body ?? {}, 'ticketTypeId')) {
+		res.status(400).json({ error: 'ticketTypeId is required' });
+		return;
+	}
+
+	const rawTicketTypeId = req.body.ticketTypeId;
+	const normalizedTicketTypeId = typeof rawTicketTypeId === 'string' ? rawTicketTypeId.trim() : '';
+	if (rawTicketTypeId !== null && rawTicketTypeId !== undefined && typeof rawTicketTypeId !== 'string') {
+		res.status(400).json({ error: 'ticketTypeId must be a string or null' });
+		return;
+	}
+
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
+
+	const updated = await withRls(context, async tenantPrisma => {
+		const ticket = await tenantPrisma.ticket.findFirst({ where: { id: ticketId } });
+		if (!ticket) {
+			res.status(404).json({ error: 'Ticket not found' });
+			return null;
+		}
+
+		if (normalizedTicketTypeId) {
+			const ticketType = await resolveTicketTypeForEvent(tenantPrisma, ticket.eventId, normalizedTicketTypeId);
+			if (!ticketType) {
+				res.status(400).json({ error: 'ticketTypeId does not belong to this event' });
+				return null;
+			}
+		}
+
+		return tenantPrisma.ticket.update({
+			where: { id: ticket.id },
+			data: {
+				ticketTypeId: normalizedTicketTypeId || null,
+				version: { increment: 1 },
+			},
+			include: { ticketType: true },
+		});
+	});
+
+	if (!updated) {
+		return;
+	}
+
+	res.json({
+		data: {
+			id: updated.id,
+			eventId: updated.eventId,
+			guestId: updated.guestId,
+			ticketTypeId: updated.ticketTypeId,
+			ticketType: updated.ticketType
+				? {
+						id: updated.ticketType.id,
+						name: updated.ticketType.name,
+						price: Number(updated.ticketType.price),
+					}
+				: null,
+			name: updated.name,
+			status: updated.status,
+			version: updated.version,
+			createdAt: updated.createdAt,
+			updatedAt: updated.updatedAt,
+		},
+	});
 });
 
 // Scan history for a ticket - owner/admin/scanner

@@ -12,20 +12,15 @@ const prismaMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../src/prisma', () => ({
-	default: {
-		event: { findFirst: prismaMocks.eventFindFirst },
-		ticket: { findMany: prismaMocks.ticketFindMany },
-		scan: { upsert: prismaMocks.scanUpsert, findMany: prismaMocks.scanFindMany },
-		syncState: { upsert: prismaMocks.syncStateUpsert },
-		$transaction: prismaMocks.transaction,
-	},
-	getPrismaForTenant: vi.fn(async () => ({
-		event: { findFirst: prismaMocks.eventFindFirst },
-		ticket: { findMany: prismaMocks.ticketFindMany },
-		scan: { upsert: prismaMocks.scanUpsert, findMany: prismaMocks.scanFindMany },
-		syncState: { upsert: prismaMocks.syncStateUpsert },
-		$transaction: prismaMocks.transaction,
-	})),
+	withRls: vi.fn(async (_context: any, work: any) =>
+		work({
+			event: { findFirst: prismaMocks.eventFindFirst },
+			ticket: { findMany: prismaMocks.ticketFindMany },
+			scan: { upsert: prismaMocks.scanUpsert, findMany: prismaMocks.scanFindMany },
+			syncState: { upsert: prismaMocks.syncStateUpsert },
+			$transaction: prismaMocks.transaction,
+		}),
+	),
 }));
 
 vi.mock('../src/middleware/auth', () => ({
@@ -187,7 +182,7 @@ describe('POST /sync', () => {
 		expect(prismaMocks.transaction).toHaveBeenCalledTimes(1);
 		expect(prismaMocks.syncStateUpsert).toHaveBeenCalledTimes(1);
 		const syncStateArg = prismaMocks.syncStateUpsert.mock.calls[0][0];
-		expect(syncStateArg.where.deviceId_eventId.deviceId).toBe('device-explicit');
+		expect(syncStateArg.where.tenantId_deviceId_eventId.deviceId).toBe('device-explicit');
 		expect(res.body.data.newTicketVersion).toBe(2);
 	});
 });

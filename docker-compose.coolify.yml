@@ -6,7 +6,8 @@ services:
     restart: 'no'
     environment:
       DATABASE_URL: ${DATABASE_URL}
-    command: sh -c "npx prisma migrate deploy"
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:-}
+    command: sh -c "DATABASE_URL=${MIGRATION_DATABASE_URL:-$DATABASE_URL} npx prisma migrate deploy"
 
   backend:
     build:

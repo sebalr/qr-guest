@@ -6,6 +6,25 @@ import { withRls } from '../prisma';
 
 const router = Router();
 
+function parsePrice(value: unknown): number | null {
+	if (typeof value === 'number' && Number.isFinite(value)) {
+		return value;
+	}
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+		const parsed = Number(trimmed);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return null;
+}
+
+function isValidMoneyAmount(value: number): boolean {
+	if (value < 0) return false;
+	const cents = value * 100;
+	return Math.abs(cents - Math.round(cents)) < 1e-9;
+}
+
 router.use(authMiddleware);
 
 // Read access is also available to scanners.
@@ -107,6 +126,257 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 	} catch (error) {
 		console.error('Error creating event:', error);
 		res.status(500).json({ error: 'Failed to create event' });
+	}
+});
+
+router.get('/:id/ticket-types', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'event id is required' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const ticketTypes = await withRls(context, async tenantPrisma => {
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			if (!event) {
+				res.status(404).json({ error: 'Event not found' });
+				return null;
+			}
+
+			return tenantPrisma.ticketType.findMany({
+				where: { eventId },
+				orderBy: [{ createdAt: 'asc' }],
+			});
+		});
+
+		if (!ticketTypes) {
+			return;
+		}
+
+		res.json({
+			data: ticketTypes.map(t => ({
+				id: t.id,
+				eventId: t.eventId,
+				name: t.name,
+				price: Number(t.price),
+				version: t.version,
+				createdAt: t.createdAt,
+				updatedAt: t.updatedAt,
+			})),
+		});
+	} catch (error) {
+		console.error('Error listing ticket types:', error);
+		res.status(500).json({ error: 'Failed to load ticket types' });
+	}
+});
+
+router.post('/:id/ticket-types', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'event id is required' });
+		return;
+	}
+
+	const rawName = typeof req.body?.name === 'string' ? req.body.name : '';
+	const name = rawName.trim();
+	const price = parsePrice(req.body?.price);
+
+	if (!name) {
+		res.status(400).json({ error: 'name is required' });
+		return;
+	}
+
+	if (price === null || !isValidMoneyAmount(price)) {
+		res.status(400).json({ error: 'price must be a valid non-negative decimal with up to 2 digits' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const created = await withRls(context, async tenantPrisma => {
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			if (!event) {
+				res.status(404).json({ error: 'Event not found' });
+				return null;
+			}
+
+			const duplicate = await tenantPrisma.ticketType.findFirst({
+				where: {
+					eventId,
+					name: { equals: name, mode: 'insensitive' },
+				},
+			});
+
+			if (duplicate) {
+				res.status(409).json({ error: 'A ticket type with this name already exists for the event' });
+				return null;
+			}
+
+			return tenantPrisma.ticketType.create({
+				data: {
+					tenantId: context.tenantId,
+					eventId,
+					name,
+					price,
+				},
+			});
+		});
+
+		if (!created) {
+			return;
+		}
+
+		res.status(201).json({
+			data: {
+				id: created.id,
+				eventId: created.eventId,
+				name: created.name,
+				price: Number(created.price),
+				version: created.version,
+				createdAt: created.createdAt,
+				updatedAt: created.updatedAt,
+			},
+		});
+	} catch (error) {
+		console.error('Error creating ticket type:', error);
+		res.status(500).json({ error: 'Failed to create ticket type' });
+	}
+});
+
+router.patch('/ticket-types/:id', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const ticketTypeId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!ticketTypeId) {
+		res.status(400).json({ error: 'ticket type id is required' });
+		return;
+	}
+
+	const hasName = Object.prototype.hasOwnProperty.call(req.body ?? {}, 'name');
+	const hasPrice = Object.prototype.hasOwnProperty.call(req.body ?? {}, 'price');
+
+	if (!hasName && !hasPrice) {
+		res.status(400).json({ error: 'At least one field (name or price) is required' });
+		return;
+	}
+
+	const rawName = hasName && typeof req.body?.name === 'string' ? req.body.name : '';
+	const name = hasName ? rawName.trim() : undefined;
+	const price = hasPrice ? parsePrice(req.body?.price) : undefined;
+
+	if (hasName && !name) {
+		res.status(400).json({ error: 'name cannot be empty' });
+		return;
+	}
+
+	if (hasPrice && (typeof price !== 'number' || !isValidMoneyAmount(price))) {
+		res.status(400).json({ error: 'price must be a valid non-negative decimal with up to 2 digits' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const updated = await withRls(context, async tenantPrisma => {
+			const existing = await tenantPrisma.ticketType.findFirst({ where: { id: ticketTypeId } });
+			if (!existing) {
+				res.status(404).json({ error: 'Ticket type not found' });
+				return null;
+			}
+
+			if (name) {
+				const duplicate = await tenantPrisma.ticketType.findFirst({
+					where: {
+						eventId: existing.eventId,
+						id: { not: existing.id },
+						name: { equals: name, mode: 'insensitive' },
+					},
+				});
+
+				if (duplicate) {
+					res.status(409).json({ error: 'A ticket type with this name already exists for the event' });
+					return null;
+				}
+			}
+
+			return tenantPrisma.ticketType.update({
+				where: { id: ticketTypeId },
+				data: {
+					...(name ? { name } : {}),
+					...(typeof price === 'number' ? { price } : {}),
+					version: { increment: 1 },
+				},
+			});
+		});
+
+		if (!updated) {
+			return;
+		}
+
+		res.json({
+			data: {
+				id: updated.id,
+				eventId: updated.eventId,
+				name: updated.name,
+				price: Number(updated.price),
+				version: updated.version,
+				createdAt: updated.createdAt,
+				updatedAt: updated.updatedAt,
+			},
+		});
+	} catch (error) {
+		console.error('Error updating ticket type:', error);
+		res.status(500).json({ error: 'Failed to update ticket type' });
+	}
+});
+
+router.delete('/ticket-types/:id', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const ticketTypeId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!ticketTypeId) {
+		res.status(400).json({ error: 'ticket type id is required' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const deleted = await withRls(context, async tenantPrisma => {
+			const existing = await tenantPrisma.ticketType.findFirst({ where: { id: ticketTypeId } });
+			if (!existing) {
+				res.status(404).json({ error: 'Ticket type not found' });
+				return null;
+			}
+
+			await tenantPrisma.ticketType.delete({ where: { id: ticketTypeId } });
+			return { id: ticketTypeId };
+		});
+
+		if (!deleted) {
+			return;
+		}
+
+		res.json({ data: deleted });
+	} catch (error) {
+		console.error('Error deleting ticket type:', error);
+		res.status(500).json({ error: 'Failed to delete ticket type' });
 	}
 });
 
