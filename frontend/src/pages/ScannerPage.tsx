@@ -24,33 +24,50 @@ function getDeviceId(): string {
 /** Safe meta reader — returns sensible defaults on any corruption. */
 async function getMeta() {
 	try {
-		const [ver, cursor, lastSync] = await Promise.all([
+		const [ver, ticketIdCursor, cursor, scanIdCursor, lastSync] = await Promise.all([
 			db.meta.get('last_ticket_version'),
+			db.meta.get('last_ticket_id_cursor'),
 			db.meta.get('last_scan_cursor'),
+			db.meta.get('last_scan_id_cursor'),
 			db.meta.get('last_sync_at'),
 		]);
 		return {
 			last_ticket_version: typeof ver?.value === 'number' ? ver.value : 0,
+			last_ticket_id_cursor: typeof ticketIdCursor?.value === 'string' ? ticketIdCursor.value : '',
 			last_scan_cursor: typeof cursor?.value === 'string' ? cursor.value : new Date(0).toISOString(),
+			last_scan_id_cursor: typeof scanIdCursor?.value === 'string' ? scanIdCursor.value : '',
 			last_sync_at: typeof lastSync?.value === 'string' ? lastSync.value : null,
 		};
 	} catch {
 		// If IndexedDB meta is corrupted, return safe defaults
 		return {
 			last_ticket_version: 0,
+			last_ticket_id_cursor: '',
 			last_scan_cursor: new Date(0).toISOString(),
+			last_scan_id_cursor: '',
 			last_sync_at: null,
 		};
 	}
 }
 
-async function updateMeta(data: { newTicketVersion?: number; newScanCursor?: string }) {
+async function updateMeta(data: {
+	newTicketVersion?: number;
+	newTicketIdCursor?: string;
+	newScanCursor?: string;
+	newScanIdCursor?: string;
+}) {
 	try {
 		if (data.newTicketVersion != null) {
 			await db.meta.put({ key: 'last_ticket_version', value: data.newTicketVersion });
 		}
+		if (typeof data.newTicketIdCursor === 'string') {
+			await db.meta.put({ key: 'last_ticket_id_cursor', value: data.newTicketIdCursor });
+		}
 		if (data.newScanCursor) {
 			await db.meta.put({ key: 'last_scan_cursor', value: data.newScanCursor });
+		}
+		if (typeof data.newScanIdCursor === 'string') {
+			await db.meta.put({ key: 'last_scan_id_cursor', value: data.newScanIdCursor });
 		}
 		await db.meta.put({ key: 'last_sync_at', value: new Date().toISOString() });
 	} catch {
@@ -59,6 +76,17 @@ async function updateMeta(data: { newTicketVersion?: number; newScanCursor?: str
 }
 
 type ScanState = 'idle' | 'success' | 'error';
+
+const SYNC_BATCH_SIZE = 150;
+
+function chunkArray<T>(items: T[], chunkSize: number): T[][] {
+	if (chunkSize <= 0) return [items];
+	const chunks: T[][] = [];
+	for (let i = 0; i < items.length; i += chunkSize) {
+		chunks.push(items.slice(i, i + chunkSize));
+	}
+	return chunks;
+}
 
 export default function ScannerPage() {
 	const { id: eventId } = useParams<{ id: string }>();
@@ -82,6 +110,7 @@ export default function ScannerPage() {
 	const [unsyncedCount, setUnsyncedCount] = useState(0);
 	const [uploadingDebugData, setUploadingDebugData] = useState(false);
 	const [clearingLocalData, setClearingLocalData] = useState(false);
+	const [isFullResyncing, setIsFullResyncing] = useState(false);
 	const [clearLocalDataDialogOpen, setClearLocalDataDialogOpen] = useState(false);
 	const [menuFeedback, setMenuFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 	const [duplicateInfo, setDuplicateInfo] = useState<{
@@ -142,39 +171,110 @@ export default function ScannerPage() {
 			setSyncError(null);
 
 			try {
-				const meta = resolveMetaForSync(await getMeta(), fullResync);
-
-				// Collect the IDs of unsynced scans BEFORE sending
+				const deviceId = getDeviceId();
+				let currentMeta = resolveMetaForSync(await getMeta(), fullResync);
 				const unsynced = await getUnsyncedScans();
-				const unsyncedIds = unsynced.map(s => s.id);
+				const unsyncedChunks = chunkArray(unsynced, SYNC_BATCH_SIZE);
 
-				const res = await syncApi(
-					createSyncPayload({
-						eventId: eventId!,
-						meta,
-						unsynced,
-						deviceId: getDeviceId(),
-					}),
-				);
+				const applySyncPage = async (
+					payload: ReturnType<typeof mapSyncResponseToLocal>,
+					options?: { markSyncedIds?: string[] },
+				): Promise<boolean> => {
+					const {
+						ticketRows,
+						scanRows,
+						newTicketVersion,
+						newTicketIdCursor,
+						newScanCursor,
+						newScanIdCursor,
+						hasMoreTicketUpdates,
+						hasMoreScanUpdates,
+					} = payload;
 
-				const { ticketRows, scanRows, newTicketVersion, newScanCursor } = mapSyncResponseToLocal(res.data.data);
+					if (ticketRows.length) {
+						for (const ticketBatch of chunkArray(ticketRows, SYNC_BATCH_SIZE)) {
+							await db.tickets.bulkPut(ticketBatch);
+						}
+					}
 
-				if (ticketRows.length) {
-					await db.tickets.bulkPut(ticketRows);
+					// Persist remote scans from other devices — this makes the duplicate dialog
+					// work cross-device: device B will see device A's scans after the next sync.
+					if (scanRows.length) {
+						for (const scanBatch of chunkArray(scanRows, SYNC_BATCH_SIZE)) {
+							await db.scans.bulkPut(scanBatch);
+						}
+					}
+
+					const markSyncedIds = options?.markSyncedIds ?? [];
+					if (markSyncedIds.length) {
+						await db.scans.where('id').anyOf(markSyncedIds).modify({ synced: true });
+					}
+
+					await updateMeta({
+						newTicketVersion,
+						newTicketIdCursor,
+						newScanCursor,
+						newScanIdCursor,
+					});
+
+					currentMeta = {
+						...currentMeta,
+						last_ticket_version: newTicketVersion,
+						last_ticket_id_cursor: newTicketIdCursor,
+						last_scan_cursor: newScanCursor,
+						last_scan_id_cursor: newScanIdCursor,
+						last_sync_at: new Date().toISOString(),
+					};
+
+					return hasMoreTicketUpdates || hasMoreScanUpdates;
+				};
+
+				const drainRemoteUpdates = async (): Promise<void> => {
+					let hasMoreRemoteUpdates = true;
+					while (hasMoreRemoteUpdates) {
+						const nextRes = await syncApi(
+							createSyncPayload({
+								eventId: eventId!,
+								meta: currentMeta,
+								unsynced: [],
+								deviceId,
+							}),
+						);
+
+						hasMoreRemoteUpdates = await applySyncPage(mapSyncResponseToLocal(nextRes.data.data));
+					}
+				};
+
+				const syncChunk = async (chunk: LocalScan[], chunkIdsToMark?: string[]): Promise<void> => {
+					const res = await syncApi(
+						createSyncPayload({
+							eventId: eventId!,
+							meta: currentMeta,
+							unsynced: chunk,
+							deviceId,
+						}),
+					);
+
+					const hasMoreRemoteUpdates = await applySyncPage(mapSyncResponseToLocal(res.data.data), {
+						markSyncedIds: chunkIdsToMark,
+					});
+
+					if (hasMoreRemoteUpdates) {
+						await drainRemoteUpdates();
+					}
+				};
+
+				for (const chunk of unsyncedChunks) {
+					await syncChunk(
+						chunk,
+						chunk.map(s => s.id),
+					);
 				}
 
-				// Persist remote scans from other devices — this makes the duplicate dialog
-				// work cross-device: device B will see device A's scans after the next sync.
-				if (scanRows.length) {
-					await db.scans.bulkPut(scanRows);
+				if (unsyncedChunks.length === 0) {
+					await syncChunk([]);
 				}
 
-				// Only mark the exact scans we sent as synced — not any newly added ones
-				if (unsyncedIds.length) {
-					await db.scans.where('id').anyOf(unsyncedIds).modify({ synced: true });
-				}
-
-				await updateMeta({ newTicketVersion, newScanCursor });
 				await refreshCounts();
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : 'Sync failed';
@@ -189,19 +289,25 @@ export default function ScannerPage() {
 
 	/** Full resync: resets all cursors and marks all local scans as unsynced so they are re-sent. */
 	const triggerFullResync = useCallback(async () => {
+		if (isFullResyncing) return;
+		setIsFullResyncing(true);
 		try {
 			// Mark all scans for this event as unsynced so they are re-sent
 			await db.scans.where('event_id').equals(eventId!).modify({ synced: false });
 			// Clear cursor meta
 			await db.meta.delete('last_ticket_version');
+			await db.meta.delete('last_ticket_id_cursor');
 			await db.meta.delete('last_scan_cursor');
+			await db.meta.delete('last_scan_id_cursor');
 			setSyncError(null);
 			await doSync(true);
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Full resync failed';
 			setSyncError(msg);
+		} finally {
+			setIsFullResyncing(false);
 		}
-	}, [eventId, doSync]);
+	}, [eventId, doSync, isFullResyncing]);
 
 	const handleUploadDeviceDebugData = useCallback(async () => {
 		if (!eventId) return;
@@ -466,8 +572,10 @@ export default function ScannerPage() {
 						size="sm"
 						variant="destructive"
 						className="text-xs"
+						disabled={isFullResyncing}
 						onClick={triggerFullResync}>
-						Full Resync
+						<RefreshCw className={`h-3.5 w-3.5 ${isFullResyncing ? 'animate-spin' : ''}`} />
+						{isFullResyncing ? 'Resyncing...' : 'Full Resync'}
 					</Button>
 				</div>
 			)}
@@ -525,9 +633,10 @@ export default function ScannerPage() {
 					variant="outline"
 					size="sm"
 					className="mt-6 border-gray-700 text-gray-400 hover:bg-gray-800 gap-2"
+					disabled={isFullResyncing}
 					onClick={triggerFullResync}>
-					<RefreshCw className="h-3.5 w-3.5" />
-					Full Resync
+					<RefreshCw className={`h-3.5 w-3.5 ${isFullResyncing ? 'animate-spin' : ''}`} />
+					{isFullResyncing ? 'Resyncing...' : 'Full Resync'}
 				</Button>
 			</div>
 

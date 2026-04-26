@@ -59,6 +59,7 @@ type ScanHistoryItem = TicketScanDetail & {
 type GuestListView = 'full' | 'compact';
 const COMPACT_VIEW_DEFAULT_THRESHOLD = 300;
 const COMPACT_GRID_COLUMNS = 4;
+const EVENT_TICKETS_PAGE_SIZE = 100;
 
 export default function EventDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -69,6 +70,7 @@ export default function EventDetailPage() {
 	const [tickets, setTickets] = useState<Ticket[]>([]);
 	const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [ticketLoadProgress, setTicketLoadProgress] = useState({ pagesLoaded: 0, ticketsLoaded: 0 });
 
 	// Bulk add
 	const [bulkNames, setBulkNames] = useState('');
@@ -122,12 +124,39 @@ export default function EventDetailPage() {
 
 	useEffect(() => {
 		if (!id) return;
+		setLoading(true);
+		setTicketLoadProgress({ pagesLoaded: 0, ticketsLoaded: 0 });
 		setHasManualGuestListViewSelection(false);
 		setGuestListView('full');
-		Promise.all([getEventApi(id), getTicketsApi(id), getEventTicketTypesApi(id)])
-			.then(([evRes, tkRes, typeRes]) => {
+
+		const fetchAllTickets = async (eventId: string): Promise<Ticket[]> => {
+			const allTickets: Ticket[] = [];
+			let cursorCreatedAt: string | undefined;
+			let cursorId: string | undefined;
+			let hasMore = true;
+			let pagesLoaded = 0;
+
+			while (hasMore) {
+				const tkRes = await getTicketsApi(eventId, {
+					pageSize: EVENT_TICKETS_PAGE_SIZE,
+					...(cursorCreatedAt ? { cursorCreatedAt } : {}),
+					...(cursorId ? { cursorId } : {}),
+				});
+
+				allTickets.push(...tkRes.data.data);
+				pagesLoaded += 1;
+				setTicketLoadProgress({ pagesLoaded, ticketsLoaded: allTickets.length });
+				hasMore = tkRes.data.pagination?.hasMore === true;
+				cursorCreatedAt = tkRes.data.pagination?.nextCursorCreatedAt ?? undefined;
+				cursorId = tkRes.data.pagination?.nextCursorId ?? undefined;
+			}
+
+			return allTickets;
+		};
+
+		Promise.all([getEventApi(id), fetchAllTickets(id), getEventTicketTypesApi(id)])
+			.then(([evRes, tks, typeRes]) => {
 				setEvent(evRes.data.data);
-				const tks = tkRes.data.data;
 				setTickets(tks);
 				setTicketTypes(typeRes.data.data);
 				db.tickets.bulkPut(
@@ -563,7 +592,14 @@ export default function EventDetailPage() {
 	if (loading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
-				<p className="text-muted-foreground">Loading…</p>
+				<div className="text-center space-y-2">
+					<div className="mx-auto h-6 w-6 rounded-full border-2 border-slate-300 border-t-slate-700 animate-spin" />
+					<p className="text-muted-foreground">Loading event data...</p>
+					<p className="text-xs text-muted-foreground">
+						Loaded {ticketLoadProgress.ticketsLoaded} tickets across {ticketLoadProgress.pagesLoaded} page
+						{ticketLoadProgress.pagesLoaded === 1 ? '' : 's'}
+					</p>
+				</div>
 			</div>
 		);
 	}

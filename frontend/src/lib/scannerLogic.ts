@@ -3,7 +3,9 @@ import type { LocalScan } from '../db';
 
 export interface ScannerMeta {
 	last_ticket_version: number;
+	last_ticket_id_cursor: string;
 	last_scan_cursor: string;
+	last_scan_id_cursor: string;
 	last_sync_at: string | null;
 }
 
@@ -43,7 +45,9 @@ export function resolveMetaForSync(meta: ScannerMeta, fullResync: boolean): Scan
 	if (!fullResync) return meta;
 	return {
 		last_ticket_version: 0,
+		last_ticket_id_cursor: '',
 		last_scan_cursor: new Date(0).toISOString(),
+		last_scan_id_cursor: '',
 		last_sync_at: null,
 	};
 }
@@ -64,7 +68,9 @@ export function createSyncPayload(args: {
 		eventId,
 		deviceId,
 		lastTicketVersion: meta.last_ticket_version,
+		lastTicketIdCursor: meta.last_ticket_id_cursor,
 		lastScanCursor: meta.last_scan_cursor,
+		lastScanIdCursor: meta.last_scan_id_cursor,
 		localScans: unsynced.map(s => ({
 			id: s.id,
 			ticketId: s.ticket_id,
@@ -91,6 +97,10 @@ export function mapSyncResponseToLocal(response: SyncResponse) {
 			synced: true,
 		})),
 		newTicketVersion: response.newTicketVersion,
+		newTicketIdCursor: response.newTicketIdCursor ?? '',
 		newScanCursor: response.newScanCursor,
+		newScanIdCursor: response.newScanIdCursor ?? '',
+		hasMoreTicketUpdates: response.hasMoreTicketUpdates === true,
+		hasMoreScanUpdates: response.hasMoreScanUpdates === true,
 	};
 }

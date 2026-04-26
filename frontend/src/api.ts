@@ -32,6 +32,18 @@ export interface Ticket {
 	scanCount?: number;
 }
 
+export interface TicketListPagination {
+	pageSize: number;
+	hasMore: boolean;
+	nextCursorCreatedAt: string | null;
+	nextCursorId: string | null;
+}
+
+export interface TicketListResponse {
+	data: Ticket[];
+	pagination?: TicketListPagination;
+}
+
 export interface TicketType {
 	id: string;
 	eventId: string;
@@ -62,7 +74,9 @@ export interface SyncPayload {
 	eventId: string;
 	deviceId: string;
 	lastTicketVersion: number;
+	lastTicketIdCursor?: string;
 	lastScanCursor: string;
+	lastScanIdCursor?: string;
 	localScans: {
 		id: string;
 		ticketId: string;
@@ -90,7 +104,11 @@ export interface SyncResponse {
 	}[];
 	scanUpdates: RemoteScan[];
 	newTicketVersion: number;
+	newTicketIdCursor?: string;
 	newScanCursor: string;
+	newScanIdCursor?: string;
+	hasMoreTicketUpdates?: boolean;
+	hasMoreScanUpdates?: boolean;
 }
 
 export interface EventStats {
@@ -215,7 +233,8 @@ export const deleteEventTicketTypeApi = (ticketTypeId: string) =>
 	api.delete<{ data: { id: string } }>(`/events/ticket-types/${ticketTypeId}`);
 
 // Tickets
-export const getTicketsApi = (eventId: string) => api.get<{ data: Ticket[] }>(`/events/${eventId}/tickets`);
+export const getTicketsApi = (eventId: string, params?: { pageSize?: number; cursorCreatedAt?: string; cursorId?: string }) =>
+	api.get<TicketListResponse>(`/events/${eventId}/tickets`, { params });
 
 export const addTicketsApi = (eventId: string, tickets: Array<string | { name: string; ticketTypeId?: string }>) => {
 	const normalized = tickets.map(t => (typeof t === 'string' ? { name: t } : t));

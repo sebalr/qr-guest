@@ -5,15 +5,18 @@ import { requireRole } from '../middleware/roles';
 import { withRls } from '../prisma';
 
 const router = Router();
+const SYNC_PAGE_SIZE = 100;
 
 router.use(authMiddleware);
 router.use(requireRole(['owner', 'admin', 'scanner']));
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-	const { eventId, lastTicketVersion, lastScanCursor, localScans, deviceId } = req.body as {
+	const { eventId, lastTicketVersion, lastTicketIdCursor, lastScanCursor, lastScanIdCursor, localScans, deviceId } = req.body as {
 		eventId: string;
 		lastTicketVersion: number;
+		lastTicketIdCursor?: string;
 		lastScanCursor: string;
+		lastScanIdCursor?: string;
 		deviceId?: string;
 		localScans: {
 			id: string;
@@ -45,6 +48,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		res.status(400).json({ error: 'lastScanCursor must be a valid ISO datetime string' });
 		return;
 	}
+
+	const normalizedLastTicketVersion = Number.isFinite(lastTicketVersion) ? lastTicketVersion : 0;
+	const normalizedLastTicketIdCursor = typeof lastTicketIdCursor === 'string' ? lastTicketIdCursor : '';
+	const normalizedLastScanIdCursor = typeof lastScanIdCursor === 'string' ? lastScanIdCursor : '';
 
 	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
@@ -104,24 +111,47 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 			);
 		}
 
-		const [ticketUpdates, scanUpdates] = await Promise.all([
+		const [ticketRows, scanRows] = await Promise.all([
 			tenantPrisma.ticket.findMany({
 				where: {
 					eventId,
-					version: { gt: lastTicketVersion ?? 0 },
+					OR: [
+						{ version: { gt: normalizedLastTicketVersion } },
+						{
+							AND: [{ version: normalizedLastTicketVersion }, { id: { gt: normalizedLastTicketIdCursor } }],
+						},
+					],
 				},
+				orderBy: [{ version: 'asc' }, { id: 'asc' }],
+				take: SYNC_PAGE_SIZE + 1,
 			}),
 			tenantPrisma.scan.findMany({
 				where: {
 					eventId,
-					createdAt: { gt: cursorDate },
+					OR: [
+						{ createdAt: { gt: cursorDate } },
+						{
+							AND: [{ createdAt: cursorDate }, { id: { gt: normalizedLastScanIdCursor } }],
+						},
+					],
 				},
-				orderBy: { createdAt: 'asc' },
+				orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+				take: SYNC_PAGE_SIZE + 1,
 			}),
 		]);
 
-		const newTicketVersion = ticketUpdates.length > 0 ? Math.max(...ticketUpdates.map(t => t.version)) : (lastTicketVersion ?? 0);
+		const hasMoreTicketUpdates = ticketRows.length > SYNC_PAGE_SIZE;
+		const hasMoreScanUpdates = scanRows.length > SYNC_PAGE_SIZE;
+		const ticketUpdates = hasMoreTicketUpdates ? ticketRows.slice(0, SYNC_PAGE_SIZE) : ticketRows;
+		const scanUpdates = hasMoreScanUpdates ? scanRows.slice(0, SYNC_PAGE_SIZE) : scanRows;
+
+		const lastTicketUpdate = ticketUpdates.length > 0 ? ticketUpdates[ticketUpdates.length - 1] : null;
+		const lastScanUpdate = scanUpdates.length > 0 ? scanUpdates[scanUpdates.length - 1] : null;
+
+		const newTicketVersion = lastTicketUpdate ? lastTicketUpdate.version : normalizedLastTicketVersion;
+		const newTicketIdCursor = lastTicketUpdate ? lastTicketUpdate.id : normalizedLastTicketIdCursor;
 		const newScanCursor = scanUpdates.length > 0 ? scanUpdates[scanUpdates.length - 1].createdAt.toISOString() : cursorDate.toISOString();
+		const newScanIdCursor = lastScanUpdate ? lastScanUpdate.id : normalizedLastScanIdCursor;
 
 		await tenantPrisma.syncState.upsert({
 			where: {
@@ -148,7 +178,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 			ticketUpdates,
 			scanUpdates,
 			newTicketVersion,
+			newTicketIdCursor,
 			newScanCursor,
+			newScanIdCursor,
+			hasMoreTicketUpdates,
+			hasMoreScanUpdates,
 		};
 	});
 

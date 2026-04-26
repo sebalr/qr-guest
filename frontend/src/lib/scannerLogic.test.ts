@@ -44,7 +44,9 @@ describe('parseQRPayload', () => {
 describe('sync helpers', () => {
 	const baseMeta = {
 		last_ticket_version: 7,
+		last_ticket_id_cursor: 'ticket-7',
 		last_scan_cursor: '2026-04-24T00:00:00.000Z',
+		last_scan_id_cursor: 'scan-7',
 		last_sync_at: '2026-04-24T00:05:00.000Z',
 	} as const;
 
@@ -79,7 +81,9 @@ describe('sync helpers', () => {
 	it('resets version and cursor when doing full resync', () => {
 		const result = resolveMetaForSync(baseMeta, true);
 		expect(result.last_ticket_version).toBe(0);
+		expect(result.last_ticket_id_cursor).toBe('');
 		expect(result.last_scan_cursor).toBe(new Date(0).toISOString());
+		expect(result.last_scan_id_cursor).toBe('');
 		expect(result.last_sync_at).toBeNull();
 	});
 
@@ -100,7 +104,9 @@ describe('sync helpers', () => {
 		expect(payload.eventId).toBe('event-1');
 		expect(payload.deviceId).toBe('device-abc');
 		expect(payload.lastTicketVersion).toBe(7);
+		expect(payload.lastTicketIdCursor).toBe('ticket-7');
 		expect(payload.lastScanCursor).toBe('2026-04-24T00:00:00.000Z');
+		expect(payload.lastScanIdCursor).toBe('scan-7');
 		expect(payload.localScans).toEqual([
 			{
 				id: 'scan-1',
@@ -138,7 +144,11 @@ describe('sync helpers', () => {
 				},
 			],
 			newTicketVersion: 8,
+			newTicketIdCursor: 'ticket-10',
 			newScanCursor: '2026-04-24T00:30:00.000Z',
+			newScanIdCursor: 'remote-scan-1',
+			hasMoreTicketUpdates: false,
+			hasMoreScanUpdates: true,
 		});
 
 		expect(mapped.ticketRows).toEqual([
@@ -160,6 +170,10 @@ describe('sync helpers', () => {
 			},
 		]);
 		expect(mapped.newTicketVersion).toBe(8);
+		expect(mapped.newTicketIdCursor).toBe('ticket-10');
 		expect(mapped.newScanCursor).toBe('2026-04-24T00:30:00.000Z');
+		expect(mapped.newScanIdCursor).toBe('remote-scan-1');
+		expect(mapped.hasMoreTicketUpdates).toBe(false);
+		expect(mapped.hasMoreScanUpdates).toBe(true);
 	});
 });

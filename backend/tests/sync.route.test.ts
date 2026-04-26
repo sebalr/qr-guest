@@ -50,10 +50,13 @@ describe('POST /sync', () => {
 		prismaMocks.scanUpsert.mockReturnValue({});
 		prismaMocks.eventFindFirst.mockResolvedValue({ id: 'event-1', tenantId: 'tenant-1' });
 		prismaMocks.ticketFindMany.mockImplementation(({ where }: any) => {
-			if (where?.version) {
+			if (where?.id?.in) {
+				return Promise.resolve([{ id: 'ticket-1' }]);
+			}
+			if (Array.isArray(where?.OR) || where?.version || where?.AND) {
 				return Promise.resolve([]);
 			}
-			return Promise.resolve([{ id: 'ticket-1' }]);
+			return Promise.resolve([]);
 		});
 		prismaMocks.scanFindMany.mockResolvedValue([]);
 		prismaMocks.syncStateUpsert.mockResolvedValue({});

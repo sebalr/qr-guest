@@ -7,6 +7,8 @@ import { requireRole } from '../middleware/roles';
 import { withRls } from '../prisma';
 
 const router = Router();
+const TICKETS_PAGE_SIZE_DEFAULT = 100;
+const TICKETS_PAGE_SIZE_MAX = 100;
 
 router.use(authMiddleware);
 
@@ -233,6 +235,21 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		return;
 	}
 
+	const pageSizeRaw = Array.isArray(req.query.pageSize) ? req.query.pageSize[0] : req.query.pageSize;
+	const parsedPageSize = typeof pageSizeRaw === 'string' ? Number.parseInt(pageSizeRaw, 10) : Number.NaN;
+	const pageSize = Number.isFinite(parsedPageSize)
+		? Math.min(Math.max(parsedPageSize, 1), TICKETS_PAGE_SIZE_MAX)
+		: TICKETS_PAGE_SIZE_DEFAULT;
+
+	const cursorCreatedAtRaw = Array.isArray(req.query.cursorCreatedAt) ? req.query.cursorCreatedAt[0] : req.query.cursorCreatedAt;
+	const cursorIdRaw = Array.isArray(req.query.cursorId) ? req.query.cursorId[0] : req.query.cursorId;
+	const cursorCreatedAt = typeof cursorCreatedAtRaw === 'string' && cursorCreatedAtRaw.length > 0 ? new Date(cursorCreatedAtRaw) : null;
+	if (cursorCreatedAt && Number.isNaN(cursorCreatedAt.getTime())) {
+		res.status(400).json({ error: 'cursorCreatedAt must be a valid ISO datetime string' });
+		return;
+	}
+	const cursorId = typeof cursorIdRaw === 'string' ? cursorIdRaw : '';
+
 	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
 	const ticketsData = await withRls(context, async tenantPrisma => {
@@ -243,12 +260,20 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		}
 
 		return tenantPrisma.ticket.findMany({
-			where: { eventId },
+			where: {
+				eventId,
+				...(cursorCreatedAt
+					? {
+							OR: [{ createdAt: { gt: cursorCreatedAt } }, { AND: [{ createdAt: cursorCreatedAt }, { id: { gt: cursorId } }] }],
+						}
+					: {}),
+			},
 			include: {
 				ticketType: true,
 				_count: { select: { scans: true } },
 			},
-			orderBy: { createdAt: 'asc' },
+			orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+			take: pageSize + 1,
 		});
 	});
 
@@ -256,7 +281,9 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		return;
 	}
 
-	const result = ticketsData.map(t => ({
+	const hasMore = ticketsData.length > pageSize;
+	const pageRows = hasMore ? ticketsData.slice(0, pageSize) : ticketsData;
+	const result = pageRows.map(t => ({
 		id: t.id,
 		eventId: t.eventId,
 		guestId: t.guestId,
@@ -275,8 +302,17 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		updatedAt: t.updatedAt,
 		scanCount: t._count.scans,
 	}));
+	const lastRow = pageRows.length > 0 ? pageRows[pageRows.length - 1] : null;
 
-	res.json({ data: result });
+	res.json({
+		data: result,
+		pagination: {
+			pageSize,
+			hasMore,
+			nextCursorCreatedAt: lastRow ? lastRow.createdAt.toISOString() : null,
+			nextCursorId: lastRow ? lastRow.id : null,
+		},
+	});
 });
 
 router.patch('/tickets/:id', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
