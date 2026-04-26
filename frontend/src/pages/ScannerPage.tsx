@@ -88,7 +88,7 @@ export default function ScannerPage() {
 		ticket: LocalTicket;
 		lastScan: LocalScan;
 	} | null>(null);
-	const [pendingTicket, setPendingTicket] = useState<{ tid: string; eid: string } | null>(null);
+	const [pendingTicket, setPendingTicket] = useState<{ tid: string; eid: string; qrToken: string } | null>(null);
 
 	// Compatibility-safe unsynced matcher: treats only explicit true as synced.
 	const getUnsyncedScans = useCallback(async () => {
@@ -324,7 +324,7 @@ export default function ScannerPage() {
 			showError('Invalid QR code format.');
 			return;
 		}
-		const { tid, eid } = parsed;
+		const { tid, eid, qrToken } = parsed;
 
 		const ticket = await db.tickets.get(tid);
 		if (!ticket) {
@@ -337,17 +337,21 @@ export default function ScannerPage() {
 		}
 
 		const prevScans = await db.scans.where('ticket_id').equals(tid).toArray();
+		if (prevScans.length >= 2) {
+			showError('Ticket has already been re-scanned. No further scans allowed.');
+			return;
+		}
 		if (prevScans.length > 0) {
 			const last = prevScans.sort((a, b) => new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime())[0];
 			setDuplicateInfo({ ticket, lastScan: last });
-			setPendingTicket({ tid, eid });
+			setPendingTicket({ tid, eid, qrToken });
 			return;
 		}
 
-		await registerScan(tid, eid);
+		await registerScan(tid, eid, qrToken);
 	}
 
-	async function registerScan(ticketId: string, eid: string) {
+	async function registerScan(ticketId: string, eid: string, qrToken?: string, confirmed?: boolean) {
 		const scanId = crypto.randomUUID();
 		const scannedAt = new Date().toISOString();
 		// Always write to local DB first — data is never lost until server confirms
@@ -361,9 +365,14 @@ export default function ScannerPage() {
 		await refreshCounts();
 		showSuccess('✓ Ticket scanned successfully!');
 
-		// Best-effort immediate online push — does NOT affect local record
+		// Best-effort immediate online push — mark synced locally if server confirms
 		if (navigator.onLine) {
-			postScanApi(ticketId, eid, getDeviceId(), scannedAt, scanId).catch(() => {});
+			postScanApi(ticketId, eid, getDeviceId(), scannedAt, scanId, qrToken, confirmed)
+				.then(() => {
+					db.scans.update(scanId, { synced: true }).catch(() => {});
+					refreshCounts();
+				})
+				.catch(() => {});
 		}
 	}
 
@@ -527,10 +536,10 @@ export default function ScannerPage() {
 					ticket={duplicateInfo.ticket}
 					lastScan={duplicateInfo.lastScan}
 					onScanAgain={async () => {
-						const { tid, eid } = pendingTicket;
+						const { tid, eid, qrToken } = pendingTicket;
 						setDuplicateInfo(null);
 						setPendingTicket(null);
-						await registerScan(tid, eid);
+						await registerScan(tid, eid, qrToken, true);
 					}}
 					onCancel={() => {
 						setDuplicateInfo(null);

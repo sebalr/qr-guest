@@ -241,8 +241,24 @@ export const getEventStatsApi = (eventId: string, interval?: string) =>
 	api.get<{ data: EventStats }>(`/events/${eventId}/stats`, interval ? { params: { interval } } : {});
 
 // Scan
-export const postScanApi = (ticketId: string, eventId: string, deviceId: string, scannedAt: string, scanId: string) =>
-	api.post('/scan', { id: scanId, ticketId, eventId, deviceId, scannedAt });
+export const postScanApi = (
+	ticketId: string,
+	eventId: string,
+	deviceId: string,
+	scannedAt: string,
+	scanId: string,
+	qrToken?: string,
+	confirmed?: boolean,
+) =>
+	api.post('/scan', {
+		id: scanId,
+		ticketId,
+		eventId,
+		deviceId,
+		scannedAt,
+		...(qrToken !== undefined && { qrToken }),
+		...(confirmed !== undefined && { confirmed }),
+	});
 
 export const uploadDeviceEventDebugDataApi = (payload: DeviceEventDebugUploadPayload) =>
 	api.post<{ data: DeviceEventDebugUploadResponse }>('/scan/device-event-debug', payload);

@@ -7,32 +7,36 @@ export interface ScannerMeta {
 	last_sync_at: string | null;
 }
 
-export function parseQRPayload(text: string): { tid: string; eid: string } | null {
+export function parseQRPayload(text: string): { tid: string; eid: string; qrToken: string } | null {
 	try {
-		const obj = JSON.parse(text) as { tid?: string; eid?: string };
-		if (obj.tid && obj.eid) return { tid: obj.tid, eid: obj.eid };
+		const bytes = base64UrlToBytes(text);
+		// Compact token: 16 bytes tid + 16 bytes eid + 8 bytes HMAC = 40 bytes total
+		if (bytes.length !== 40) return null;
+		const tid = bytesToUUID(bytes.slice(0, 16));
+		const eid = bytesToUUID(bytes.slice(16, 32));
+		return { tid, eid, qrToken: text };
 	} catch {
-		// Not JSON
+		return null;
 	}
+}
 
-	if (text.split('.').length === 3) {
-		try {
-			const payload = text.split('.')[1];
-			const decoded = JSON.parse(decodeBase64(base64UrlToBase64(payload))) as { tid?: string; eid?: string };
-			if (decoded.tid && decoded.eid) return { tid: decoded.tid, eid: decoded.eid };
-		} catch {
-			// Not a valid JWT payload
-		}
+/** Convert a 16-byte Uint8Array to a lowercase UUID string. */
+function bytesToUUID(bytes: Uint8Array): string {
+	const hex = Array.from(bytes)
+		.map(b => b.toString(16).padStart(2, '0'))
+		.join('');
+	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/** Decode a base64url string to a Uint8Array. */
+function base64UrlToBytes(value: string): Uint8Array {
+	const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+	const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+	if (typeof atob === 'function') {
+		const binary = atob(padded);
+		return Uint8Array.from(binary, c => c.charCodeAt(0));
 	}
-
-	try {
-		const decoded = JSON.parse(decodeBase64(text)) as { tid?: string; eid?: string };
-		if (decoded.tid && decoded.eid) return { tid: decoded.tid, eid: decoded.eid };
-	} catch {
-		// Not base64 JSON
-	}
-
-	return null;
+	return new Uint8Array(Buffer.from(padded, 'base64'));
 }
 
 export function resolveMetaForSync(meta: ScannerMeta, fullResync: boolean): ScannerMeta {
@@ -89,17 +93,4 @@ export function mapSyncResponseToLocal(response: SyncResponse) {
 		newTicketVersion: response.newTicketVersion,
 		newScanCursor: response.newScanCursor,
 	};
-}
-
-function base64UrlToBase64(value: string): string {
-	const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
-	const padLength = (4 - (normalized.length % 4)) % 4;
-	return normalized + '='.repeat(padLength);
-}
-
-function decodeBase64(value: string): string {
-	if (typeof atob === 'function') {
-		return atob(value);
-	}
-	return Buffer.from(value, 'base64').toString('utf8');
 }

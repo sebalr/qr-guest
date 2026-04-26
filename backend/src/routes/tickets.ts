@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import { generateCompactQRToken } from '../lib/qrToken';
 import { resolveRlsContext } from '../lib/tenantContext';
 import prisma from '../prisma';
 import { authMiddleware } from '../middleware/auth';
@@ -466,10 +466,9 @@ router.get('/tickets/:id/qr', requireRole(['owner', 'admin']), async (req: Reque
 		return;
 	}
 
-	// Use noTimestamp to strip iat/exp - keeps the QR payload minimal for easy scanning
-	const qrToken = jwt.sign({ tid: ticket.id, eid: ticket.eventId }, secret, {
-		noTimestamp: true,
-	});
+	// Compact 40-byte binary token: 16 bytes tid + 16 bytes eid + 8-byte HMAC-SHA256 truncated.
+	// base64url-encoded → 54 chars (no padding). ~3x smaller than a JWT.
+	const qrToken = generateCompactQRToken(ticket.id, ticket.eventId, secret);
 
 	res.json({ data: { qrToken } });
 });

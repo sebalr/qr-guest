@@ -3,26 +3,41 @@ import type { LocalScan } from '../db';
 import { createSyncPayload, getUnsyncedLocalScans, mapSyncResponseToLocal, parseQRPayload, resolveMetaForSync } from './scannerLogic';
 
 describe('parseQRPayload', () => {
-	it('parses plain JSON payload', () => {
-		const value = JSON.stringify({ tid: 'ticket-1', eid: 'event-1' });
-		expect(parseQRPayload(value)).toEqual({ tid: 'ticket-1', eid: 'event-1' });
+	// A valid compact token is 40 bytes (16 tid + 16 eid + 8 HMAC) base64url-encoded.
+	// Build a synthetic one with known UUIDs for testing the parser (HMAC bytes not verified by parser).
+	const tid = '11111111-2222-3333-4444-555555555555';
+	const eid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+
+	function makeCompactToken(tidStr: string, eidStr: string): string {
+		const tidBytes = Buffer.from(tidStr.replace(/-/g, ''), 'hex');
+		const eidBytes = Buffer.from(eidStr.replace(/-/g, ''), 'hex');
+		// Use 8 zero bytes as placeholder HMAC — parser doesn't verify the MAC
+		const mac = Buffer.alloc(8, 0);
+		return Buffer.concat([tidBytes, eidBytes, mac]).toString('base64url');
+	}
+
+	it('parses a valid compact 40-byte token', () => {
+		const token = makeCompactToken(tid, eid);
+		const result = parseQRPayload(token);
+		expect(result).not.toBeNull();
+		expect(result!.tid).toBe(tid);
+		expect(result!.eid).toBe(eid);
+		expect(result!.qrToken).toBe(token);
 	});
 
-	it('parses JWT payload with base64url encoding', () => {
-		const payload = Buffer.from(JSON.stringify({ tid: 'ticket-2', eid: 'event-2' }), 'utf8').toString('base64url');
-		const jwtLike = `header.${payload}.signature`;
-
-		expect(parseQRPayload(jwtLike)).toEqual({ tid: 'ticket-2', eid: 'event-2' });
+	it('returns null for a token that is the wrong length', () => {
+		// 39 bytes → should fail
+		const shortToken = Buffer.alloc(39, 0).toString('base64url');
+		expect(parseQRPayload(shortToken)).toBeNull();
 	});
 
-	it('parses base64 JSON payload', () => {
-		const base64 = Buffer.from(JSON.stringify({ tid: 'ticket-3', eid: 'event-3' }), 'utf8').toString('base64');
-
-		expect(parseQRPayload(base64)).toEqual({ tid: 'ticket-3', eid: 'event-3' });
-	});
-
-	it('returns null for invalid payload', () => {
+	it('returns null for plain text garbage', () => {
 		expect(parseQRPayload('invalid-qr-data')).toBeNull();
+	});
+
+	it('returns null for old JWT-style tokens', () => {
+		const payload = Buffer.from(JSON.stringify({ tid: 'ticket-2', eid: 'event-2' }), 'utf8').toString('base64url');
+		expect(parseQRPayload(`header.${payload}.signature`)).toBeNull();
 	});
 });
 

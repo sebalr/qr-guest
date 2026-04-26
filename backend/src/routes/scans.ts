@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { Prisma } from '../generated/prisma/client';
+import { verifyCompactQRToken } from '../lib/qrToken';
 import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
@@ -82,6 +83,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		deviceId,
 		scannedAt,
 		confirmed,
+		qrToken,
 	} = req.body as {
 		id?: string;
 		ticketId: string;
@@ -89,6 +91,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		deviceId: string;
 		scannedAt: string;
 		confirmed?: boolean;
+		qrToken?: string;
 	};
 
 	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -100,6 +103,14 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 	if (!ticketId || !eventId || !deviceId || !scannedAt) {
 		res.status(400).json({ error: 'ticketId, eventId, deviceId, and scannedAt are required' });
 		return;
+	}
+
+	const qrSecret = process.env.QR_SECRET;
+	if (qrToken !== undefined) {
+		if (!qrSecret || !verifyCompactQRToken(qrToken, ticketId, eventId, qrSecret)) {
+			res.status(422).json({ error: 'Invalid QR token' });
+			return;
+		}
 	}
 
 	const scannedAtDate = new Date(scannedAt);
@@ -136,6 +147,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 				error: 'Ticket has already been scanned',
 				data: { existingScans },
 			});
+			return null;
+		}
+
+		if (existingScans.length >= 2) {
+			res.status(422).json({ error: 'Ticket has already been re-scanned the maximum number of times' });
 			return null;
 		}
 
