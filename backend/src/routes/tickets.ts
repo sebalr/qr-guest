@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { generateCompactQRToken } from '../lib/qrToken';
 import { resolveRlsContext } from '../lib/tenantContext';
-import prisma from '../prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole } from '../middleware/roles';
 import { withRls } from '../prisma';
@@ -42,17 +41,6 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 
 	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
-	const tenant = await prisma.tenant.findUnique({ where: { id: context.tenantId } });
-	if (tenant?.plan === 'free') {
-		const existing = await withRls(context, async tenantPrisma => {
-			return tenantPrisma.ticket.count({ where: { eventId } });
-		});
-		if (existing >= 10) {
-			res.status(403).json({ error: 'Free plan allows a maximum of 10 tickets per event.' });
-			return;
-		}
-	}
-
 	let resolvedGuestId: string;
 	let resolvedName: string;
 
@@ -63,6 +51,14 @@ router.post('/events/:id/tickets', requireRole(['owner', 'admin']), async (req: 
 		if (!event) {
 			res.status(404).json({ error: 'Event not found' });
 			return null;
+		}
+
+		if (typeof event.maxGuests === 'number') {
+			const existing = await tenantPrisma.ticket.count({ where: { eventId } });
+			if (existing >= event.maxGuests) {
+				res.status(403).json({ error: `Event guest limit reached (${event.maxGuests}).` });
+				return null;
+			}
 		}
 
 		if (guestId) {
@@ -142,26 +138,29 @@ router.post('/events/:id/tickets/bulk', requireRole(['owner', 'admin']), async (
 		return;
 	}
 
-	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
-
-	const tenant = await prisma.tenant.findUnique({ where: { id: context.tenantId } });
-	if (tenant?.plan === 'free') {
-		const existing = await withRls(context, async tenantPrisma => {
-			return tenantPrisma.ticket.count({ where: { eventId } });
-		});
-		if (existing + tickets.length > 10) {
-			res.status(403).json({
-				error: `Free plan allows a maximum of 10 tickets per event. Current: ${existing}`,
-			});
-			return;
-		}
+	const plannedCreates = tickets.filter(t => t.name.trim().length > 0).length;
+	if (plannedCreates === 0) {
+		res.status(400).json({ error: 'tickets must include at least one valid name' });
+		return;
 	}
+
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 
 	const created = await withRls(context, async tenantPrisma => {
 		const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
 		if (!event) {
 			res.status(404).json({ error: 'Event not found' });
 			return null;
+		}
+
+		if (typeof event.maxGuests === 'number') {
+			const existing = await tenantPrisma.ticket.count({ where: { eventId } });
+			if (existing + plannedCreates > event.maxGuests) {
+				res.status(403).json({
+					error: `Event guest limit exceeded. Limit: ${event.maxGuests}, current: ${existing}`,
+				});
+				return null;
+			}
 		}
 
 		const providedTypeIds = Array.from(

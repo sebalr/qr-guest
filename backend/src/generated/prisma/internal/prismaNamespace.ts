@@ -1319,6 +1319,7 @@ export const EventScalarFieldEnum = {
   name: 'name',
   description: 'description',
   imageUrl: 'imageUrl',
+  maxGuests: 'maxGuests',
   startsAt: 'startsAt',
   endsAt: 'endsAt',
   version: 'version',

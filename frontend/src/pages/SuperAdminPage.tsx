@@ -475,6 +475,13 @@ export default function SuperAdminPage() {
 										<div className="text-right text-xs text-muted-foreground shrink-0 ml-4">
 											<p>{event._count.tickets} tickets</p>
 											<p>{event._count.scans} scans</p>
+											<p>max {typeof event.maxGuests === 'number' ? event.maxGuests : 'Unlimited'}</p>
+											<Button
+												className="mt-2"
+												size="sm"
+												onClick={() => navigate(`/events/${event.id}?tenantId=${encodeURIComponent(selectedTenantId)}`)}>
+												Open
+											</Button>
 										</div>
 									</div>
 								))}

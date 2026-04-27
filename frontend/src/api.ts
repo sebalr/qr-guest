@@ -10,11 +10,21 @@ api.interceptors.request.use(config => {
 	return config;
 });
 
+interface TenantScopedRequestOptions {
+	tenantId?: string;
+}
+
+function tenantScopedParams(options?: TenantScopedRequestOptions): { tenantId: string } | undefined {
+	if (!options?.tenantId) return undefined;
+	return { tenantId: options.tenantId };
+}
+
 export interface Event {
 	id: string;
 	name: string;
 	description?: string | null;
 	imageUrl?: string | null;
+	maxGuests?: number | null;
 	startsAt?: string | null;
 	endsAt?: string | null;
 	tenantId: string;
@@ -139,6 +149,7 @@ export interface AdminEvent {
 	name: string;
 	startsAt: string;
 	endsAt: string;
+	maxGuests?: number | null;
 	tenantId: string;
 	tenant: { id: string; name: string; plan: string };
 	_count: { tickets: number; scans: number };
@@ -223,37 +234,57 @@ export const getEventsApi = () => api.get<{ data: Event[] }>('/events');
 export const createEventApi = (data: { name: string; startsAt?: string; endsAt?: string; description?: string; imageUrl?: string }) =>
 	api.post<{ data: Event }>('/events', data);
 
-export const getEventApi = (id: string) => api.get<{ data: Event }>(`/events/${id}`);
-export const getEventTicketTypesApi = (eventId: string) => api.get<{ data: TicketType[] }>(`/events/${eventId}/ticket-types`);
-export const createEventTicketTypeApi = (eventId: string, data: { name: string; price: number }) =>
-	api.post<{ data: TicketType }>(`/events/${eventId}/ticket-types`, data);
-export const updateEventTicketTypeApi = (ticketTypeId: string, data: { name?: string; price?: number }) =>
-	api.patch<{ data: TicketType }>(`/events/ticket-types/${ticketTypeId}`, data);
-export const deleteEventTicketTypeApi = (ticketTypeId: string) =>
-	api.delete<{ data: { id: string } }>(`/events/ticket-types/${ticketTypeId}`);
+export const getEventApi = (id: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: Event }>(`/events/${id}`, { params: tenantScopedParams(options) });
+export const updateEventApi = (id: string, data: { maxGuests: number }, options?: TenantScopedRequestOptions) =>
+	api.patch<{ data: Event }>(`/events/${id}`, data, { params: tenantScopedParams(options) });
+export const getEventTicketTypesApi = (eventId: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: TicketType[] }>(`/events/${eventId}/ticket-types`, { params: tenantScopedParams(options) });
+export const createEventTicketTypeApi = (eventId: string, data: { name: string; price: number }, options?: TenantScopedRequestOptions) =>
+	api.post<{ data: TicketType }>(`/events/${eventId}/ticket-types`, data, { params: tenantScopedParams(options) });
+export const updateEventTicketTypeApi = (
+	ticketTypeId: string,
+	data: { name?: string; price?: number },
+	options?: TenantScopedRequestOptions,
+) => api.patch<{ data: TicketType }>(`/events/ticket-types/${ticketTypeId}`, data, { params: tenantScopedParams(options) });
+export const deleteEventTicketTypeApi = (ticketTypeId: string, options?: TenantScopedRequestOptions) =>
+	api.delete<{ data: { id: string } }>(`/events/ticket-types/${ticketTypeId}`, { params: tenantScopedParams(options) });
 
 // Tickets
-export const getTicketsApi = (eventId: string, params?: { pageSize?: number; cursorCreatedAt?: string; cursorId?: string }) =>
-	api.get<TicketListResponse>(`/events/${eventId}/tickets`, { params });
+export const getTicketsApi = (
+	eventId: string,
+	params?: { pageSize?: number; cursorCreatedAt?: string; cursorId?: string },
+	options?: TenantScopedRequestOptions,
+) => api.get<TicketListResponse>(`/events/${eventId}/tickets`, { params: { ...params, ...tenantScopedParams(options) } });
 
-export const addTicketsApi = (eventId: string, tickets: Array<string | { name: string; ticketTypeId?: string }>) => {
+export const addTicketsApi = (
+	eventId: string,
+	tickets: Array<string | { name: string; ticketTypeId?: string }>,
+	options?: TenantScopedRequestOptions,
+) => {
 	const normalized = tickets.map(t => (typeof t === 'string' ? { name: t } : t));
-	return api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: normalized });
+	return api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: normalized }, { params: tenantScopedParams(options) });
 };
 
-export const createTicketApi = (eventId: string, data: { name?: string; guestId?: string; ticketTypeId?: string }) =>
-	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data);
+export const createTicketApi = (
+	eventId: string,
+	data: { name?: string; guestId?: string; ticketTypeId?: string },
+	options?: TenantScopedRequestOptions,
+) => api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data, { params: tenantScopedParams(options) });
 
-export const updateTicketApi = (ticketId: string, data: { ticketTypeId: string | null }) =>
-	api.patch<{ data: Ticket }>(`/tickets/${ticketId}`, data);
+export const updateTicketApi = (ticketId: string, data: { ticketTypeId: string | null }, options?: TenantScopedRequestOptions) =>
+	api.patch<{ data: Ticket }>(`/tickets/${ticketId}`, data, { params: tenantScopedParams(options) });
 
-export const cancelTicketApi = (ticketId: string) => api.post<{ data: Ticket }>(`/tickets/${ticketId}/cancel`);
-export const getTicketScansApi = (ticketId: string) => api.get<{ data: TicketScanDetail[] }>(`/tickets/${ticketId}/scans`);
+export const cancelTicketApi = (ticketId: string, options?: TenantScopedRequestOptions) =>
+	api.post<{ data: Ticket }>(`/tickets/${ticketId}/cancel`, undefined, { params: tenantScopedParams(options) });
+export const getTicketScansApi = (ticketId: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: TicketScanDetail[] }>(`/tickets/${ticketId}/scans`, { params: tenantScopedParams(options) });
 
 // Guests
 export const searchGuestsApi = (q: string) => api.get<{ data: Guest[] }>('/guests', { params: { q } });
 
-export const getTicketQRApi = (ticketId: string) => api.get<{ data: { qrToken: string } }>(`/tickets/${ticketId}/qr`);
+export const getTicketQRApi = (ticketId: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: { qrToken: string } }>(`/tickets/${ticketId}/qr`, { params: tenantScopedParams(options) });
 
 // Stats
 export const getEventStatsApi = (eventId: string, interval?: string) =>

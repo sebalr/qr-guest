@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import axios from 'axios';
 import {
 	getEventApi,
+	updateEventApi,
 	getEventTicketTypesApi,
 	createEventTicketTypeApi,
 	updateEventTicketTypeApi,
@@ -64,8 +66,12 @@ const EVENT_TICKETS_PAGE_SIZE = 100;
 export default function EventDetailPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
 	const { user } = useAuth();
+	const tenantId = (searchParams.get('tenantId') ?? '').trim() || undefined;
+	const tenantScope = useMemo(() => ({ ...(tenantId ? { tenantId } : {}) }), [tenantId]);
 	const canManageTickets = user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin';
+	const canEditGuestLimit = user?.isSuperAdmin === true;
 	const [event, setEvent] = useState<Event | null>(null);
 	const [tickets, setTickets] = useState<Ticket[]>([]);
 	const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
@@ -120,6 +126,9 @@ export default function EventDetailPage() {
 	const [editingTicketTypeSelection, setEditingTicketTypeSelection] = useState<string>('none');
 	const [updatingTicket, setUpdatingTicket] = useState(false);
 	const [ticketTypesDialogOpen, setTicketTypesDialogOpen] = useState(false);
+	const [maxGuestsInput, setMaxGuestsInput] = useState('');
+	const [maxGuestsError, setMaxGuestsError] = useState('');
+	const [savingMaxGuests, setSavingMaxGuests] = useState(false);
 	const compactListRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
@@ -137,11 +146,15 @@ export default function EventDetailPage() {
 			let pagesLoaded = 0;
 
 			while (hasMore) {
-				const tkRes = await getTicketsApi(eventId, {
-					pageSize: EVENT_TICKETS_PAGE_SIZE,
-					...(cursorCreatedAt ? { cursorCreatedAt } : {}),
-					...(cursorId ? { cursorId } : {}),
-				});
+				const tkRes = await getTicketsApi(
+					eventId,
+					{
+						pageSize: EVENT_TICKETS_PAGE_SIZE,
+						...(cursorCreatedAt ? { cursorCreatedAt } : {}),
+						...(cursorId ? { cursorId } : {}),
+					},
+					tenantScope,
+				);
 
 				allTickets.push(...tkRes.data.data);
 				pagesLoaded += 1;
@@ -154,9 +167,10 @@ export default function EventDetailPage() {
 			return allTickets;
 		};
 
-		Promise.all([getEventApi(id), fetchAllTickets(id), getEventTicketTypesApi(id)])
+		Promise.all([getEventApi(id, tenantScope), fetchAllTickets(id), getEventTicketTypesApi(id, tenantScope)])
 			.then(([evRes, tks, typeRes]) => {
 				setEvent(evRes.data.data);
+				setMaxGuestsInput(typeof evRes.data.data.maxGuests === 'number' ? String(evRes.data.data.maxGuests) : '');
 				setTickets(tks);
 				setTicketTypes(typeRes.data.data);
 				db.tickets.bulkPut(
@@ -187,7 +201,7 @@ export default function EventDetailPage() {
 			})
 			.catch(() => {})
 			.finally(() => setLoading(false));
-	}, [id]);
+	}, [id, tenantScope]);
 
 	useEffect(() => {
 		if (hasManualGuestListViewSelection) return;
@@ -232,9 +246,46 @@ export default function EventDetailPage() {
 		setGuestSuggestions([]);
 	}
 
+	function getApiErrorMessage(error: unknown, fallback: string): string {
+		if (axios.isAxiosError(error)) {
+			const message = (error.response?.data as { error?: string } | undefined)?.error;
+			if (typeof message === 'string' && message.trim()) {
+				return message;
+			}
+		}
+		return fallback;
+	}
+
+	async function handleSaveMaxGuests(e: FormEvent) {
+		e.preventDefault();
+		if (!id || !canEditGuestLimit) return;
+
+		setMaxGuestsError('');
+		const parsed = Number(maxGuestsInput);
+		if (!Number.isInteger(parsed) || parsed < 1) {
+			setMaxGuestsError('Max guests must be a whole number greater than 0.');
+			return;
+		}
+
+		setSavingMaxGuests(true);
+		try {
+			const res = await updateEventApi(id, { maxGuests: parsed }, tenantScope);
+			setEvent(res.data.data);
+			setMaxGuestsInput(String(res.data.data.maxGuests ?? parsed));
+		} catch (error) {
+			setMaxGuestsError(getApiErrorMessage(error, 'Failed to update max guests.'));
+		} finally {
+			setSavingMaxGuests(false);
+		}
+	}
+
 	async function handleAddSingle(e: FormEvent) {
 		e.preventDefault();
 		if (!id) return;
+		if (typeof event?.maxGuests === 'number' && tickets.length >= event.maxGuests) {
+			setSingleError(`Event guest limit reached (${event.maxGuests}).`);
+			return;
+		}
 		setSingleError('');
 		setAddingSingle(true);
 		try {
@@ -242,7 +293,7 @@ export default function EventDetailPage() {
 				...(selectedGuest ? { guestId: selectedGuest.id } : { name: singleName.trim() }),
 				...(singleTicketTypeId !== 'none' ? { ticketTypeId: singleTicketTypeId } : {}),
 			};
-			const res = await createTicketApi(id, payload);
+			const res = await createTicketApi(id, payload, tenantScope);
 			const newTicket = res.data.data;
 			setTickets(prev => [...prev, newTicket]);
 			db.tickets.put({
@@ -256,8 +307,8 @@ export default function EventDetailPage() {
 			setSingleTicketTypeId('none');
 			setSelectedGuest(null);
 			setGuestSuggestions([]);
-		} catch {
-			setSingleError('Failed to add guest.');
+		} catch (error) {
+			setSingleError(getApiErrorMessage(error, 'Failed to add guest.'));
 		} finally {
 			setAddingSingle(false);
 		}
@@ -277,12 +328,18 @@ export default function EventDetailPage() {
 			setAdding(false);
 			return;
 		}
+
+		if (typeof event?.maxGuests === 'number' && tickets.length + names.length > event.maxGuests) {
+			setBulkError(`Adding ${names.length} guests exceeds event limit (${event.maxGuests}).`);
+			setAdding(false);
+			return;
+		}
 		try {
 			const payload = names.map(name => ({
 				name,
 				...(bulkTicketTypeId !== 'none' ? { ticketTypeId: bulkTicketTypeId } : {}),
 			}));
-			const res = await addTicketsApi(id, payload);
+			const res = await addTicketsApi(id, payload, tenantScope);
 			const newTickets = res.data.data;
 			setTickets(prev => [...prev, ...newTickets]);
 			db.tickets.bulkPut(
@@ -297,8 +354,8 @@ export default function EventDetailPage() {
 			setBulkNames('');
 			setBulkTicketTypeId('none');
 			setShowBulk(false);
-		} catch {
-			setBulkError('Failed to add tickets.');
+		} catch (error) {
+			setBulkError(getApiErrorMessage(error, 'Failed to add tickets.'));
 		} finally {
 			setAdding(false);
 		}
@@ -324,7 +381,7 @@ export default function EventDetailPage() {
 		}
 
 		try {
-			const res = await createEventTicketTypeApi(id, { name, price });
+			const res = await createEventTicketTypeApi(id, { name, price }, tenantScope);
 			setTicketTypes(prev => [...prev, res.data.data]);
 			setNewTicketTypeName('');
 			setNewTicketTypePrice('');
@@ -361,7 +418,7 @@ export default function EventDetailPage() {
 		}
 
 		try {
-			const res = await updateEventTicketTypeApi(editingTicketTypeId, { name, price });
+			const res = await updateEventTicketTypeApi(editingTicketTypeId, { name, price }, tenantScope);
 			const updatedType = res.data.data;
 			setTicketTypes(prev => prev.map(t => (t.id === editingTicketTypeId ? res.data.data : t)));
 			setTickets(prev => prev.map(t => (t.ticketTypeId === editingTicketTypeId ? { ...t, ticketType: updatedType } : t)));
@@ -377,7 +434,7 @@ export default function EventDetailPage() {
 
 	async function handleDeleteTicketType(ticketTypeId: string) {
 		try {
-			await deleteEventTicketTypeApi(ticketTypeId);
+			await deleteEventTicketTypeApi(ticketTypeId, tenantScope);
 			setTicketTypes(prev => prev.filter(t => t.id !== ticketTypeId));
 			setTickets(prev => prev.map(t => (t.ticketTypeId === ticketTypeId ? { ...t, ticketTypeId: null, ticketType: null } : t)));
 		} catch {
@@ -394,9 +451,13 @@ export default function EventDetailPage() {
 		if (!editingTicket) return;
 		setUpdatingTicket(true);
 		try {
-			const res = await updateTicketApi(editingTicket.id, {
-				ticketTypeId: editingTicketTypeSelection === 'none' ? null : editingTicketTypeSelection,
-			});
+			const res = await updateTicketApi(
+				editingTicket.id,
+				{
+					ticketTypeId: editingTicketTypeSelection === 'none' ? null : editingTicketTypeSelection,
+				},
+				tenantScope,
+			);
 			const updated = res.data.data;
 			setTickets(prev => prev.map(t => (t.id === updated.id ? updated : t)));
 			setEditingTicket(null);
@@ -411,7 +472,7 @@ export default function EventDetailPage() {
 		if (!cancelTargetTicketId) return;
 		setCancelingTicket(true);
 		try {
-			await cancelTicketApi(cancelTargetTicketId);
+			await cancelTicketApi(cancelTargetTicketId, tenantScope);
 			setTickets(prev => prev.map(t => (t.id === cancelTargetTicketId ? { ...t, status: 'cancelled' } : t)));
 			db.tickets.update(cancelTargetTicketId, { status: 'cancelled' });
 			setCancelTargetTicketId(null);
@@ -428,7 +489,7 @@ export default function EventDetailPage() {
 		if (!ticket || ticket.status === 'cancelled') {
 			throw new Error('Ticket is cancelled');
 		}
-		const res = await getTicketQRApi(ticketId);
+		const res = await getTicketQRApi(ticketId, tenantScope);
 		const token = res.data.data.qrToken;
 		setQrMap(prev => ({ ...prev, [ticketId]: token }));
 		return token;
@@ -529,7 +590,7 @@ export default function EventDetailPage() {
 			let remoteFailed = false;
 
 			try {
-				const res = await getTicketScansApi(ticket.id);
+				const res = await getTicketScansApi(ticket.id, tenantScope);
 				remoteScans = res.data.data;
 			} catch {
 				remoteFailed = true;
@@ -563,6 +624,8 @@ export default function EventDetailPage() {
 
 	const totalScanned = Object.values(scanCounts).reduce((a, b) => a + b, 0);
 	const cancelledCount = tickets.filter(t => t.status === 'cancelled').length;
+	const hasGuestLimit = typeof event?.maxGuests === 'number';
+	const guestLimitReached = hasGuestLimit && tickets.length >= (event?.maxGuests ?? Number.MAX_SAFE_INTEGER);
 	const cancelTargetTicket = cancelTargetTicketId ? (tickets.find(t => t.id === cancelTargetTicketId) ?? null) : null;
 	const compactRows = useMemo(() => {
 		const rows: Ticket[][] = [];
@@ -611,7 +674,7 @@ export default function EventDetailPage() {
 					<Button
 						variant="ghost"
 						size="icon"
-						onClick={() => navigate('/events')}>
+						onClick={() => navigate(tenantId && user?.isSuperAdmin ? '/super-admin' : '/events')}>
 						<ArrowLeft className="h-4 w-4" />
 					</Button>
 					<div className="flex-1 min-w-0 flex items-center gap-3">
@@ -630,7 +693,7 @@ export default function EventDetailPage() {
 							variant="outline"
 							size="sm"
 							className="gap-1.5"
-							onClick={() => navigate(`/events/${id}/dashboard`)}>
+							onClick={() => navigate(`/events/${id}/dashboard${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
 							<BarChart2 className="h-4 w-4" />
 							<span className="hidden sm:inline">Dashboard</span>
 						</Button>
@@ -638,7 +701,7 @@ export default function EventDetailPage() {
 					<Button
 						size="sm"
 						className="gap-1.5"
-						onClick={() => navigate(`/events/${id}/scan`)}>
+						onClick={() => navigate(`/events/${id}/scan${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
 						<Camera className="h-4 w-4" />
 						<span className="hidden sm:inline">Scanner</span>
 					</Button>
@@ -657,7 +720,7 @@ export default function EventDetailPage() {
 									{event.endsAt && new Date(event.endsAt).toLocaleString()}
 								</p>
 							)}
-							<div className="grid grid-cols-3 gap-4">
+							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 								<div className="flex flex-col items-center p-3 rounded-lg bg-slate-50 border">
 									<Users className="h-5 w-5 text-muted-foreground mb-1" />
 									<p className="text-2xl font-bold">{tickets.length}</p>
@@ -673,7 +736,39 @@ export default function EventDetailPage() {
 									<p className="text-2xl font-bold text-red-500">{cancelledCount}</p>
 									<p className="text-xs text-muted-foreground">Cancelled</p>
 								</div>
+								<div className="flex flex-col items-center p-3 rounded-lg bg-blue-50 border border-blue-100">
+									<Users className="h-5 w-5 text-blue-600 mb-1" />
+									<p className="text-2xl font-bold text-blue-600">{hasGuestLimit ? event.maxGuests : '∞'}</p>
+									<p className="text-xs text-muted-foreground">Max Guests</p>
+								</div>
 							</div>
+							{canEditGuestLimit && (
+								<form
+									onSubmit={handleSaveMaxGuests}
+									className="mt-4 p-3 rounded-lg border bg-slate-50 space-y-2">
+									<div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+										<div className="space-y-1">
+											<Label htmlFor="event-max-guests">Max Guests</Label>
+											<Input
+												id="event-max-guests"
+												type="number"
+												inputMode="numeric"
+												min="1"
+												step="1"
+												value={maxGuestsInput}
+												onChange={e => setMaxGuestsInput(e.target.value)}
+												placeholder="500"
+											/>
+										</div>
+										<Button
+											type="submit"
+											disabled={savingMaxGuests}>
+											{savingMaxGuests ? 'Saving…' : 'Save Max Guests'}
+										</Button>
+									</div>
+									{maxGuestsError && <p className="text-xs text-destructive">{maxGuestsError}</p>}
+								</form>
+							)}
 						</CardContent>
 					</Card>
 				)}
@@ -767,12 +862,19 @@ export default function EventDetailPage() {
 						<Button
 							type="submit"
 							size="sm"
-							disabled={addingSingle || !singleName.trim()}
+							disabled={addingSingle || !singleName.trim() || guestLimitReached}
 							className="gap-1.5 shrink-0">
 							<UserPlus className="h-3.5 w-3.5" />
 							{addingSingle ? 'Adding…' : 'Add'}
 						</Button>
 					</form>
+				)}
+
+				{guestLimitReached && hasGuestLimit && (
+					<Alert variant="destructive">
+						<AlertCircle className="h-4 w-4" />
+						<AlertDescription>Event guest limit reached ({event?.maxGuests}).</AlertDescription>
+					</Alert>
 				)}
 
 				<div className="flex justify-between items-center">
@@ -819,6 +921,7 @@ export default function EventDetailPage() {
 							<Button
 								variant={showBulk ? 'outline' : 'default'}
 								size="sm"
+								disabled={guestLimitReached && !showBulk}
 								className="gap-1.5"
 								onClick={() => setShowBulk(v => !v)}>
 								{showBulk ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
@@ -874,7 +977,7 @@ export default function EventDetailPage() {
 								)}
 								<Button
 									type="submit"
-									disabled={adding}>
+									disabled={adding || guestLimitReached}>
 									{adding ? 'Adding…' : 'Add Guests'}
 								</Button>
 							</form>

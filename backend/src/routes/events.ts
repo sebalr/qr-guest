@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
-import { requireRole } from '../middleware/roles';
+import { requireRole, requireSuperAdmin } from '../middleware/roles';
 import { withRls } from '../prisma';
 
 const router = Router();
@@ -109,6 +109,20 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 			return;
 		}
 
+		const tenant = await withRls(context, async tenantPrisma => {
+			return tenantPrisma.tenant.findUnique({
+				where: { id: context.tenantId },
+				select: { plan: true },
+			});
+		});
+
+		if (!tenant) {
+			res.status(404).json({ error: 'Tenant not found' });
+			return;
+		}
+
+		const defaultMaxGuests = tenant.plan === 'pro' ? 500 : 10;
+
 		const event = await withRls(context, async tenantPrisma => {
 			return tenantPrisma.event.create({
 				data: {
@@ -116,6 +130,7 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 					name,
 					description: description ?? null,
 					imageUrl: imageUrl ?? null,
+					maxGuests: defaultMaxGuests,
 					startsAt: startDate ?? null,
 					endsAt: endDate ?? null,
 				},
@@ -126,6 +141,64 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 	} catch (error) {
 		console.error('Error creating event:', error);
 		res.status(500).json({ error: 'Failed to create event' });
+	}
+});
+
+router.patch('/:id', requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'event id is required' });
+		return;
+	}
+
+	const rawMaxGuests = req.body?.maxGuests;
+	if (!Number.isInteger(rawMaxGuests) || rawMaxGuests < 1) {
+		res.status(400).json({ error: 'maxGuests must be an integer greater than 0' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const updated = await withRls(context, async tenantPrisma => {
+			const existing = await tenantPrisma.event.findFirst({
+				where: { id: eventId },
+				include: { _count: { select: { tickets: true } } },
+			});
+
+			if (!existing) {
+				res.status(404).json({ error: 'Event not found' });
+				return null;
+			}
+
+			if (existing._count.tickets > rawMaxGuests) {
+				res.status(400).json({
+					error: `maxGuests cannot be lower than the current number of tickets (${existing._count.tickets})`,
+				});
+				return null;
+			}
+
+			return tenantPrisma.event.update({
+				where: { id: existing.id },
+				data: {
+					maxGuests: rawMaxGuests,
+					version: { increment: 1 },
+				},
+			});
+		});
+
+		if (!updated) {
+			return;
+		}
+
+		res.json({ data: updated });
+	} catch (error) {
+		console.error('Error updating event:', error);
+		res.status(500).json({ error: 'Failed to update event' });
 	}
 });
 
