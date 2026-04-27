@@ -7,6 +7,9 @@ export interface JwtPayload {
 	role: string;
 	isSuperAdmin: boolean;
 	email?: string;
+	tempScannerId?: string;
+	eventId?: string;
+	isTemporaryScanner?: boolean;
 }
 
 declare global {
@@ -41,6 +44,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 				tenantId: payload.tenantId,
 				role: payload.role,
 				isSuperAdmin: payload.isSuperAdmin,
+				tempScannerId: payload.tempScannerId,
+				eventId: payload.eventId,
 			});
 		}
 		req.user = payload;

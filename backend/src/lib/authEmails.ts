@@ -99,3 +99,19 @@ export async function sendPasswordResetEmail(params: { to: string; token: string
 		text: `Reset your QR Guest password here: ${url}\n\nThis link expires in 1 hour.`,
 	});
 }
+
+export async function sendTemporaryScannerAccessEmail(params: { to: string; eventName: string; scannerName: string; loginToken: string }) {
+	const url = `${getFrontendBaseUrl()}/temporal-scanner-login?token=${encodeURIComponent(params.loginToken)}`;
+	await sendEmail({
+		to: params.to,
+		subject: `Scanner access for ${params.eventName}`,
+		html: renderEmailShell(
+			'Scanner access link',
+			`You were invited as a temporary scanner (${params.scannerName}) for ${params.eventName}. Use the link below to access the scanner.`,
+			'Open scanner access',
+			url,
+			'If you should no longer have access, contact your event administrator.',
+		),
+		text: `You were invited as a temporary scanner (${params.scannerName}) for ${params.eventName}. Open scanner access here: ${url}`,
+	});
+}

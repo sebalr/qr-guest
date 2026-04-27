@@ -21,6 +21,7 @@ model Tenant {
   scans             Scan[]
   guests            Guest[]
   ticketTypes       TicketType[]
+  temporaryScanners TemporaryScanner[]
   syncStates        SyncState[]
   deviceDebugEvents DeviceEventDebugData[]
 
@@ -36,6 +37,8 @@ model User {
   createdAt    DateTime      @default(now()) @map("created_at")
   userTenants  UserTenant[]
   scans        Scan[]
+  temporaryScannerProfiles TemporaryScanner[] @relation("TemporaryScannerUser")
+  createdTemporaryScanners TemporaryScanner[] @relation("TemporaryScannerCreatedBy")
   authTokens   UserAuthToken[]
 
   @@map("users")
@@ -82,6 +85,7 @@ model Event {
   tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tickets     Ticket[]
   ticketTypes TicketType[]
+  temporaryScanners TemporaryScanner[]
   scans       Scan[]
   syncStates  SyncState[]
   debugData   DeviceEventDebugData[]
@@ -111,6 +115,28 @@ model Ticket {
   @@unique([id, tenantId])
   @@index([tenantId, eventId, createdAt])
   @@map("tickets")
+}
+
+model TemporaryScanner {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  eventId    String   @map("event_id")
+  userId     String   @map("user_id")
+  createdBy  String   @map("created_by")
+  name       String
+  loginToken String   @unique @map("login_token")
+  isActive   Boolean  @default(true) @map("is_active")
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event      Event    @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  user       User     @relation("TemporaryScannerUser", fields: [userId], references: [id], onDelete: Cascade)
+  creator    User     @relation("TemporaryScannerCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, eventId, createdAt])
+  @@index([tenantId, userId])
+  @@unique([eventId, userId])
+  @@map("temporary_scanners")
 }
 
 model TicketType {

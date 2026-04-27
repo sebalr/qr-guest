@@ -1,0 +1,69 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "retry": "Reintentar"
+  },
+  "scanner": {
+    "title": "Escaner QR",
+    "actions": {
+      "tools": "Herramientas del escaner",
+      "sendingLocalData": "Enviando datos locales...",
+      "sendLocalDataToApi": "Enviar datos locales del dispositivo a la API",
+      "clearingLocalData": "Borrando datos locales...",
+      "clearLocalEventData": "Borrar datos locales del evento",
+      "resyncing": "Resincronizando...",
+      "fullResync": "Resincronizacion completa",
+      "clearing": "Borrando...",
+      "clearLocalData": "Borrar datos locales"
+    },
+    "feedback": {
+      "localDataSent": "Los datos locales del dispositivo se enviaron a la API.",
+      "localDataSendFailed": "No se pudieron enviar los datos locales del dispositivo.",
+      "localDataCleared": "Se borraron los datos locales de este evento.",
+      "localDataClearFailed": "No se pudieron borrar los datos locales del dispositivo."
+    },
+    "errors": {
+      "syncFailed": "La sincronizacion fallo",
+      "fullResyncFailed": "La resincronizacion completa fallo",
+      "cameraUnavailable": "Acceso a camara denegado o no disponible.",
+      "invalidQrFormat": "Formato de codigo QR invalido.",
+      "ticketNotFound": "Ticket no encontrado en la base de datos local. Se requiere sincronizacion.",
+      "cancelledTicket": "Ticket cancelado.",
+      "rescanLimitReached": "El ticket ya se escaneo de nuevo. No se permiten mas escaneos.",
+      "indexedDbIssue": "Error en la base de datos local. No sincronizado.",
+      "scanFailed": "El escaneo fallo.",
+      "syncErrorBanner": "Error de sincronizacion: {{error}}. Los escaneos locales estan seguros."
+    },
+    "success": {
+      "ticketScanned": "Ticket escaneado correctamente"
+    },
+    "camera": {
+      "unavailableTitle": "Camara no disponible",
+      "allowAccessHint": "Permite el acceso a la camara en la configuracion del navegador y recarga.",
+      "pointAtQr": "Apunta la camara a un codigo QR"
+    },
+    "clearDataDialog": {
+      "title": "Borrar datos locales del evento?",
+      "description": "Esto elimina tickets, escaneos y metadatos de sincronizacion locales solo en este dispositivo. Los datos del servidor no se afectan."
+    },
+    "syncStatus": {
+      "online": "En linea",
+      "offline": "Sin conexion",
+      "secondsAgo_one": "hace {{count}} s",
+      "secondsAgo_other": "hace {{count}} s",
+      "minutesAgo_one": "hace {{count}} min",
+      "minutesAgo_other": "hace {{count}} min",
+      "hoursAgo_one": "hace {{count}} h",
+      "hoursAgo_other": "hace {{count}} h",
+      "pending_one": "{{count}} pendiente",
+      "pending_other": "{{count}} pendientes",
+      "notSynced": "No sincronizado"
+    },
+    "duplicateDialog": {
+      "title": "Escaneo duplicado detectado",
+      "alreadyScannedAt": "Este ticket ya fue escaneado a las {{scanTime}}.",
+      "description": "Aun puedes registrar este escaneo si esta persona necesita contarse otra vez.",
+      "recordAgain": "Registrar de nuevo"
+    }
+  }
+}

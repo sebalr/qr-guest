@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
+import { randomBytes, randomUUID } from 'crypto';
+import { sendTemporaryScannerAccessEmail } from '../lib/authEmails';
 import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
-import { requireRole, requireSuperAdmin } from '../middleware/roles';
+import { requireRole, requireSuperAdmin, requireTemporaryScannerEventAccess } from '../middleware/roles';
 import { withRls } from '../prisma';
 
 const router = Router();
@@ -36,6 +38,13 @@ router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request,
 		});
 
 		const events = await withRls(context, async tenantPrisma => {
+			if (req.user?.isTemporaryScanner === true && req.user.eventId) {
+				const event = await tenantPrisma.event.findFirst({
+					where: { id: req.user.eventId },
+				});
+				return event ? [event] : [];
+			}
+
 			return tenantPrisma.event.findMany({
 				orderBy: { createdAt: 'desc' },
 			});
@@ -48,36 +57,41 @@ router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request,
 	}
 });
 
-router.get('/:id', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
-	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+router.get(
+	'/:id',
+	requireRole(['owner', 'admin', 'scanner']),
+	requireTemporaryScannerEventAccess('id'),
+	async (req: Request, res: Response): Promise<void> => {
+		const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-	if (!eventId) {
-		res.status(400).json({ error: 'event id is required' });
-		return;
-	}
-
-	try {
-		const context = resolveRlsContext(req, {
-			allowSuperAdminTenantOverride: true,
-			allowSuperAdminBypass: true,
-		});
-
-		const event = await withRls(context, async tenantPrisma => {
-			return tenantPrisma.event.findFirst({
-				where: { id: eventId },
-			});
-		});
-		if (!event) {
-			res.status(404).json({ error: 'Event not found' });
+		if (!eventId) {
+			res.status(400).json({ error: 'event id is required' });
 			return;
 		}
 
-		res.json({ data: event });
-	} catch (error) {
-		console.error('Error fetching event:', error);
-		res.status(500).json({ error: 'Failed to load event' });
-	}
-});
+		try {
+			const context = resolveRlsContext(req, {
+				allowSuperAdminTenantOverride: true,
+				allowSuperAdminBypass: true,
+			});
+
+			const event = await withRls(context, async tenantPrisma => {
+				return tenantPrisma.event.findFirst({
+					where: { id: eventId },
+				});
+			});
+			if (!event) {
+				res.status(404).json({ error: 'Event not found' });
+				return;
+			}
+
+			res.json({ data: event });
+		} catch (error) {
+			console.error('Error fetching event:', error);
+			res.status(500).json({ error: 'Failed to load event' });
+		}
+	},
+);
 
 router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -201,6 +215,282 @@ router.patch('/:id', requireSuperAdmin, async (req: Request, res: Response): Pro
 		res.status(500).json({ error: 'Failed to update event' });
 	}
 });
+
+router.get('/:id/temporary-scanners', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'event id is required' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const scanners = await withRls(context, async tenantPrisma => {
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			if (!event) {
+				res.status(404).json({ error: 'Event not found' });
+				return null;
+			}
+
+			return tenantPrisma.temporaryScanner.findMany({
+				where: { eventId },
+				orderBy: [{ createdAt: 'desc' }],
+			});
+		});
+
+		if (!scanners) {
+			return;
+		}
+
+		res.json({
+			data: scanners.map(scanner => ({
+				id: scanner.id,
+				eventId: scanner.eventId,
+				name: scanner.name,
+				loginToken: scanner.loginToken,
+				isActive: scanner.isActive,
+				lastUsedAt: scanner.lastUsedAt,
+				createdAt: scanner.createdAt,
+			})),
+		});
+	} catch (error) {
+		console.error('Error listing temporary scanners:', error);
+		res.status(500).json({ error: 'Failed to load temporary scanners' });
+	}
+});
+
+router.post('/:id/temporary-scanners', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	const rawName = typeof req.body?.name === 'string' ? req.body.name : '';
+	const name = rawName.trim();
+
+	if (!eventId) {
+		res.status(400).json({ error: 'event id is required' });
+		return;
+	}
+
+	if (!name) {
+		res.status(400).json({ error: 'name is required' });
+		return;
+	}
+
+	if (!req.user?.userId) {
+		res.status(401).json({ error: 'Unauthorized' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const created = await withRls(context, async tenantPrisma => {
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			if (!event) {
+				res.status(404).json({ error: 'Event not found' });
+				return null;
+			}
+
+			const user = await tenantPrisma.user.create({
+				data: {
+					email: `temp-scanner-${randomUUID()}@temporary.local`,
+					passwordHash: null,
+					emailVerifiedAt: new Date(),
+					isSuperAdmin: false,
+				},
+			});
+
+			await tenantPrisma.userTenant.create({
+				data: {
+					userId: user.id,
+					tenantId: context.tenantId,
+					role: 'scanner',
+				},
+			});
+
+			const loginToken = randomBytes(24).toString('base64url');
+			return tenantPrisma.temporaryScanner.create({
+				data: {
+					tenantId: context.tenantId,
+					eventId,
+					userId: user.id,
+					createdBy: req.user!.userId,
+					name,
+					loginToken,
+				},
+			});
+		});
+
+		if (!created) {
+			return;
+		}
+
+		res.status(201).json({
+			data: {
+				id: created.id,
+				eventId: created.eventId,
+				name: created.name,
+				loginToken: created.loginToken,
+				isActive: created.isActive,
+				lastUsedAt: created.lastUsedAt,
+				createdAt: created.createdAt,
+			},
+		});
+	} catch (error) {
+		console.error('Error creating temporary scanner:', error);
+		res.status(500).json({ error: 'Failed to create temporary scanner' });
+	}
+});
+
+router.patch('/:id/temporary-scanners/:scannerId', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	const scannerId = Array.isArray(req.params.scannerId) ? req.params.scannerId[0] : req.params.scannerId;
+	const isActive = req.body?.isActive;
+
+	if (!eventId || !scannerId) {
+		res.status(400).json({ error: 'event id and scanner id are required' });
+		return;
+	}
+
+	if (typeof isActive !== 'boolean') {
+		res.status(400).json({ error: 'isActive must be a boolean' });
+		return;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const updated = await withRls(context, async tenantPrisma => {
+			const scanner = await tenantPrisma.temporaryScanner.findFirst({
+				where: { id: scannerId, eventId },
+			});
+			if (!scanner) {
+				res.status(404).json({ error: 'Temporary scanner not found' });
+				return null;
+			}
+
+			return tenantPrisma.temporaryScanner.update({
+				where: { id: scanner.id },
+				data: { isActive },
+			});
+		});
+
+		if (!updated) {
+			return;
+		}
+
+		res.json({
+			data: {
+				id: updated.id,
+				eventId: updated.eventId,
+				name: updated.name,
+				loginToken: updated.loginToken,
+				isActive: updated.isActive,
+				lastUsedAt: updated.lastUsedAt,
+				createdAt: updated.createdAt,
+			},
+		});
+	} catch (error) {
+		console.error('Error updating temporary scanner:', error);
+		res.status(500).json({ error: 'Failed to update temporary scanner' });
+	}
+});
+
+router.post(
+	'/:id/temporary-scanners/:scannerId/send-email',
+	requireRole(['owner', 'admin']),
+	async (req: Request, res: Response): Promise<void> => {
+		const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+		const scannerId = Array.isArray(req.params.scannerId) ? req.params.scannerId[0] : req.params.scannerId;
+		const rawRecipientEmail = typeof req.body?.email === 'string' ? req.body.email : '';
+		const recipientEmail = rawRecipientEmail.trim().toLowerCase();
+
+		if (!eventId || !scannerId) {
+			res.status(400).json({ error: 'event id and scanner id are required' });
+			return;
+		}
+
+		if (!recipientEmail) {
+			res.status(400).json({ error: 'email is required' });
+			return;
+		}
+
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(recipientEmail)) {
+			res.status(400).json({ error: 'email must be valid' });
+			return;
+		}
+
+		try {
+			const context = resolveRlsContext(req, {
+				allowSuperAdminTenantOverride: true,
+				allowSuperAdminBypass: true,
+			});
+
+			const scannerData = await withRls(context, async tenantPrisma => {
+				const event = await tenantPrisma.event.findFirst({
+					where: { id: eventId },
+					select: { id: true, name: true },
+				});
+				if (!event) {
+					res.status(404).json({ error: 'Event not found' });
+					return null;
+				}
+
+				const scanner = await tenantPrisma.temporaryScanner.findFirst({
+					where: { id: scannerId, eventId },
+					select: {
+						id: true,
+						name: true,
+						loginToken: true,
+						isActive: true,
+					},
+				});
+
+				if (!scanner) {
+					res.status(404).json({ error: 'Temporary scanner not found' });
+					return null;
+				}
+
+				if (!scanner.isActive) {
+					res.status(400).json({ error: 'Temporary scanner is disabled' });
+					return null;
+				}
+
+				return {
+					eventName: event.name,
+					scannerName: scanner.name,
+					loginToken: scanner.loginToken,
+				};
+			});
+
+			if (!scannerData) {
+				return;
+			}
+
+			await sendTemporaryScannerAccessEmail({
+				to: recipientEmail,
+				eventName: scannerData.eventName,
+				scannerName: scannerData.scannerName,
+				loginToken: scannerData.loginToken,
+			});
+
+			res.json({ data: { message: 'Temporary scanner email sent successfully' } });
+		} catch (error) {
+			console.error('Error sending temporary scanner email:', error);
+			res.status(500).json({ error: 'Failed to send temporary scanner email' });
+		}
+	},
+);
 
 router.get('/:id/ticket-types', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

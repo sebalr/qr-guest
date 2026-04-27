@@ -6,9 +6,6 @@ import {
 	getEventApi,
 	updateEventApi,
 	getEventTicketTypesApi,
-	createEventTicketTypeApi,
-	updateEventTicketTypeApi,
-	deleteEventTicketTypeApi,
 	getTicketsApi,
 	addTicketsApi,
 	createTicketApi,
@@ -49,6 +46,7 @@ import {
 	CheckCircle2,
 	XCircle,
 	BarChart2,
+	Settings,
 	Download,
 	Share2,
 	UserPlus,
@@ -114,22 +112,18 @@ export default function EventDetailPage() {
 	const [cancelTargetTicketId, setCancelTargetTicketId] = useState<string | null>(null);
 	const [cancelingTicket, setCancelingTicket] = useState(false);
 	const [errorDialogMessage, setErrorDialogMessage] = useState<string | null>(null);
-	const [newTicketTypeName, setNewTicketTypeName] = useState('');
-	const [newTicketTypePrice, setNewTicketTypePrice] = useState('');
-	const [ticketTypeError, setTicketTypeError] = useState('');
-	const [savingTicketType, setSavingTicketType] = useState(false);
-	const [editingTicketTypeId, setEditingTicketTypeId] = useState<string | null>(null);
-	const [editingTicketTypeName, setEditingTicketTypeName] = useState('');
-	const [editingTicketTypePrice, setEditingTicketTypePrice] = useState('');
-	const [updatingTicketType, setUpdatingTicketType] = useState(false);
 	const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
 	const [editingTicketTypeSelection, setEditingTicketTypeSelection] = useState<string>('none');
 	const [updatingTicket, setUpdatingTicket] = useState(false);
-	const [ticketTypesDialogOpen, setTicketTypesDialogOpen] = useState(false);
 	const [maxGuestsInput, setMaxGuestsInput] = useState('');
 	const [maxGuestsError, setMaxGuestsError] = useState('');
 	const [savingMaxGuests, setSavingMaxGuests] = useState(false);
 	const compactListRef = useRef<HTMLDivElement | null>(null);
+
+	// Filter state
+	const [selectedFilters, setSelectedFilters] = useState<Set<'total' | 'scanned' | 'cancelled'>>(
+		new Set(['total', 'scanned', 'cancelled']),
+	);
 
 	useEffect(() => {
 		if (!id) return;
@@ -361,87 +355,6 @@ export default function EventDetailPage() {
 		}
 	}
 
-	async function handleCreateTicketType(e: FormEvent) {
-		e.preventDefault();
-		if (!id) return;
-		setTicketTypeError('');
-		setSavingTicketType(true);
-		const name = newTicketTypeName.trim();
-		const price = Number(newTicketTypePrice);
-
-		if (!name) {
-			setTicketTypeError('Ticket type name is required.');
-			setSavingTicketType(false);
-			return;
-		}
-		if (!Number.isFinite(price) || price < 0) {
-			setTicketTypeError('Price must be a valid non-negative number.');
-			setSavingTicketType(false);
-			return;
-		}
-
-		try {
-			const res = await createEventTicketTypeApi(id, { name, price }, tenantScope);
-			setTicketTypes(prev => [...prev, res.data.data]);
-			setNewTicketTypeName('');
-			setNewTicketTypePrice('');
-		} catch {
-			setTicketTypeError('Failed to create ticket type.');
-		} finally {
-			setSavingTicketType(false);
-		}
-	}
-
-	function startEditTicketType(type: TicketType) {
-		setEditingTicketTypeId(type.id);
-		setEditingTicketTypeName(type.name);
-		setEditingTicketTypePrice(type.price.toFixed(2));
-		setTicketTypeError('');
-	}
-
-	async function handleSaveEditedTicketType() {
-		if (!editingTicketTypeId) return;
-		setTicketTypeError('');
-		setUpdatingTicketType(true);
-		const name = editingTicketTypeName.trim();
-		const price = Number(editingTicketTypePrice);
-
-		if (!name) {
-			setTicketTypeError('Ticket type name is required.');
-			setUpdatingTicketType(false);
-			return;
-		}
-		if (!Number.isFinite(price) || price < 0) {
-			setTicketTypeError('Price must be a valid non-negative number.');
-			setUpdatingTicketType(false);
-			return;
-		}
-
-		try {
-			const res = await updateEventTicketTypeApi(editingTicketTypeId, { name, price }, tenantScope);
-			const updatedType = res.data.data;
-			setTicketTypes(prev => prev.map(t => (t.id === editingTicketTypeId ? res.data.data : t)));
-			setTickets(prev => prev.map(t => (t.ticketTypeId === editingTicketTypeId ? { ...t, ticketType: updatedType } : t)));
-			setEditingTicketTypeId(null);
-			setEditingTicketTypeName('');
-			setEditingTicketTypePrice('');
-		} catch {
-			setTicketTypeError('Failed to update ticket type.');
-		} finally {
-			setUpdatingTicketType(false);
-		}
-	}
-
-	async function handleDeleteTicketType(ticketTypeId: string) {
-		try {
-			await deleteEventTicketTypeApi(ticketTypeId, tenantScope);
-			setTicketTypes(prev => prev.filter(t => t.id !== ticketTypeId));
-			setTickets(prev => prev.map(t => (t.ticketTypeId === ticketTypeId ? { ...t, ticketTypeId: null, ticketType: null } : t)));
-		} catch {
-			setTicketTypeError('Failed to delete ticket type.');
-		}
-	}
-
 	function openEditTicketDialog(ticket: Ticket) {
 		setEditingTicket(ticket);
 		setEditingTicketTypeSelection(ticket.ticketTypeId ?? 'none');
@@ -527,10 +440,10 @@ export default function EventDetailPage() {
 	}
 
 	function toggleSelectAll() {
-		if (selected.size === tickets.length) {
+		if (selected.size === displayTickets.length) {
 			setSelected(new Set());
 		} else {
-			setSelected(new Set(tickets.map(t => t.id)));
+			setSelected(new Set(displayTickets.map(t => t.id)));
 		}
 	}
 
@@ -622,6 +535,27 @@ export default function EventDetailPage() {
 		}
 	}
 
+	const toggleFilter = (filter: 'total' | 'scanned' | 'cancelled') => {
+		const newFilters = new Set(selectedFilters);
+		if (newFilters.has(filter)) {
+			newFilters.delete(filter);
+		} else {
+			newFilters.add(filter);
+		}
+		setSelectedFilters(newFilters);
+	};
+
+	const getFilteredTickets = () => {
+		const result: Ticket[] = [];
+		if (selectedFilters.has('total')) result.push(...tickets.filter(t => t.status !== 'cancelled'));
+		if (selectedFilters.has('scanned'))
+			result.push(...tickets.filter(t => scanCounts[t.id] && scanCounts[t.id] > 0 && t.status !== 'cancelled'));
+		if (selectedFilters.has('cancelled')) result.push(...tickets.filter(t => t.status === 'cancelled'));
+		return [...new Map(result.map(t => [t.id, t])).values()];
+	};
+
+	const displayTickets = getFilteredTickets();
+
 	const totalScanned = Object.values(scanCounts).reduce((a, b) => a + b, 0);
 	const cancelledCount = tickets.filter(t => t.status === 'cancelled').length;
 	const hasGuestLimit = typeof event?.maxGuests === 'number';
@@ -629,11 +563,11 @@ export default function EventDetailPage() {
 	const cancelTargetTicket = cancelTargetTicketId ? (tickets.find(t => t.id === cancelTargetTicketId) ?? null) : null;
 	const compactRows = useMemo(() => {
 		const rows: Ticket[][] = [];
-		for (let i = 0; i < tickets.length; i += COMPACT_GRID_COLUMNS) {
-			rows.push(tickets.slice(i, i + COMPACT_GRID_COLUMNS));
+		for (let i = 0; i < displayTickets.length; i += COMPACT_GRID_COLUMNS) {
+			rows.push(displayTickets.slice(i, i + COMPACT_GRID_COLUMNS));
 		}
 		return rows;
-	}, [tickets]);
+	}, [displayTickets]);
 	const compactRowVirtualizer = useVirtualizer({
 		count: compactRows.length,
 		getScrollElement: () => compactListRef.current,
@@ -698,6 +632,16 @@ export default function EventDetailPage() {
 							<span className="hidden sm:inline">Dashboard</span>
 						</Button>
 					)}
+					{canManageTickets && (
+						<Button
+							variant="outline"
+							size="sm"
+							className="gap-1.5"
+							onClick={() => navigate(`/events/${id}/settings${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
+							<Settings className="h-4 w-4" />
+							<span className="hidden sm:inline">Settings</span>
+						</Button>
+					)}
 					<Button
 						size="sm"
 						className="gap-1.5"
@@ -721,22 +665,34 @@ export default function EventDetailPage() {
 								</p>
 							)}
 							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-								<div className="flex flex-col items-center p-3 rounded-lg bg-slate-50 border">
+								<button
+									onClick={() => toggleFilter('total')}
+									className={`flex flex-col items-center p-3 rounded-lg bg-slate-50 border-2 border-slate-300 transition-all cursor-pointer ${
+										selectedFilters.has('total') ? 'border-slate-700 shadow-md bg-slate-100' : 'hover:shadow-sm'
+									}`}>
 									<Users className="h-5 w-5 text-muted-foreground mb-1" />
 									<p className="text-2xl font-bold">{tickets.length}</p>
 									<p className="text-xs text-muted-foreground">Total</p>
-								</div>
-								<div className="flex flex-col items-center p-3 rounded-lg bg-green-50 border border-green-100">
+								</button>
+								<button
+									onClick={() => toggleFilter('scanned')}
+									className={`flex flex-col items-center p-3 rounded-lg bg-green-50 border-2 border-green-300 transition-all cursor-pointer ${
+										selectedFilters.has('scanned') ? 'border-green-700 shadow-md bg-green-100' : 'hover:shadow-sm'
+									}`}>
 									<CheckCircle2 className="h-5 w-5 text-green-600 mb-1" />
 									<p className="text-2xl font-bold text-green-600">{totalScanned}</p>
 									<p className="text-xs text-muted-foreground">Scanned</p>
-								</div>
-								<div className="flex flex-col items-center p-3 rounded-lg bg-red-50 border border-red-100">
+								</button>
+								<button
+									onClick={() => toggleFilter('cancelled')}
+									className={`flex flex-col items-center p-3 rounded-lg bg-red-50 border-2 border-red-300 transition-all cursor-pointer ${
+										selectedFilters.has('cancelled') ? 'border-red-700 shadow-md bg-red-100' : 'hover:shadow-sm'
+									}`}>
 									<XCircle className="h-5 w-5 text-red-500 mb-1" />
 									<p className="text-2xl font-bold text-red-500">{cancelledCount}</p>
 									<p className="text-xs text-muted-foreground">Cancelled</p>
-								</div>
-								<div className="flex flex-col items-center p-3 rounded-lg bg-blue-50 border border-blue-100">
+								</button>
+								<div className="flex flex-col items-center p-3 rounded-lg bg-blue-50 border-2 border-blue-300">
 									<Users className="h-5 w-5 text-blue-600 mb-1" />
 									<p className="text-2xl font-bold text-blue-600">{hasGuestLimit ? event.maxGuests : '∞'}</p>
 									<p className="text-xs text-muted-foreground">Max Guests</p>
@@ -910,15 +866,6 @@ export default function EventDetailPage() {
 					{canManageTickets && (
 						<div className="flex items-center gap-2">
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => {
-									setTicketTypeError('');
-									setTicketTypesDialogOpen(true);
-								}}>
-								Ticket Types
-							</Button>
-							<Button
 								variant={showBulk ? 'outline' : 'default'}
 								size="sm"
 								disabled={guestLimitReached && !showBulk}
@@ -986,7 +933,7 @@ export default function EventDetailPage() {
 				)}
 
 				<div className="space-y-3">
-					{tickets.length === 0 ? (
+					{displayTickets.length === 0 ? (
 						<Card className="py-12 text-center">
 							<CardContent>
 								<p className="text-muted-foreground">No guests yet.</p>
@@ -1084,7 +1031,7 @@ export default function EventDetailPage() {
 							</div>
 						</div>
 					) : (
-						tickets.map(ticket => (
+						displayTickets.map(ticket => (
 							<Card key={ticket.id}>
 								<CardContent className="p-4">
 									<div className="flex justify-between items-start gap-4">
@@ -1209,88 +1156,6 @@ export default function EventDetailPage() {
 			)}
 
 			<Dialog
-				open={ticketTypesDialogOpen}
-				onOpenChange={setTicketTypesDialogOpen}>
-				<DialogContent className="sm:max-w-2xl">
-					<DialogHeader>
-						<DialogTitle>Ticket Types</DialogTitle>
-						<DialogDescription>Create, edit, and delete ticket types for this event.</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4">
-						<form
-							onSubmit={handleCreateTicketType}
-							className="grid gap-3 md:grid-cols-[1fr_160px_auto] items-end">
-							<div className="space-y-1">
-								<Label htmlFor="new-ticket-type-name">Name</Label>
-								<Input
-									id="new-ticket-type-name"
-									placeholder="VIP"
-									value={newTicketTypeName}
-									onChange={e => setNewTicketTypeName(e.target.value)}
-								/>
-							</div>
-							<div className="space-y-1">
-								<Label htmlFor="new-ticket-type-price">Price</Label>
-								<Input
-									id="new-ticket-type-price"
-									type="number"
-									inputMode="decimal"
-									min="0"
-									step="0.01"
-									placeholder="49.90"
-									value={newTicketTypePrice}
-									onChange={e => setNewTicketTypePrice(e.target.value)}
-								/>
-							</div>
-							<Button
-								type="submit"
-								disabled={savingTicketType}>
-								{savingTicketType ? 'Saving…' : 'Add Type'}
-							</Button>
-						</form>
-
-						{ticketTypeError && (
-							<Alert variant="destructive">
-								<AlertCircle className="h-4 w-4" />
-								<AlertDescription>{ticketTypeError}</AlertDescription>
-							</Alert>
-						)}
-
-						{ticketTypes.length === 0 ? (
-							<p className="text-sm text-muted-foreground">No ticket types configured yet.</p>
-						) : (
-							<div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-								{ticketTypes.map(type => (
-									<div
-										key={type.id}
-										className="rounded-lg border p-3 flex items-center justify-between gap-3">
-										<div>
-											<p className="font-medium">{type.name}</p>
-											<p className="text-xs text-muted-foreground">${type.price.toFixed(2)}</p>
-										</div>
-										<div className="flex gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => startEditTicketType(type)}>
-												Edit
-											</Button>
-											<Button
-												variant="destructive"
-												size="sm"
-												onClick={() => handleDeleteTicketType(type.id)}>
-												Delete
-											</Button>
-										</div>
-									</div>
-								))}
-							</div>
-						)}
-					</div>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog
 				open={!!cancelTargetTicketId}
 				onOpenChange={open => {
 					if (!open && !cancelingTicket) setCancelTargetTicketId(null);
@@ -1316,58 +1181,6 @@ export default function EventDetailPage() {
 							disabled={cancelingTicket}
 							onClick={handleCancelConfirmed}>
 							{cancelingTicket ? 'Cancelling…' : 'Cancel Ticket'}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog
-				open={!!editingTicketTypeId}
-				onOpenChange={open => {
-					if (!open && !updatingTicketType) {
-						setEditingTicketTypeId(null);
-						setEditingTicketTypeName('');
-						setEditingTicketTypePrice('');
-					}
-				}}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Edit Ticket Type</DialogTitle>
-						<DialogDescription>Update ticket type name and price.</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-3">
-						<div className="space-y-1">
-							<Label htmlFor="edit-ticket-type-name">Name</Label>
-							<Input
-								id="edit-ticket-type-name"
-								value={editingTicketTypeName}
-								onChange={e => setEditingTicketTypeName(e.target.value)}
-							/>
-						</div>
-						<div className="space-y-1">
-							<Label htmlFor="edit-ticket-type-price">Price</Label>
-							<Input
-								id="edit-ticket-type-price"
-								type="number"
-								inputMode="decimal"
-								min="0"
-								step="0.01"
-								value={editingTicketTypePrice}
-								onChange={e => setEditingTicketTypePrice(e.target.value)}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							disabled={updatingTicketType}
-							onClick={() => setEditingTicketTypeId(null)}>
-							Cancel
-						</Button>
-						<Button
-							disabled={updatingTicketType}
-							onClick={handleSaveEditedTicketType}>
-							{updatingTicketType ? 'Saving…' : 'Save'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

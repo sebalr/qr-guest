@@ -8,6 +8,9 @@ interface JWTPayload {
 	role?: string;
 	isSuperAdmin?: boolean;
 	email?: string;
+	tempScannerId?: string;
+	eventId?: string;
+	isTemporaryScanner?: boolean;
 	exp?: number;
 }
 
@@ -17,6 +20,9 @@ interface AuthUser {
 	role: string;
 	isSuperAdmin: boolean;
 	email: string;
+	tempScannerId?: string;
+	eventId?: string;
+	isTemporaryScanner: boolean;
 }
 
 interface AvailableTenant {
@@ -64,6 +70,9 @@ function tokenToUser(token: string): AuthUser | null {
 		role: payload.role,
 		isSuperAdmin: payload.isSuperAdmin === true,
 		email: payload.email ?? '',
+		tempScannerId: payload.tempScannerId,
+		eventId: payload.eventId,
+		isTemporaryScanner: payload.isTemporaryScanner === true,
 	};
 }
 

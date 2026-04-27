@@ -234,6 +234,11 @@ router.get('/events/:id/tickets', requireRole(['owner', 'admin', 'scanner']), as
 		return;
 	}
 
+	if (req.user?.isTemporaryScanner === true) {
+		res.status(403).json({ error: 'Forbidden: temporary scanner access is limited to scanning' });
+		return;
+	}
+
 	const pageSizeRaw = Array.isArray(req.query.pageSize) ? req.query.pageSize[0] : req.query.pageSize;
 	const parsedPageSize = typeof pageSizeRaw === 'string' ? Number.parseInt(pageSizeRaw, 10) : Number.NaN;
 	const pageSize = Number.isFinite(parsedPageSize)
@@ -391,6 +396,11 @@ router.get('/tickets/:id/scans', requireRole(['owner', 'admin', 'scanner']), asy
 	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	if (!ticketId) {
 		res.status(400).json({ error: 'Invalid ticket id' });
+		return;
+	}
+
+	if (req.user?.isTemporaryScanner === true) {
+		res.status(403).json({ error: 'Forbidden: temporary scanner access is limited to scanning' });
 		return;
 	}
 

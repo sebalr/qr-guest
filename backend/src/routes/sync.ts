@@ -31,6 +31,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 		return;
 	}
 
+	if (req.user?.isTemporaryScanner === true && req.user.eventId !== eventId) {
+		res.status(403).json({ error: 'Forbidden: scanner access is limited to one event' });
+		return;
+	}
+
 	const normalizedLocalScans = Array.isArray(localScans) ? localScans : [];
 	const explicitDeviceId = typeof deviceId === 'string' ? deviceId.trim() : '';
 	const fallbackDeviceId = normalizedLocalScans

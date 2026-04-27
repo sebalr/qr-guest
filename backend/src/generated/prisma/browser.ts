@@ -48,6 +48,11 @@ export type Event = Prisma.EventModel
  */
 export type Ticket = Prisma.TicketModel
 /**
+ * Model TemporaryScanner
+ * 
+ */
+export type TemporaryScanner = Prisma.TemporaryScannerModel
+/**
  * Model TicketType
  * 
  */

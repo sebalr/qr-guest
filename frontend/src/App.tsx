@@ -8,11 +8,13 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AcceptInvitationPage from './pages/AcceptInvitationPage';
+import TemporalScannerLoginPage from './pages/TemporalScannerLoginPage';
 import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
 import ScannerPage from './pages/ScannerPage';
 import SuperAdminPage from './pages/SuperAdminPage';
 import DashboardPage from './pages/DashboardPage';
+import EventSettingsPage from './pages/EventSettingsPage';
 
 export default function App() {
 	return (
@@ -48,6 +50,10 @@ export default function App() {
 						element={<AcceptInvitationPage />}
 					/>
 					<Route
+						path="/temporal-scanner-login"
+						element={<TemporalScannerLoginPage />}
+					/>
+					<Route
 						path="/events"
 						element={
 							<ProtectedRoute roles={['scanner', 'admin', 'owner']}>
@@ -76,6 +82,14 @@ export default function App() {
 						element={
 							<ProtectedRoute roles={['admin', 'owner']}>
 								<DashboardPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/events/:id/settings"
+						element={
+							<ProtectedRoute roles={['admin', 'owner']}>
+								<EventSettingsPage />
 							</ProtectedRoute>
 						}
 					/>

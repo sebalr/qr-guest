@@ -21,6 +21,27 @@ export function ProtectedRoute({ children, roles }: Props) {
 		);
 	}
 
+	if (user.isTemporaryScanner) {
+		if (!user.eventId) {
+			return (
+				<Navigate
+					to="/login"
+					replace
+				/>
+			);
+		}
+
+		const scannerPath = `/events/${user.eventId}/scan`;
+		if (location.pathname !== scannerPath) {
+			return (
+				<Navigate
+					to={scannerPath}
+					replace
+				/>
+			);
+		}
+	}
+
 	if (!user.isSuperAdmin && roles && !roles.includes(user.role)) {
 		return (
 			<Navigate

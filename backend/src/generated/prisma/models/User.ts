@@ -192,6 +192,8 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userTenants?: Prisma.UserTenantListRelationFilter
   scans?: Prisma.ScanListRelationFilter
+  temporaryScannerProfiles?: Prisma.TemporaryScannerListRelationFilter
+  createdTemporaryScanners?: Prisma.TemporaryScannerListRelationFilter
   authTokens?: Prisma.UserAuthTokenListRelationFilter
 }
 
@@ -204,6 +206,8 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   userTenants?: Prisma.UserTenantOrderByRelationAggregateInput
   scans?: Prisma.ScanOrderByRelationAggregateInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerOrderByRelationAggregateInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerOrderByRelationAggregateInput
   authTokens?: Prisma.UserAuthTokenOrderByRelationAggregateInput
 }
 
@@ -219,6 +223,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userTenants?: Prisma.UserTenantListRelationFilter
   scans?: Prisma.ScanListRelationFilter
+  temporaryScannerProfiles?: Prisma.TemporaryScannerListRelationFilter
+  createdTemporaryScanners?: Prisma.TemporaryScannerListRelationFilter
   authTokens?: Prisma.UserAuthTokenListRelationFilter
 }, "id" | "email">
 
@@ -255,6 +261,8 @@ export type UserCreateInput = {
   createdAt?: Date | string
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
   authTokens?: Prisma.UserAuthTokenCreateNestedManyWithoutUserInput
 }
 
@@ -267,6 +275,8 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
   authTokens?: Prisma.UserAuthTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -279,6 +289,8 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
   authTokens?: Prisma.UserAuthTokenUpdateManyWithoutUserNestedInput
 }
 
@@ -291,6 +303,8 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
   authTokens?: Prisma.UserAuthTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -393,6 +407,34 @@ export type UserUpdateOneRequiredWithoutUserTenantsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUserTenantsInput, Prisma.UserUpdateWithoutUserTenantsInput>, Prisma.UserUncheckedUpdateWithoutUserTenantsInput>
 }
 
+export type UserCreateNestedOneWithoutTemporaryScannerProfilesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutTemporaryScannerProfilesInput, Prisma.UserUncheckedCreateWithoutTemporaryScannerProfilesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutTemporaryScannerProfilesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutCreatedTemporaryScannersInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedTemporaryScannersInput, Prisma.UserUncheckedCreateWithoutCreatedTemporaryScannersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedTemporaryScannersInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutTemporaryScannerProfilesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutTemporaryScannerProfilesInput, Prisma.UserUncheckedCreateWithoutTemporaryScannerProfilesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutTemporaryScannerProfilesInput
+  upsert?: Prisma.UserUpsertWithoutTemporaryScannerProfilesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutTemporaryScannerProfilesInput, Prisma.UserUpdateWithoutTemporaryScannerProfilesInput>, Prisma.UserUncheckedUpdateWithoutTemporaryScannerProfilesInput>
+}
+
+export type UserUpdateOneRequiredWithoutCreatedTemporaryScannersNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedTemporaryScannersInput, Prisma.UserUncheckedCreateWithoutCreatedTemporaryScannersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedTemporaryScannersInput
+  upsert?: Prisma.UserUpsertWithoutCreatedTemporaryScannersInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCreatedTemporaryScannersInput, Prisma.UserUpdateWithoutCreatedTemporaryScannersInput>, Prisma.UserUncheckedUpdateWithoutCreatedTemporaryScannersInput>
+}
+
 export type UserCreateNestedOneWithoutScansInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutScansInput, Prisma.UserUncheckedCreateWithoutScansInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutScansInput
@@ -416,6 +458,8 @@ export type UserCreateWithoutAuthTokensInput = {
   createdAt?: Date | string
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
 }
 
 export type UserUncheckedCreateWithoutAuthTokensInput = {
@@ -427,6 +471,8 @@ export type UserUncheckedCreateWithoutAuthTokensInput = {
   createdAt?: Date | string
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
 }
 
 export type UserCreateOrConnectWithoutAuthTokensInput = {
@@ -454,6 +500,8 @@ export type UserUpdateWithoutAuthTokensInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuthTokensInput = {
@@ -465,6 +513,8 @@ export type UserUncheckedUpdateWithoutAuthTokensInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
 }
 
 export type UserCreateWithoutUserTenantsInput = {
@@ -475,6 +525,8 @@ export type UserCreateWithoutUserTenantsInput = {
   isSuperAdmin?: boolean
   createdAt?: Date | string
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
   authTokens?: Prisma.UserAuthTokenCreateNestedManyWithoutUserInput
 }
 
@@ -486,6 +538,8 @@ export type UserUncheckedCreateWithoutUserTenantsInput = {
   isSuperAdmin?: boolean
   createdAt?: Date | string
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
   authTokens?: Prisma.UserAuthTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -513,6 +567,8 @@ export type UserUpdateWithoutUserTenantsInput = {
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
   authTokens?: Prisma.UserAuthTokenUpdateManyWithoutUserNestedInput
 }
 
@@ -524,6 +580,144 @@ export type UserUncheckedUpdateWithoutUserTenantsInput = {
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
+  authTokens?: Prisma.UserAuthTokenUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutTemporaryScannerProfilesInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  isSuperAdmin?: boolean
+  createdAt?: Date | string
+  userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
+  scans?: Prisma.ScanCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
+  authTokens?: Prisma.UserAuthTokenCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutTemporaryScannerProfilesInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  isSuperAdmin?: boolean
+  createdAt?: Date | string
+  userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
+  authTokens?: Prisma.UserAuthTokenUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutTemporaryScannerProfilesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutTemporaryScannerProfilesInput, Prisma.UserUncheckedCreateWithoutTemporaryScannerProfilesInput>
+}
+
+export type UserCreateWithoutCreatedTemporaryScannersInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  isSuperAdmin?: boolean
+  createdAt?: Date | string
+  userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
+  scans?: Prisma.ScanCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
+  authTokens?: Prisma.UserAuthTokenCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutCreatedTemporaryScannersInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  isSuperAdmin?: boolean
+  createdAt?: Date | string
+  userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
+  authTokens?: Prisma.UserAuthTokenUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutCreatedTemporaryScannersInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedTemporaryScannersInput, Prisma.UserUncheckedCreateWithoutCreatedTemporaryScannersInput>
+}
+
+export type UserUpsertWithoutTemporaryScannerProfilesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutTemporaryScannerProfilesInput, Prisma.UserUncheckedUpdateWithoutTemporaryScannerProfilesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutTemporaryScannerProfilesInput, Prisma.UserUncheckedCreateWithoutTemporaryScannerProfilesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutTemporaryScannerProfilesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutTemporaryScannerProfilesInput, Prisma.UserUncheckedUpdateWithoutTemporaryScannerProfilesInput>
+}
+
+export type UserUpdateWithoutTemporaryScannerProfilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
+  authTokens?: Prisma.UserAuthTokenUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutTemporaryScannerProfilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
+  authTokens?: Prisma.UserAuthTokenUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserUpsertWithoutCreatedTemporaryScannersInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCreatedTemporaryScannersInput, Prisma.UserUncheckedUpdateWithoutCreatedTemporaryScannersInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedTemporaryScannersInput, Prisma.UserUncheckedCreateWithoutCreatedTemporaryScannersInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCreatedTemporaryScannersInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCreatedTemporaryScannersInput, Prisma.UserUncheckedUpdateWithoutCreatedTemporaryScannersInput>
+}
+
+export type UserUpdateWithoutCreatedTemporaryScannersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
+  authTokens?: Prisma.UserAuthTokenUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCreatedTemporaryScannersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
   authTokens?: Prisma.UserAuthTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -535,6 +729,8 @@ export type UserCreateWithoutScansInput = {
   isSuperAdmin?: boolean
   createdAt?: Date | string
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
   authTokens?: Prisma.UserAuthTokenCreateNestedManyWithoutUserInput
 }
 
@@ -546,6 +742,8 @@ export type UserUncheckedCreateWithoutScansInput = {
   isSuperAdmin?: boolean
   createdAt?: Date | string
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
   authTokens?: Prisma.UserAuthTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -573,6 +771,8 @@ export type UserUpdateWithoutScansInput = {
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
   authTokens?: Prisma.UserAuthTokenUpdateManyWithoutUserNestedInput
 }
 
@@ -584,6 +784,8 @@ export type UserUncheckedUpdateWithoutScansInput = {
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
   authTokens?: Prisma.UserAuthTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -595,12 +797,16 @@ export type UserUncheckedUpdateWithoutScansInput = {
 export type UserCountOutputType = {
   userTenants: number
   scans: number
+  temporaryScannerProfiles: number
+  createdTemporaryScanners: number
   authTokens: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userTenants?: boolean | UserCountOutputTypeCountUserTenantsArgs
   scans?: boolean | UserCountOutputTypeCountScansArgs
+  temporaryScannerProfiles?: boolean | UserCountOutputTypeCountTemporaryScannerProfilesArgs
+  createdTemporaryScanners?: boolean | UserCountOutputTypeCountCreatedTemporaryScannersArgs
   authTokens?: boolean | UserCountOutputTypeCountAuthTokensArgs
 }
 
@@ -631,6 +837,20 @@ export type UserCountOutputTypeCountScansArgs<ExtArgs extends runtime.Types.Exte
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountTemporaryScannerProfilesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TemporaryScannerWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCreatedTemporaryScannersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TemporaryScannerWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountAuthTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.UserAuthTokenWhereInput
 }
@@ -645,6 +865,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   userTenants?: boolean | Prisma.User$userTenantsArgs<ExtArgs>
   scans?: boolean | Prisma.User$scansArgs<ExtArgs>
+  temporaryScannerProfiles?: boolean | Prisma.User$temporaryScannerProfilesArgs<ExtArgs>
+  createdTemporaryScanners?: boolean | Prisma.User$createdTemporaryScannersArgs<ExtArgs>
   authTokens?: boolean | Prisma.User$authTokensArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
@@ -680,6 +902,8 @@ export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userTenants?: boolean | Prisma.User$userTenantsArgs<ExtArgs>
   scans?: boolean | Prisma.User$scansArgs<ExtArgs>
+  temporaryScannerProfiles?: boolean | Prisma.User$temporaryScannerProfilesArgs<ExtArgs>
+  createdTemporaryScanners?: boolean | Prisma.User$createdTemporaryScannersArgs<ExtArgs>
   authTokens?: boolean | Prisma.User$authTokensArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -691,6 +915,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     userTenants: Prisma.$UserTenantPayload<ExtArgs>[]
     scans: Prisma.$ScanPayload<ExtArgs>[]
+    temporaryScannerProfiles: Prisma.$TemporaryScannerPayload<ExtArgs>[]
+    createdTemporaryScanners: Prisma.$TemporaryScannerPayload<ExtArgs>[]
     authTokens: Prisma.$UserAuthTokenPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1096,6 +1322,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   userTenants<T extends Prisma.User$userTenantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userTenantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserTenantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   scans<T extends Prisma.User$scansArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$scansArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ScanPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  temporaryScannerProfiles<T extends Prisma.User$temporaryScannerProfilesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$temporaryScannerProfilesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemporaryScannerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  createdTemporaryScanners<T extends Prisma.User$createdTemporaryScannersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdTemporaryScannersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemporaryScannerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   authTokens<T extends Prisma.User$authTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$authTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserAuthTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1570,6 +1798,54 @@ export type User$scansArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
   take?: number
   skip?: number
   distinct?: Prisma.ScanScalarFieldEnum | Prisma.ScanScalarFieldEnum[]
+}
+
+/**
+ * User.temporaryScannerProfiles
+ */
+export type User$temporaryScannerProfilesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TemporaryScanner
+   */
+  select?: Prisma.TemporaryScannerSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TemporaryScanner
+   */
+  omit?: Prisma.TemporaryScannerOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TemporaryScannerInclude<ExtArgs> | null
+  where?: Prisma.TemporaryScannerWhereInput
+  orderBy?: Prisma.TemporaryScannerOrderByWithRelationInput | Prisma.TemporaryScannerOrderByWithRelationInput[]
+  cursor?: Prisma.TemporaryScannerWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TemporaryScannerScalarFieldEnum | Prisma.TemporaryScannerScalarFieldEnum[]
+}
+
+/**
+ * User.createdTemporaryScanners
+ */
+export type User$createdTemporaryScannersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TemporaryScanner
+   */
+  select?: Prisma.TemporaryScannerSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TemporaryScanner
+   */
+  omit?: Prisma.TemporaryScannerOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TemporaryScannerInclude<ExtArgs> | null
+  where?: Prisma.TemporaryScannerWhereInput
+  orderBy?: Prisma.TemporaryScannerOrderByWithRelationInput | Prisma.TemporaryScannerOrderByWithRelationInput[]
+  cursor?: Prisma.TemporaryScannerWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TemporaryScannerScalarFieldEnum | Prisma.TemporaryScannerScalarFieldEnum[]
 }
 
 /**

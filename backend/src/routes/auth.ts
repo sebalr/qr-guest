@@ -30,7 +30,16 @@ function normalizeEmail(email: string): string {
 	return email.trim().toLowerCase();
 }
 
-function signAuthToken(params: { userId: string; tenantId: string; role: string; isSuperAdmin: boolean; email: string }): string {
+function signAuthToken(params: {
+	userId: string;
+	tenantId: string;
+	role: string;
+	isSuperAdmin: boolean;
+	email: string;
+	tempScannerId?: string;
+	eventId?: string;
+	isTemporaryScanner?: boolean;
+}): string {
 	const secret = process.env.JWT_SECRET!;
 	return jwt.sign(params, secret, { expiresIn: '7d' });
 }
@@ -246,6 +255,58 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 	} catch (error) {
 		console.error('Login error:', error);
 		res.status(500).json({ error: 'Login failed' });
+	}
+});
+
+router.post('/temporal-login', async (req: Request, res: Response): Promise<void> => {
+	const tokenFromQuery = typeof req.query.token === 'string' ? req.query.token : '';
+	const tokenFromBody = typeof req.body?.token === 'string' ? req.body.token : '';
+	const token = (tokenFromQuery || tokenFromBody).trim();
+
+	if (!token) {
+		res.status(400).json({ error: 'token is required' });
+		return;
+	}
+
+	try {
+		const scanner = await prisma.temporaryScanner.findUnique({
+			where: { loginToken: token },
+			include: {
+				user: true,
+				event: {
+					select: { id: true },
+				},
+			},
+		});
+
+		if (!scanner || !scanner.isActive) {
+			res.status(401).json({ error: 'Invalid or inactive scanner link' });
+			return;
+		}
+
+		await prisma.temporaryScanner.update({
+			where: { id: scanner.id },
+			data: { lastUsedAt: new Date() },
+		});
+
+		res.json({
+			data: {
+				token: signAuthToken({
+					userId: scanner.userId,
+					tenantId: scanner.tenantId,
+					role: 'scanner',
+					isSuperAdmin: false,
+					email: scanner.user.email,
+					tempScannerId: scanner.id,
+					eventId: scanner.eventId,
+					isTemporaryScanner: true,
+				}),
+				eventId: scanner.event.id,
+			},
+		});
+	} catch (error) {
+		console.error('Temporal login error:', error);
+		res.status(500).json({ error: 'Temporal login failed' });
 	}
 });
 

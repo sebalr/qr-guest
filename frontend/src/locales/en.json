@@ -1,0 +1,69 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "retry": "Retry"
+  },
+  "scanner": {
+    "title": "QR Scanner",
+    "actions": {
+      "tools": "Scanner tools",
+      "sendingLocalData": "Sending local data...",
+      "sendLocalDataToApi": "Send local device data to API",
+      "clearingLocalData": "Clearing local data...",
+      "clearLocalEventData": "Clear local event data",
+      "resyncing": "Resyncing...",
+      "fullResync": "Full Resync",
+      "clearing": "Clearing...",
+      "clearLocalData": "Clear Local Data"
+    },
+    "feedback": {
+      "localDataSent": "Local device event data sent to API.",
+      "localDataSendFailed": "Failed to send local device event data.",
+      "localDataCleared": "Local device data cleared for this event.",
+      "localDataClearFailed": "Failed to clear local device data."
+    },
+    "errors": {
+      "syncFailed": "Sync failed",
+      "fullResyncFailed": "Full resync failed",
+      "cameraUnavailable": "Camera access denied or unavailable.",
+      "invalidQrFormat": "Invalid QR code format.",
+      "ticketNotFound": "Ticket not found in local database. Sync required.",
+      "cancelledTicket": "Cancelled ticket.",
+      "rescanLimitReached": "Ticket has already been re-scanned. No further scans allowed.",
+      "indexedDbIssue": "Local database error. Not synced.",
+      "scanFailed": "Scan failed.",
+      "syncErrorBanner": "Sync error: {{error}}. Local scans are safe."
+    },
+    "success": {
+      "ticketScanned": "Ticket scanned successfully!"
+    },
+    "camera": {
+      "unavailableTitle": "Camera Unavailable",
+      "allowAccessHint": "Allow camera access in browser settings and reload.",
+      "pointAtQr": "Point camera at a QR code"
+    },
+    "clearDataDialog": {
+      "title": "Clear local event data?",
+      "description": "This removes local tickets, scans, and sync metadata on this device only. Server data is not affected."
+    },
+    "syncStatus": {
+      "online": "Online",
+      "offline": "Offline",
+      "secondsAgo_one": "{{count}}s ago",
+      "secondsAgo_other": "{{count}}s ago",
+      "minutesAgo_one": "{{count}}m ago",
+      "minutesAgo_other": "{{count}}m ago",
+      "hoursAgo_one": "{{count}}h ago",
+      "hoursAgo_other": "{{count}}h ago",
+      "pending_one": "{{count}} pending",
+      "pending_other": "{{count}} pending",
+      "notSynced": "Not synced"
+    },
+    "duplicateDialog": {
+      "title": "Duplicate Scan Detected",
+      "alreadyScannedAt": "This ticket was already scanned at {{scanTime}}.",
+      "description": "You can still record this scan if this person needs to be counted again.",
+      "recordAgain": "Record Again"
+    }
+  }
+}

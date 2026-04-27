@@ -206,6 +206,16 @@ export interface AuthActionResponse {
 	message: string;
 }
 
+export interface TemporaryScanner {
+	id: string;
+	eventId: string;
+	name: string;
+	loginToken: string;
+	isActive: boolean;
+	lastUsedAt: string | null;
+	createdAt: string;
+}
+
 // Auth
 export const loginApi = (email: string, password: string, recaptchaToken?: string) =>
 	api.post<{ data: { token?: string; tenants?: Tenant[]; userId?: string } }>('/auth/login', { email, password, recaptchaToken });
@@ -227,6 +237,8 @@ export const resetPasswordApi = (token: string, password: string) =>
 	api.post<{ data: AuthActionResponse }>('/auth/reset-password', { token, password });
 export const acceptInvitationApi = (token: string, password: string) =>
 	api.post<{ data: { token?: string; tenants?: Tenant[]; userId?: string } }>('/auth/accept-invitation', { token, password });
+export const temporalLoginApi = (token: string) =>
+	api.post<{ data: { token: string; eventId: string } }>(`/auth/temporal-login`, { token });
 
 // Events
 export const getEventsApi = () => api.get<{ data: Event[] }>('/events');
@@ -249,6 +261,28 @@ export const updateEventTicketTypeApi = (
 ) => api.patch<{ data: TicketType }>(`/events/ticket-types/${ticketTypeId}`, data, { params: tenantScopedParams(options) });
 export const deleteEventTicketTypeApi = (ticketTypeId: string, options?: TenantScopedRequestOptions) =>
 	api.delete<{ data: { id: string } }>(`/events/ticket-types/${ticketTypeId}`, { params: tenantScopedParams(options) });
+export const getEventTemporaryScannersApi = (eventId: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: TemporaryScanner[] }>(`/events/${eventId}/temporary-scanners`, { params: tenantScopedParams(options) });
+export const createEventTemporaryScannerApi = (eventId: string, data: { name: string }, options?: TenantScopedRequestOptions) =>
+	api.post<{ data: TemporaryScanner }>(`/events/${eventId}/temporary-scanners`, data, { params: tenantScopedParams(options) });
+export const updateEventTemporaryScannerApi = (
+	eventId: string,
+	scannerId: string,
+	data: { isActive: boolean },
+	options?: TenantScopedRequestOptions,
+) =>
+	api.patch<{ data: TemporaryScanner }>(`/events/${eventId}/temporary-scanners/${scannerId}`, data, {
+		params: tenantScopedParams(options),
+	});
+export const sendEventTemporaryScannerEmailApi = (
+	eventId: string,
+	scannerId: string,
+	data: { email: string },
+	options?: TenantScopedRequestOptions,
+) =>
+	api.post<{ data: AuthActionResponse }>(`/events/${eventId}/temporary-scanners/${scannerId}/send-email`, data, {
+		params: tenantScopedParams(options),
+	});
 
 // Tickets
 export const getTicketsApi = (

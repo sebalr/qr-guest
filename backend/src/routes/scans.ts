@@ -33,6 +33,11 @@ router.post('/device-event-debug', async (req: Request, res: Response): Promise<
 		return;
 	}
 
+	if (req.user?.isTemporaryScanner === true && req.user.eventId !== normalizedEventId) {
+		res.status(403).json({ error: 'Forbidden: scanner access is limited to one event' });
+		return;
+	}
+
 	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
 	const rowId = randomUUID();
 	const debugPayload = (payload ?? {}) as Prisma.InputJsonValue;
@@ -102,6 +107,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
 	if (!ticketId || !eventId || !deviceId || !scannedAt) {
 		res.status(400).json({ error: 'ticketId, eventId, deviceId, and scannedAt are required' });
+		return;
+	}
+
+	if (req.user?.isTemporaryScanner === true && req.user.eventId !== eventId) {
+		res.status(403).json({ error: 'Forbidden: scanner access is limited to one event' });
 		return;
 	}
 

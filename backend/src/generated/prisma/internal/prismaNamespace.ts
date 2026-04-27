@@ -390,6 +390,7 @@ export const ModelName = {
   UserTenant: 'UserTenant',
   Event: 'Event',
   Ticket: 'Ticket',
+  TemporaryScanner: 'TemporaryScanner',
   TicketType: 'TicketType',
   Scan: 'Scan',
   DeviceEventDebugData: 'DeviceEventDebugData',
@@ -410,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tenant" | "user" | "userAuthToken" | "userTenant" | "event" | "ticket" | "ticketType" | "scan" | "deviceEventDebugData" | "syncState" | "guest"
+    modelProps: "tenant" | "user" | "userAuthToken" | "userTenant" | "event" | "ticket" | "temporaryScanner" | "ticketType" | "scan" | "deviceEventDebugData" | "syncState" | "guest"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -855,6 +856,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.TicketCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TicketCountAggregateOutputType> | number
+        }
+      }
+    }
+    TemporaryScanner: {
+      payload: Prisma.$TemporaryScannerPayload<ExtArgs>
+      fields: Prisma.TemporaryScannerFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TemporaryScannerFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TemporaryScannerFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>
+        }
+        findFirst: {
+          args: Prisma.TemporaryScannerFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TemporaryScannerFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>
+        }
+        findMany: {
+          args: Prisma.TemporaryScannerFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>[]
+        }
+        create: {
+          args: Prisma.TemporaryScannerCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>
+        }
+        createMany: {
+          args: Prisma.TemporaryScannerCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TemporaryScannerCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>[]
+        }
+        delete: {
+          args: Prisma.TemporaryScannerDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>
+        }
+        update: {
+          args: Prisma.TemporaryScannerUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>
+        }
+        deleteMany: {
+          args: Prisma.TemporaryScannerDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TemporaryScannerUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TemporaryScannerUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>[]
+        }
+        upsert: {
+          args: Prisma.TemporaryScannerUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemporaryScannerPayload>
+        }
+        aggregate: {
+          args: Prisma.TemporaryScannerAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemporaryScanner>
+        }
+        groupBy: {
+          args: Prisma.TemporaryScannerGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemporaryScannerGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TemporaryScannerCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemporaryScannerCountAggregateOutputType> | number
         }
       }
     }
@@ -1345,6 +1420,22 @@ export const TicketScalarFieldEnum = {
 export type TicketScalarFieldEnum = (typeof TicketScalarFieldEnum)[keyof typeof TicketScalarFieldEnum]
 
 
+export const TemporaryScannerScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  eventId: 'eventId',
+  userId: 'userId',
+  createdBy: 'createdBy',
+  name: 'name',
+  loginToken: 'loginToken',
+  isActive: 'isActive',
+  lastUsedAt: 'lastUsedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TemporaryScannerScalarFieldEnum = (typeof TemporaryScannerScalarFieldEnum)[keyof typeof TemporaryScannerScalarFieldEnum]
+
+
 export const TicketTypeScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
@@ -1660,6 +1751,7 @@ export type GlobalOmitConfig = {
   userTenant?: Prisma.UserTenantOmit
   event?: Prisma.EventOmit
   ticket?: Prisma.TicketOmit
+  temporaryScanner?: Prisma.TemporaryScannerOmit
   ticketType?: Prisma.TicketTypeOmit
   scan?: Prisma.ScanOmit
   deviceEventDebugData?: Prisma.DeviceEventDebugDataOmit

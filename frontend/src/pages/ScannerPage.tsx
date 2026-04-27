@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { BrowserQRCodeReader, IScannerControls } from '@zxing/browser';
 import { db, LocalTicket, LocalScan } from '../db';
 import { postScanApi, syncApi, uploadDeviceEventDebugDataApi } from '../api';
+import { useAuth } from '../auth/AuthContext';
 import DuplicateDialog from '../components/DuplicateDialog';
 import SyncStatus from '../components/SyncStatus';
 import { createSyncPayload, mapSyncResponseToLocal, parseQRPayload, resolveMetaForSync } from '../lib/scannerLogic';
@@ -11,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowLeft, RefreshCw, AlertTriangle, Camera, MoreVertical, UploadCloud, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function getDeviceId(): string {
 	let id = localStorage.getItem('device_id');
@@ -79,6 +81,12 @@ type ScanState = 'idle' | 'success' | 'error';
 
 const SYNC_BATCH_SIZE = 150;
 
+function isLikelyIndexedDbError(error: unknown): boolean {
+	if (!(error instanceof Error)) return false;
+	const details = `${error.name} ${error.message}`.toLowerCase();
+	return details.includes('dexie') || details.includes('indexeddb') || details.includes('idb') || details.includes('database');
+}
+
 function chunkArray<T>(items: T[], chunkSize: number): T[][] {
 	if (chunkSize <= 0) return [items];
 	const chunks: T[][] = [];
@@ -91,6 +99,8 @@ function chunkArray<T>(items: T[], chunkSize: number): T[][] {
 export default function ScannerPage() {
 	const { id: eventId } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const { t } = useTranslation();
+	const { user } = useAuth();
 
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const controlsRef = useRef<IScannerControls | null>(null);
@@ -113,6 +123,7 @@ export default function ScannerPage() {
 	const [isFullResyncing, setIsFullResyncing] = useState(false);
 	const [clearLocalDataDialogOpen, setClearLocalDataDialogOpen] = useState(false);
 	const [menuFeedback, setMenuFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+	const [indexedDbError, setIndexedDbError] = useState(false);
 	const [duplicateInfo, setDuplicateInfo] = useState<{
 		ticket: LocalTicket;
 		lastScan: LocalScan;
@@ -130,7 +141,11 @@ export default function ScannerPage() {
 		try {
 			const [scanned, total, unsyncedScans, meta] = await Promise.all([
 				db.scans.where('event_id').equals(eventId).count(),
-				db.tickets.where('event_id').equals(eventId).count(),
+				db.tickets
+					.where('event_id')
+					.equals(eventId)
+					.and(ticket => ticket.status !== 'cancelled')
+					.count(),
 				getUnsyncedScans(),
 				getMeta(),
 			]);
@@ -138,7 +153,9 @@ export default function ScannerPage() {
 			setTotalCount(total);
 			setUnsyncedCount(unsyncedScans.length);
 			setLastSync(meta.last_sync_at);
+			setIndexedDbError(false);
 		} catch {
+			setIndexedDbError(true);
 			// Non-critical — UI will show stale counts
 		}
 	}, [eventId, getUnsyncedScans]);
@@ -277,14 +294,17 @@ export default function ScannerPage() {
 
 				await refreshCounts();
 			} catch (err) {
-				const msg = err instanceof Error ? err.message : 'Sync failed';
+				if (isLikelyIndexedDbError(err)) {
+					setIndexedDbError(true);
+				}
+				const msg = err instanceof Error ? err.message : t('scanner.errors.syncFailed');
 				setSyncError(msg);
 				// Scans remain unsynced — no data loss
 			} finally {
 				syncInProgressRef.current = false;
 			}
 		},
-		[eventId, getUnsyncedScans, refreshCounts],
+		[eventId, getUnsyncedScans, refreshCounts, t],
 	);
 
 	/** Full resync: resets all cursors and marks all local scans as unsynced so they are re-sent. */
@@ -302,12 +322,15 @@ export default function ScannerPage() {
 			setSyncError(null);
 			await doSync(true);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'Full resync failed';
+			if (isLikelyIndexedDbError(err)) {
+				setIndexedDbError(true);
+			}
+			const msg = err instanceof Error ? err.message : t('scanner.errors.fullResyncFailed');
 			setSyncError(msg);
 		} finally {
 			setIsFullResyncing(false);
 		}
-	}, [eventId, doSync, isFullResyncing]);
+	}, [eventId, doSync, isFullResyncing, t]);
 
 	const handleUploadDeviceDebugData = useCallback(async () => {
 		if (!eventId) return;
@@ -349,13 +372,16 @@ export default function ScannerPage() {
 				payload,
 			});
 
-			setMenuFeedback({ kind: 'success', text: 'Local device event data sent to API.' });
-		} catch {
-			setMenuFeedback({ kind: 'error', text: 'Failed to send local device event data.' });
+			setMenuFeedback({ kind: 'success', text: t('scanner.feedback.localDataSent') });
+		} catch (err) {
+			if (isLikelyIndexedDbError(err)) {
+				setIndexedDbError(true);
+			}
+			setMenuFeedback({ kind: 'error', text: t('scanner.feedback.localDataSendFailed') });
 		} finally {
 			setUploadingDebugData(false);
 		}
-	}, [eventId]);
+	}, [eventId, t]);
 
 	const handleClearLocalEventData = useCallback(async () => {
 		if (!eventId) return;
@@ -370,13 +396,17 @@ export default function ScannerPage() {
 				await db.meta.clear();
 			});
 			await refreshCounts();
-			setMenuFeedback({ kind: 'success', text: 'Local device data cleared for this event.' });
-		} catch {
-			setMenuFeedback({ kind: 'error', text: 'Failed to clear local device data.' });
+			setIndexedDbError(false);
+			setMenuFeedback({ kind: 'success', text: t('scanner.feedback.localDataCleared') });
+		} catch (err) {
+			if (isLikelyIndexedDbError(err)) {
+				setIndexedDbError(true);
+			}
+			setMenuFeedback({ kind: 'error', text: t('scanner.feedback.localDataClearFailed') });
 		} finally {
 			setClearingLocalData(false);
 		}
-	}, [eventId, refreshCounts]);
+	}, [eventId, refreshCounts, t]);
 
 	// Auto-sync every 60s when online; skip if a sync is already running
 	useEffect(() => {
@@ -404,7 +434,9 @@ export default function ScannerPage() {
 					const text = result.getText();
 					if (text === lastScannedRef.current) return;
 					lastScannedRef.current = text;
-					handleScan(text);
+					handleScan(text).catch(() => {
+						showError(t('scanner.errors.indexedDbIssue'));
+					});
 					// Cooldown to prevent rapid rescans
 					if (cooldownRef.current) clearTimeout(cooldownRef.current);
 					cooldownRef.current = setTimeout(() => {
@@ -413,7 +445,7 @@ export default function ScannerPage() {
 				}
 			})
 			.catch(() => {
-				if (mounted) setCameraError('Camera access denied or unavailable.');
+				if (mounted) setCameraError(t('scanner.errors.cameraUnavailable'));
 			});
 
 		return () => {
@@ -422,39 +454,49 @@ export default function ScannerPage() {
 			if (cooldownRef.current) clearTimeout(cooldownRef.current);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [t]);
 
 	async function handleScan(qrText: string) {
-		const parsed = parseQRPayload(qrText);
-		if (!parsed) {
-			showError('Invalid QR code format.');
-			return;
-		}
-		const { tid, eid, qrToken } = parsed;
+		try {
+			const parsed = parseQRPayload(qrText);
+			if (!parsed) {
+				showError(t('scanner.errors.invalidQrFormat'));
+				return;
+			}
+			const { tid, eid, qrToken } = parsed;
 
-		const ticket = await db.tickets.get(tid);
-		if (!ticket) {
-			showError('Ticket not found in local database. Sync required.');
-			return;
-		}
-		if (ticket.status === 'cancelled') {
-			showError('⚠ Cancelled ticket.');
-			return;
-		}
+			const ticket = await db.tickets.get(tid);
+			if (!ticket) {
+				showError(t('scanner.errors.ticketNotFound'));
+				return;
+			}
+			if (ticket.status === 'cancelled') {
+				showError(t('scanner.errors.cancelledTicket'));
+				return;
+			}
 
-		const prevScans = await db.scans.where('ticket_id').equals(tid).toArray();
-		if (prevScans.length >= 2) {
-			showError('Ticket has already been re-scanned. No further scans allowed.');
-			return;
-		}
-		if (prevScans.length > 0) {
-			const last = prevScans.sort((a, b) => new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime())[0];
-			setDuplicateInfo({ ticket, lastScan: last });
-			setPendingTicket({ tid, eid, qrToken });
-			return;
-		}
+			const prevScans = await db.scans.where('ticket_id').equals(tid).toArray();
+			if (prevScans.length >= 2) {
+				showError(t('scanner.errors.rescanLimitReached'));
+				return;
+			}
+			if (prevScans.length > 0) {
+				const last = prevScans.sort((a, b) => new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime())[0];
+				setDuplicateInfo({ ticket, lastScan: last });
+				setPendingTicket({ tid, eid, qrToken });
+				return;
+			}
 
-		await registerScan(tid, eid, qrToken);
+			setIndexedDbError(false);
+			await registerScan(tid, eid, qrToken);
+		} catch (err) {
+			if (isLikelyIndexedDbError(err)) {
+				setIndexedDbError(true);
+				showError(t('scanner.errors.indexedDbIssue'));
+				return;
+			}
+			showError(t('scanner.errors.scanFailed'));
+		}
 	}
 
 	async function registerScan(ticketId: string, eid: string, qrToken?: string, confirmed?: boolean) {
@@ -469,7 +511,7 @@ export default function ScannerPage() {
 			synced: false,
 		});
 		await refreshCounts();
-		showSuccess('✓ Ticket scanned successfully!');
+		showSuccess(t('scanner.success.ticketScanned'));
 
 		// Best-effort immediate online push — mark synced locally if server confirms
 		if (navigator.onLine) {
@@ -501,16 +543,17 @@ export default function ScannerPage() {
 					variant="ghost"
 					size="icon"
 					className="text-gray-300 hover:text-white hover:bg-gray-800"
-					onClick={() => navigate(`/events/${eventId}`)}>
+					onClick={() => navigate(user?.isTemporaryScanner ? `/events/${eventId}/scan` : `/events/${eventId}`)}>
 					<ArrowLeft className="h-4 w-4" />
 				</Button>
-				<h1 className="font-bold text-lg flex-1">QR Scanner</h1>
+				<h1 className="font-bold text-lg flex-1">{t('scanner.title')}</h1>
 				<SyncStatus
 					online={online}
 					lastSync={lastSync}
 					scannedCount={scannedCount}
 					totalCount={totalCount}
 					unsyncedCount={unsyncedCount}
+					hasIndexedDbError={indexedDbError}
 				/>
 				<Popover>
 					<PopoverTrigger asChild>
@@ -518,7 +561,7 @@ export default function ScannerPage() {
 							variant="ghost"
 							size="icon"
 							className="text-gray-300 hover:text-white hover:bg-gray-800"
-							aria-label="Scanner tools">
+							aria-label={t('scanner.actions.tools')}>
 							<MoreVertical className="h-4 w-4" />
 						</Button>
 					</PopoverTrigger>
@@ -531,7 +574,7 @@ export default function ScannerPage() {
 							disabled={uploadingDebugData || clearingLocalData}
 							onClick={handleUploadDeviceDebugData}>
 							<UploadCloud className="h-4 w-4" />
-							{uploadingDebugData ? 'Sending local data…' : 'Send local device data to API'}
+							{uploadingDebugData ? t('scanner.actions.sendingLocalData') : t('scanner.actions.sendLocalDataToApi')}
 						</Button>
 						<Button
 							variant="ghost"
@@ -539,7 +582,7 @@ export default function ScannerPage() {
 							disabled={uploadingDebugData || clearingLocalData}
 							onClick={() => setClearLocalDataDialogOpen(true)}>
 							<Trash2 className="h-4 w-4" />
-							{clearingLocalData ? 'Clearing local data…' : 'Clear local event data'}
+							{clearingLocalData ? t('scanner.actions.clearingLocalData') : t('scanner.actions.clearLocalEventData')}
 						</Button>
 					</PopoverContent>
 				</Popover>
@@ -560,13 +603,13 @@ export default function ScannerPage() {
 			{syncError && (
 				<div className="bg-yellow-900/80 border-b border-yellow-700 px-4 py-2 flex items-center gap-3 text-sm">
 					<AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0" />
-					<span className="text-yellow-200 flex-1">Sync error: {syncError}. Local scans are safe.</span>
+					<span className="text-yellow-200 flex-1">{t('scanner.errors.syncErrorBanner', { error: syncError })}</span>
 					<Button
 						size="sm"
 						variant="outline"
 						className="text-xs border-yellow-700 text-yellow-300 hover:bg-yellow-800"
 						onClick={() => doSync()}>
-						Retry
+						{t('common.retry')}
 					</Button>
 					<Button
 						size="sm"
@@ -575,7 +618,7 @@ export default function ScannerPage() {
 						disabled={isFullResyncing}
 						onClick={triggerFullResync}>
 						<RefreshCw className={`h-3.5 w-3.5 ${isFullResyncing ? 'animate-spin' : ''}`} />
-						{isFullResyncing ? 'Resyncing...' : 'Full Resync'}
+						{isFullResyncing ? t('scanner.actions.resyncing') : t('scanner.actions.fullResync')}
 					</Button>
 				</div>
 			)}
@@ -584,14 +627,14 @@ export default function ScannerPage() {
 				{cameraError ? (
 					<div className="bg-red-950/50 border border-red-800 rounded-xl p-8 text-center max-w-sm">
 						<Camera className="h-12 w-12 text-red-400 mx-auto mb-3" />
-						<p className="text-red-300 text-lg font-medium mb-2">Camera Unavailable</p>
+						<p className="text-red-300 text-lg font-medium mb-2">{t('scanner.camera.unavailableTitle')}</p>
 						<p className="text-gray-400 text-sm">{cameraError}</p>
-						<p className="text-gray-500 text-xs mt-1">Allow camera access in browser settings and reload.</p>
+						<p className="text-gray-500 text-xs mt-1">{t('scanner.camera.allowAccessHint')}</p>
 						<Button
 							className="mt-5"
 							variant="destructive"
 							onClick={() => window.location.reload()}>
-							Retry
+							{t('common.retry')}
 						</Button>
 					</div>
 				) : (
@@ -626,7 +669,7 @@ export default function ScannerPage() {
 					</div>
 				)}
 
-				<p className="text-gray-500 text-sm mt-4">Point camera at a QR code</p>
+				<p className="text-gray-500 text-sm mt-4">{t('scanner.camera.pointAtQr')}</p>
 
 				{/* Manual Full Resync button — always accessible */}
 				<Button
@@ -636,7 +679,7 @@ export default function ScannerPage() {
 					disabled={isFullResyncing}
 					onClick={triggerFullResync}>
 					<RefreshCw className={`h-3.5 w-3.5 ${isFullResyncing ? 'animate-spin' : ''}`} />
-					{isFullResyncing ? 'Resyncing...' : 'Full Resync'}
+					{isFullResyncing ? t('scanner.actions.resyncing') : t('scanner.actions.fullResync')}
 				</Button>
 			</div>
 
@@ -664,17 +707,15 @@ export default function ScannerPage() {
 				}}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Clear local event data?</DialogTitle>
-						<DialogDescription>
-							This removes local tickets, scans, and sync metadata on this device only. Server data is not affected.
-						</DialogDescription>
+						<DialogTitle>{t('scanner.clearDataDialog.title')}</DialogTitle>
+						<DialogDescription>{t('scanner.clearDataDialog.description')}</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
 						<Button
 							variant="outline"
 							disabled={clearingLocalData}
 							onClick={() => setClearLocalDataDialogOpen(false)}>
-							Cancel
+							{t('common.cancel')}
 						</Button>
 						<Button
 							variant="destructive"
@@ -683,7 +724,7 @@ export default function ScannerPage() {
 								await handleClearLocalEventData();
 								setClearLocalDataDialogOpen(false);
 							}}>
-							{clearingLocalData ? 'Clearing…' : 'Clear Local Data'}
+							{clearingLocalData ? t('scanner.actions.clearing') : t('scanner.actions.clearLocalData')}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
