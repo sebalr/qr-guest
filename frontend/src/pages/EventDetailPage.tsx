@@ -11,6 +11,7 @@ import {
 	createTicketApi,
 	updateTicketApi,
 	cancelTicketApi,
+	restoreTicketApi,
 	getTicketQRApi,
 	searchGuestsApi,
 	getTicketScansApi,
@@ -50,6 +51,8 @@ import {
 	Download,
 	Share2,
 	UserPlus,
+	Eye,
+	EyeOff,
 } from 'lucide-react';
 
 type ScanHistoryItem = TicketScanDetail & {
@@ -111,6 +114,7 @@ export default function EventDetailPage() {
 	const [scanHistoryError, setScanHistoryError] = useState('');
 	const [cancelTargetTicketId, setCancelTargetTicketId] = useState<string | null>(null);
 	const [cancelingTicket, setCancelingTicket] = useState(false);
+	const [restoringTicketId, setRestoringTicketId] = useState<string | null>(null);
 	const [errorDialogMessage, setErrorDialogMessage] = useState<string | null>(null);
 	const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
 	const [editingTicketTypeSelection, setEditingTicketTypeSelection] = useState<string>('none');
@@ -396,6 +400,19 @@ export default function EventDetailPage() {
 		}
 	}
 
+	async function handleRestoreTicket(ticketId: string) {
+		setRestoringTicketId(ticketId);
+		try {
+			await restoreTicketApi(ticketId, tenantScope);
+			setTickets(prev => prev.map(t => (t.id === ticketId ? { ...t, status: 'active' } : t)));
+			db.tickets.update(ticketId, { status: 'active' });
+		} catch {
+			setErrorDialogMessage('Failed to restore ticket.');
+		} finally {
+			setRestoringTicketId(null);
+		}
+	}
+
 	async function fetchQrToken(ticketId: string): Promise<string> {
 		if (qrMap[ticketId]) return qrMap[ticketId];
 		const ticket = tickets.find(t => t.id === ticketId);
@@ -667,27 +684,48 @@ export default function EventDetailPage() {
 							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 								<button
 									onClick={() => toggleFilter('total')}
-									className={`flex flex-col items-center p-3 rounded-lg bg-slate-50 border-2 border-slate-300 transition-all cursor-pointer ${
-										selectedFilters.has('total') ? 'border-slate-700 shadow-md bg-slate-100' : 'hover:shadow-sm'
+									aria-pressed={selectedFilters.has('total')}
+									className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
+										selectedFilters.has('total')
+											? 'bg-slate-200 border-slate-900 ring-2 ring-slate-900/25'
+											: 'bg-slate-50 border-slate-300 hover:border-slate-500'
 									}`}>
+									<span
+										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('total') ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'}`}>
+										{selectedFilters.has('total') ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+									</span>
 									<Users className="h-5 w-5 text-muted-foreground mb-1" />
 									<p className="text-2xl font-bold">{tickets.length}</p>
 									<p className="text-xs text-muted-foreground">Total</p>
 								</button>
 								<button
 									onClick={() => toggleFilter('scanned')}
-									className={`flex flex-col items-center p-3 rounded-lg bg-green-50 border-2 border-green-300 transition-all cursor-pointer ${
-										selectedFilters.has('scanned') ? 'border-green-700 shadow-md bg-green-100' : 'hover:shadow-sm'
+									aria-pressed={selectedFilters.has('scanned')}
+									className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
+										selectedFilters.has('scanned')
+											? 'bg-green-200 border-green-900 ring-2 ring-green-900/25'
+											: 'bg-green-50 border-green-300 hover:border-green-500'
 									}`}>
+									<span
+										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('scanned') ? 'bg-green-900 text-white' : 'bg-green-200 text-green-700'}`}>
+										{selectedFilters.has('scanned') ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+									</span>
 									<CheckCircle2 className="h-5 w-5 text-green-600 mb-1" />
 									<p className="text-2xl font-bold text-green-600">{totalScanned}</p>
 									<p className="text-xs text-muted-foreground">Scanned</p>
 								</button>
 								<button
 									onClick={() => toggleFilter('cancelled')}
-									className={`flex flex-col items-center p-3 rounded-lg bg-red-50 border-2 border-red-300 transition-all cursor-pointer ${
-										selectedFilters.has('cancelled') ? 'border-red-700 shadow-md bg-red-100' : 'hover:shadow-sm'
+									aria-pressed={selectedFilters.has('cancelled')}
+									className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
+										selectedFilters.has('cancelled')
+											? 'bg-red-200 border-red-900 ring-2 ring-red-900/25'
+											: 'bg-red-50 border-red-300 hover:border-red-500'
 									}`}>
+									<span
+										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('cancelled') ? 'bg-red-900 text-white' : 'bg-red-200 text-red-700'}`}>
+										{selectedFilters.has('cancelled') ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+									</span>
 									<XCircle className="h-5 w-5 text-red-500 mb-1" />
 									<p className="text-2xl font-bold text-red-500">{cancelledCount}</p>
 									<p className="text-xs text-muted-foreground">Cancelled</p>
@@ -1022,6 +1060,17 @@ export default function EventDetailPage() {
 																</Button>
 															</div>
 														)}
+														{canManageTickets && ticket.status === 'cancelled' && (
+															<div className="mt-auto pt-1 flex gap-1.5 flex-wrap">
+																<Button
+																	variant="outline"
+																	size="sm"
+																	disabled={restoringTicketId === ticket.id}
+																	onClick={() => handleRestoreTicket(ticket.id)}>
+																	{restoringTicketId === ticket.id ? 'Restoring…' : 'Restore'}
+																</Button>
+															</div>
+														)}
 													</div>
 												))}
 											</div>
@@ -1094,6 +1143,15 @@ export default function EventDetailPage() {
 													size="sm"
 													onClick={() => setCancelTargetTicketId(ticket.id)}>
 													Cancel
+												</Button>
+											)}
+											{canManageTickets && ticket.status === 'cancelled' && (
+												<Button
+													variant="outline"
+													size="sm"
+													disabled={restoringTicketId === ticket.id}
+													onClick={() => handleRestoreTicket(ticket.id)}>
+													{restoringTicketId === ticket.id ? 'Restoring…' : 'Restore'}
 												</Button>
 											)}
 										</div>

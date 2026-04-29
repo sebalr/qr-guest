@@ -478,6 +478,45 @@ router.post('/tickets/:id/cancel', requireRole(['owner', 'admin']), async (req: 
 	res.json({ data: updated });
 });
 
+// Restore a cancelled ticket - owner/admin only
+router.post('/tickets/:id/restore', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	if (!ticketId) {
+		res.status(400).json({ error: 'Invalid ticket id' });
+		return;
+	}
+
+	const context = resolveRlsContext(req, { allowSuperAdminTenantOverride: true });
+
+	const updated = await withRls(context, async tenantPrisma => {
+		const ticket = await tenantPrisma.ticket.findFirst({
+			where: { id: ticketId },
+			include: { event: true },
+		});
+
+		if (!ticket) {
+			res.status(404).json({ error: 'Ticket not found' });
+			return null;
+		}
+
+		if (ticket.status !== 'cancelled') {
+			res.status(400).json({ error: 'Ticket is already active' });
+			return null;
+		}
+
+		return tenantPrisma.ticket.update({
+			where: { id: ticketId },
+			data: { status: 'active', version: { increment: 1 } },
+		});
+	});
+
+	if (!updated) {
+		return;
+	}
+
+	res.json({ data: updated });
+});
+
 // QR token for a ticket - owner/admin only
 router.get('/tickets/:id/qr', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
 	const ticketId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

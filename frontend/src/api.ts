@@ -311,6 +311,8 @@ export const updateTicketApi = (ticketId: string, data: { ticketTypeId: string |
 
 export const cancelTicketApi = (ticketId: string, options?: TenantScopedRequestOptions) =>
 	api.post<{ data: Ticket }>(`/tickets/${ticketId}/cancel`, undefined, { params: tenantScopedParams(options) });
+export const restoreTicketApi = (ticketId: string, options?: TenantScopedRequestOptions) =>
+	api.post<{ data: Ticket }>(`/tickets/${ticketId}/restore`, undefined, { params: tenantScopedParams(options) });
 export const getTicketScansApi = (ticketId: string, options?: TenantScopedRequestOptions) =>
 	api.get<{ data: TicketScanDetail[] }>(`/tickets/${ticketId}/scans`, { params: tenantScopedParams(options) });
 
