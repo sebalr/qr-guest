@@ -5,9 +5,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: qrguest
-      APP_DB_USER: ${APP_DB_USER:-qrguest_app}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-qrguest_app}
+      POSTGRES_DB: ${APP_DB_NAME:-tiqra}
+      APP_DB_USER: ${APP_DB_USER:-tiqra_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-tiqra_app}
     volumes:
       - postgres_data:/var/lib/postgresql
     ports:
@@ -24,11 +24,11 @@ services:
     environment:
       PGPASSWORD: postgres
       POSTGRES_USER: postgres
-      POSTGRES_DB: qrguest
+      POSTGRES_DB: ${APP_DB_NAME:-tiqra}
       PGHOST: db
       PGPORT: 5432
-      APP_DB_USER: ${APP_DB_USER:-qrguest_app}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-qrguest_app}
+      APP_DB_USER: ${APP_DB_USER:-tiqra_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-tiqra_app}
     volumes:
       - ./db/init/01-create-app-role.sh:/bootstrap/01-create-app-role.sh:ro
     depends_on:
@@ -42,7 +42,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${APP_DB_USER:-qrguest_app}:${APP_DB_PASSWORD:-qrguest_app}@db:5432/qrguest
+      DATABASE_URL: postgresql://${APP_DB_USER:-tiqra_app}:${APP_DB_PASSWORD:-tiqra_app}@db:5432/${APP_DB_NAME:-tiqra}
       JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret}
       QR_SECRET: ${QR_SECRET:-change_me_qr_secret}
       PORT: 3000
@@ -53,7 +53,7 @@ services:
         condition: service_healthy
       db-bootstrap:
         condition: service_completed_successfully
-    command: sh -c "DATABASE_URL=postgresql://postgres:postgres@db:5432/qrguest npx prisma migrate deploy && node dist/index.js"
+    command: sh -c "DATABASE_URL=postgresql://postgres:postgres@db:5432/${APP_DB_NAME:-tiqra} npx prisma migrate deploy && node dist/index.js"
 
   frontend:
     build:

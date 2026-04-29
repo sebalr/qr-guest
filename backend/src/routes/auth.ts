@@ -340,7 +340,7 @@ router.post('/resend-verification', async (req: Request, res: Response): Promise
 
 		await sendVerificationEmail({
 			to: user.email,
-			tenantName: user.userTenants[0]?.tenant.name ?? 'QR Guest',
+			tenantName: user.userTenants[0]?.tenant.name ?? 'Tiqra',
 			token: verification.token,
 		});
 

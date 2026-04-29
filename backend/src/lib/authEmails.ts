@@ -56,15 +56,15 @@ export async function sendVerificationEmail(params: { to: string; tenantName: st
 	const url = `${getFrontendBaseUrl()}/verify-email?token=${encodeURIComponent(params.token)}`;
 	await sendEmail({
 		to: params.to,
-		subject: 'Verify your QR Guest account',
+		subject: 'Verify your Tiqra account',
 		html: renderEmailShell(
 			'Verify your email',
-			`Your ${params.tenantName} workspace is ready. Verify your email to start using QR Guest.`,
+			`Your ${params.tenantName} workspace is ready. Verify your email to start using Tiqra.`,
 			'Verify email',
 			url,
 			'This verification link expires in 24 hours.',
 		),
-		text: `Verify your email for QR Guest: ${url}\n\nThis link expires in 24 hours.`,
+		text: `Verify your email for Tiqra: ${url}\n\nThis link expires in 24 hours.`,
 	});
 }
 
@@ -72,7 +72,7 @@ export async function sendInvitationEmail(params: { to: string; tenantName: stri
 	const url = `${getFrontendBaseUrl()}/accept-invitation?token=${encodeURIComponent(params.token)}`;
 	await sendEmail({
 		to: params.to,
-		subject: `You're invited to ${params.tenantName} on QR Guest`,
+		subject: `You're invited to ${params.tenantName} on Tiqra`,
 		html: renderEmailShell(
 			'Accept your invitation',
 			`${params.inviterEmail} invited you to join ${params.tenantName} as ${params.role}. Set your password to activate the account.`,
@@ -88,15 +88,15 @@ export async function sendPasswordResetEmail(params: { to: string; token: string
 	const url = `${getFrontendBaseUrl()}/reset-password?token=${encodeURIComponent(params.token)}`;
 	await sendEmail({
 		to: params.to,
-		subject: 'Reset your QR Guest password',
+		subject: 'Reset your Tiqra password',
 		html: renderEmailShell(
 			'Reset your password',
-			'Use the link below to choose a new password for your QR Guest account.',
+			'Use the link below to choose a new password for your Tiqra account.',
 			'Reset password',
 			url,
 			'This reset link expires in 1 hour.',
 		),
-		text: `Reset your QR Guest password here: ${url}\n\nThis link expires in 1 hour.`,
+		text: `Reset your Tiqra password here: ${url}\n\nThis link expires in 1 hour.`,
 	});
 }
 

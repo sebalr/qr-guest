@@ -15,6 +15,7 @@ import ScannerPage from './pages/ScannerPage';
 import SuperAdminPage from './pages/SuperAdminPage';
 import DashboardPage from './pages/DashboardPage';
 import EventSettingsPage from './pages/EventSettingsPage';
+import LandingPage from './pages/LandingPage';
 
 export default function App() {
 	return (
@@ -103,18 +104,13 @@ export default function App() {
 					/>
 					<Route
 						path="/"
-						element={
-							<Navigate
-								to="/events"
-								replace
-							/>
-						}
+						element={<LandingPage />}
 					/>
 					<Route
 						path="*"
 						element={
 							<Navigate
-								to="/events"
+								to="/"
 								replace
 							/>
 						}

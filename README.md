@@ -1,4 +1,4 @@
-# QR Guest — Offline-First QR Event Management System
+# Tiqra — Offline-First QR Event Management System
 
 A multi-tenant, offline-first event management system with QR-based tickets, React PWA (admin + scanner), and a Node.js/Express backend with PostgreSQL.
 
@@ -64,6 +64,16 @@ docker compose up -d db db-bootstrap
 cd backend && npm run prisma:migrate
 ```
 
+### Local Rename Transition (from qrguest defaults)
+
+If you already have a local database created with the old `qrguest` naming, set these values in your root `.env` before running compose:
+
+- `APP_DB_NAME=qrguest`
+- `APP_DB_USER=qrguest_app`
+- `APP_DB_PASSWORD=<your-existing-password>`
+
+This keeps your existing local data working while the project defaults now use Tiqra names.
+
 ### Development
 
 ```bash
@@ -112,8 +122,8 @@ npm run dev
 
 GitHub Actions automatically build and push Docker images to GHCR on pushes to `main`:
 
-- Changes in `backend/` → builds `ghcr.io/<owner>/qr-guest/backend:latest`
-- Changes in `frontend/` → builds `ghcr.io/<owner>/qr-guest/frontend:latest`
+- Changes in `backend/` → builds `ghcr.io/<owner>/tiqra/backend:latest`
+- Changes in `frontend/` → builds `ghcr.io/<owner>/tiqra/frontend:latest`
 
 ## Environment Variables
 
@@ -129,6 +139,7 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 | `FRONTEND_URL`        | Public frontend URL used in verification links |
 | `RESEND_API_KEY`      | Resend API key for auth emails                 |
 | `RESEND_FROM_EMAIL`   | Verified sender address used for auth emails   |
+| `APP_DB_NAME`         | Local Docker database name (default: `tiqra`)  |
 | `APP_DB_USER`         | Runtime DB role used by backend in Docker      |
 | `APP_DB_PASSWORD`     | Runtime DB role password in Docker             |
 
@@ -140,8 +151,8 @@ The production setup assumes an external PostgreSQL instance managed by Coolify 
 
 Security goal in production:
 
-- backend runtime uses a low-privilege role (`qrguest_app`)
-- migrations run with a separate elevated role (`qrguest_migrator`) used only by the one-shot migrate job
+- backend runtime uses a low-privilege role (`tiqra_app`)
+- migrations run with a separate elevated role (`tiqra_migrator`) used only by the one-shot migrate job
 - no shadow DB credentials are stored in production runtime services
 
 ### 1) Create production DB roles
@@ -153,52 +164,52 @@ Run this SQL once on your production database (replace passwords):
 ```sql
 DO $$
 BEGIN
-	IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'qrguest_app') THEN
-		CREATE ROLE qrguest_app LOGIN PASSWORD 'REPLACE_WITH_STRONG_RUNTIME_PASSWORD';
+	IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'tiqra_app') THEN
+		CREATE ROLE tiqra_app LOGIN PASSWORD 'REPLACE_WITH_STRONG_RUNTIME_PASSWORD';
 	ELSE
-		ALTER ROLE qrguest_app WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_RUNTIME_PASSWORD';
+		ALTER ROLE tiqra_app WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_RUNTIME_PASSWORD';
 	END IF;
 
-	IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'qrguest_migrator') THEN
-		CREATE ROLE qrguest_migrator LOGIN PASSWORD 'REPLACE_WITH_STRONG_MIGRATOR_PASSWORD';
+	IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'tiqra_migrator') THEN
+		CREATE ROLE tiqra_migrator LOGIN PASSWORD 'REPLACE_WITH_STRONG_MIGRATOR_PASSWORD';
 	ELSE
-		ALTER ROLE qrguest_migrator WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_MIGRATOR_PASSWORD';
+		ALTER ROLE tiqra_migrator WITH LOGIN PASSWORD 'REPLACE_WITH_STRONG_MIGRATOR_PASSWORD';
 	END IF;
 END
 $$;
 
-ALTER ROLE qrguest_app NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
-ALTER ROLE qrguest_migrator NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
+ALTER ROLE tiqra_app NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
+ALTER ROLE tiqra_migrator NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
 
-GRANT CONNECT ON DATABASE qrguest TO qrguest_app;
-GRANT CONNECT, CREATE, TEMPORARY ON DATABASE qrguest TO qrguest_migrator;
+GRANT CONNECT ON DATABASE tiqra TO tiqra_app;
+GRANT CONNECT, CREATE, TEMPORARY ON DATABASE tiqra TO tiqra_migrator;
 
-GRANT USAGE ON SCHEMA public TO qrguest_app;
-GRANT USAGE, CREATE ON SCHEMA public TO qrguest_migrator;
+GRANT USAGE ON SCHEMA public TO tiqra_app;
+GRANT USAGE, CREATE ON SCHEMA public TO tiqra_migrator;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO qrguest_app;
-GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO qrguest_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tiqra_app;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO tiqra_app;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO qrguest_migrator;
-GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO qrguest_migrator;
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-	GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qrguest_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-	GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO qrguest_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tiqra_migrator;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO tiqra_migrator;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
-	GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qrguest_migrator;
+	GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tiqra_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
-	GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO qrguest_migrator;
+	GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO tiqra_app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+	GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tiqra_migrator;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+	GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO tiqra_migrator;
 ```
 
 ### 2) Configure Coolify environment variables
 
 Set at least:
 
-- `DATABASE_URL=postgresql://qrguest_app:<runtime-password>@<host>:<port>/qrguest`
-- `MIGRATION_DATABASE_URL=postgresql://qrguest_migrator:<migrator-password>@<host>:<port>/qrguest`
+- `DATABASE_URL=postgresql://tiqra_app:<runtime-password>@<host>:<port>/tiqra`
+- `MIGRATION_DATABASE_URL=postgresql://tiqra_migrator:<migrator-password>@<host>:<port>/tiqra`
 - `JWT_SECRET=<strong-secret>`
 - `QR_SECRET=<strong-secret>`
 - `FRONTEND_URL=<public-frontend-url>`

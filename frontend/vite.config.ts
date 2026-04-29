@@ -14,8 +14,8 @@ export default defineConfig({
 		VitePWA({
 			registerType: 'autoUpdate',
 			manifest: {
-				name: 'QR Guest',
-				short_name: 'QRGuest',
+				name: 'Tiqra',
+				short_name: 'Tiqra',
 				description: 'Offline-first QR event management',
 				start_url: '/',
 				scope: '/',

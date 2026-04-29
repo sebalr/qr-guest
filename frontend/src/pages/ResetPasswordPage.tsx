@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
 			<Card className="w-full max-w-md">
 				<CardHeader>
 					<CardTitle>Choose a new password</CardTitle>
-					<CardDescription>Reset your QR Guest password.</CardDescription>
+					<CardDescription>Reset your Tiqra password.</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form

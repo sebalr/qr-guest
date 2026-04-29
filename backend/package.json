@@ -1,7 +1,7 @@
 {
-  "name": "qr-guest-backend",
+  "name": "tiqra-backend",
   "version": "1.0.0",
-  "description": "QR Event Management System Backend",
+  "description": "Tiqra event management backend",
   "main": "dist/index.js",
   "scripts": {
     "dev": "npm run prisma:generate && tsx watch src/index.ts",

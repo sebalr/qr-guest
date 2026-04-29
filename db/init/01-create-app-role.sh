@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-APP_DB_USER="${APP_DB_USER:-qrguest_app}"
-APP_DB_PASSWORD="${APP_DB_PASSWORD:-qrguest_app}"
-APP_SHADOW_DB="${APP_SHADOW_DB:-qrguest_shadow}"
+APP_DB_USER="${APP_DB_USER:-tiqra_app}"
+APP_DB_PASSWORD="${APP_DB_PASSWORD:-tiqra_app}"
+APP_SHADOW_DB="${APP_SHADOW_DB:-tiqra_shadow}"
 PGHOST="${PGHOST:-localhost}"
 PGPORT="${PGPORT:-5432}"
 

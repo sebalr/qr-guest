@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&family=Sora:wght@600;700;800&display=swap');
+
+.landing-shell {
+	font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', sans-serif;
+	background:
+		radial-gradient(circle at 15% 20%, rgba(251, 191, 36, 0.22), transparent 40%),
+		radial-gradient(circle at 85% 15%, rgba(45, 212, 191, 0.22), transparent 45%), linear-gradient(180deg, #f9fafb 0%, #f8fafc 100%);
+	position: relative;
+	overflow: hidden;
+}
+
+.landing-grid {
+	position: absolute;
+	inset: 0;
+	background-image:
+		linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+	background-size: 38px 38px;
+	opacity: 0.35;
+	pointer-events: none;
+}
+
+.landing-aurora {
+	position: absolute;
+	inset: -10% -20% auto;
+	height: 30rem;
+	background: linear-gradient(120deg, rgba(20, 184, 166, 0.16), rgba(251, 146, 60, 0.14), rgba(59, 130, 246, 0.14));
+	filter: blur(50px);
+	animation: drift 11s ease-in-out infinite;
+	pointer-events: none;
+}
+
+.landing-logo,
+.landing-headline {
+	font-family: 'Sora', 'Trebuchet MS', sans-serif;
+}
+
+.landing-headline {
+	letter-spacing: -0.03em;
+}
+
+@keyframes drift {
+	0% {
+		transform: translateX(-2%) translateY(0);
+	}
+	50% {
+		transform: translateX(2%) translateY(4%);
+	}
+	100% {
+		transform: translateX(-2%) translateY(0);
+	}
+}
+
+@media (max-width: 768px) {
+	.landing-grid {
+		background-size: 30px 30px;
+	}
+
+	.landing-aurora {
+		height: 24rem;
+	}
+}

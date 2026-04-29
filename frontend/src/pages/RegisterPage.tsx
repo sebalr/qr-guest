@@ -57,7 +57,7 @@ export default function RegisterPage() {
 						<div className="bg-primary rounded-xl p-2.5">
 							<QrCode className="h-7 w-7 text-primary-foreground" />
 						</div>
-						<span className="text-2xl font-bold tracking-tight">QR Guest</span>
+						<span className="text-2xl font-bold tracking-tight">Tiqra</span>
 					</div>
 				</div>
 				<Card>

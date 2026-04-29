@@ -73,7 +73,7 @@ export default function AcceptInvitationPage() {
 			<Card className="w-full max-w-md">
 				<CardHeader>
 					<CardTitle>Accept invitation</CardTitle>
-					<CardDescription>Set a password to activate your QR Guest account.</CardDescription>
+					<CardDescription>Set a password to activate your Tiqra account.</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form

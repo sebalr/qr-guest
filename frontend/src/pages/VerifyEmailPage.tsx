@@ -51,7 +51,7 @@ export default function VerifyEmailPage() {
 			<Card className="w-full max-w-md">
 				<CardHeader>
 					<CardTitle>Email verification</CardTitle>
-					<CardDescription>Finish activating your QR Guest account.</CardDescription>
+					<CardDescription>Finish activating your Tiqra account.</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<Alert variant={status === 'error' ? 'destructive' : 'default'}>
