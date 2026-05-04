@@ -7,6 +7,8 @@ import {
 	AdminTenant,
 	AdminUser,
 	createAdminUserApi,
+	createAdminEventApi,
+	createAdminGuestApi,
 	createTenantWithAdminApi,
 	downgradeTenantApi,
 	getAdminEventsApi,
@@ -46,6 +48,12 @@ export default function SuperAdminPage() {
 	const [createTenantName, setCreateTenantName] = useState('');
 	const [createTenantAdminEmail, setCreateTenantAdminEmail] = useState('');
 	const [creatingTenant, setCreatingTenant] = useState(false);
+	const [createEventName, setCreateEventName] = useState('');
+	const [createEventDescription, setCreateEventDescription] = useState('');
+	const [creatingEvent, setCreatingEvent] = useState(false);
+	const [createGuestName, setCreateGuestName] = useState('');
+	const [selectedEventId, setSelectedEventId] = useState('');
+	const [creatingGuest, setCreatingGuest] = useState(false);
 	const isSuperAdmin = user?.isSuperAdmin === true;
 	const canManageUsers = user?.role === 'owner' || user?.role === 'admin' || isSuperAdmin;
 	const selectedTenant = useMemo(() => tenants.find(t => t.id === selectedTenantId) ?? null, [tenants, selectedTenantId]);
@@ -180,6 +188,74 @@ export default function SuperAdminPage() {
 			}
 		} finally {
 			setCreatingTenant(false);
+		}
+	}
+
+	async function handleCreateEvent() {
+		setError('');
+		if (!selectedTenantId) {
+			setError('Select a tenant before creating an event.');
+			return;
+		}
+		if (!createEventName.trim()) {
+			setError('Event name is required.');
+			return;
+		}
+		setCreatingEvent(true);
+		try {
+			const created = (
+				await createAdminEventApi(selectedTenantId, {
+					name: createEventName.trim(),
+					description: createEventDescription.trim() || undefined,
+				})
+			).data.data;
+			const eventRes = await getAdminEventsApi(selectedTenantId);
+			setEvents(eventRes.data.data);
+			setCreateEventName('');
+			setCreateEventDescription('');
+			setSelectedEventId(created.id);
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setError((err.response?.data as { error?: string } | undefined)?.error ?? 'Failed to create event.');
+			} else {
+				setError('Failed to create event.');
+			}
+		} finally {
+			setCreatingEvent(false);
+		}
+	}
+
+	async function handleCreateGuest() {
+		setError('');
+		if (!selectedTenantId) {
+			setError('Select a tenant before creating a guest.');
+			return;
+		}
+		if (!selectedEventId) {
+			setError('Select an event before creating a guest.');
+			return;
+		}
+		if (!createGuestName.trim()) {
+			setError('Guest name is required.');
+			return;
+		}
+		setCreatingGuest(true);
+		try {
+			await createAdminGuestApi(selectedTenantId, selectedEventId, {
+				name: createGuestName.trim(),
+			});
+			setCreateGuestName('');
+			// Reload events to update ticket count
+			const eventRes = await getAdminEventsApi(selectedTenantId);
+			setEvents(eventRes.data.data);
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setError((err.response?.data as { error?: string } | undefined)?.error ?? 'Failed to create guest.');
+			} else {
+				setError('Failed to create guest.');
+			}
+		} finally {
+			setCreatingGuest(false);
 		}
 	}
 
@@ -404,6 +480,87 @@ export default function SuperAdminPage() {
 						</div>
 					</CardContent>
 				</Card>
+
+				{isSuperAdmin && selectedTenantId && (
+					<>
+						{/* Create Event */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-base">Create Event in {selectedTenant?.name}</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="space-y-3">
+									<div className="space-y-2">
+										<Label>Event Name</Label>
+										<Input
+											value={createEventName}
+											onChange={e => setCreateEventName(e.target.value)}
+											placeholder="Conference 2025"
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label>Description (Optional)</Label>
+										<Input
+											value={createEventDescription}
+											onChange={e => setCreateEventDescription(e.target.value)}
+											placeholder="Add event details…"
+										/>
+									</div>
+									<Button
+										onClick={handleCreateEvent}
+										disabled={creatingEvent || !createEventName.trim()}>
+										{creatingEvent ? 'Creating…' : 'Create Event'}
+									</Button>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Create Guest */}
+						{events.length > 0 && (
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-base">Add Guest in {selectedTenant?.name}</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<div className="space-y-3">
+										<div className="space-y-2">
+											<Label>Select Event</Label>
+											<Select
+												value={selectedEventId}
+												onValueChange={setSelectedEventId}>
+												<SelectTrigger>
+													<SelectValue placeholder="Select an event" />
+												</SelectTrigger>
+												<SelectContent>
+													{events.map(event => (
+														<SelectItem
+															key={event.id}
+															value={event.id}>
+															{event.name} ({event._count.tickets} tickets)
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2">
+											<Label>Guest Name</Label>
+											<Input
+												value={createGuestName}
+												onChange={e => setCreateGuestName(e.target.value)}
+												placeholder="John Doe"
+											/>
+										</div>
+										<Button
+											onClick={handleCreateGuest}
+											disabled={creatingGuest || !createGuestName.trim() || !selectedEventId}>
+											{creatingGuest ? 'Adding…' : 'Add Guest'}
+										</Button>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+					</>
+				)}
 
 				{isSuperAdmin && (
 					<Card>

@@ -381,4 +381,13 @@ export const updateUserRoleApi = (userId: string, role: ManageableUserRole, tena
 		? api.patch<{ data: AdminUser }>(`/admin/users/${userId}/role`, { role, tenantId })
 		: api.patch<{ data: AdminUser }>(`/admin/users/${userId}/role`, { role });
 
+// Super admin event and guest creation
+export const createAdminEventApi = (
+	tenantId: string,
+	data: { name: string; startsAt?: string; endsAt?: string; description?: string; imageUrl?: string },
+) => api.post<{ data: Event }>('/events', { ...data, tenantId });
+
+export const createAdminGuestApi = (tenantId: string, eventId: string, data: { name?: string; guestId?: string; ticketTypeId?: string }) =>
+	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data, { params: { tenantId } });
+
 export default api;
