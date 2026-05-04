@@ -7,6 +7,7 @@ import {
 	AdminTenant,
 	AdminUser,
 	createAdminUserApi,
+	createTenantWithAdminApi,
 	downgradeTenantApi,
 	getAdminEventsApi,
 	getAdminTenantsApi,
@@ -42,6 +43,9 @@ export default function SuperAdminPage() {
 	const [createEmail, setCreateEmail] = useState('');
 	const [createRole, setCreateRole] = useState<ManageableUserRole>('scanner');
 	const [creatingUser, setCreatingUser] = useState(false);
+	const [createTenantName, setCreateTenantName] = useState('');
+	const [createTenantAdminEmail, setCreateTenantAdminEmail] = useState('');
+	const [creatingTenant, setCreatingTenant] = useState(false);
 	const isSuperAdmin = user?.isSuperAdmin === true;
 	const canManageUsers = user?.role === 'owner' || user?.role === 'admin' || isSuperAdmin;
 	const selectedTenant = useMemo(() => tenants.find(t => t.id === selectedTenantId) ?? null, [tenants, selectedTenantId]);
@@ -154,6 +158,31 @@ export default function SuperAdminPage() {
 		}
 	}
 
+	async function handleCreateTenantWithAdmin() {
+		setError('');
+		setCreatingTenant(true);
+		try {
+			const created = (await createTenantWithAdminApi(createTenantName, createTenantAdminEmail)).data.data;
+			setTenants(prev => [created.tenant, ...prev]);
+			setSelectedTenantId(created.tenant.id);
+			setUsers([created.user]);
+			setEvents([]);
+			setCreateTenantName('');
+			setCreateTenantAdminEmail('');
+			if (created.user.emailDispatched === false) {
+				setError('Tenant and admin were created, but invitation email could not be sent.');
+			}
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setError((err.response?.data as { error?: string } | undefined)?.error ?? 'Failed to create tenant and invite admin.');
+			} else {
+				setError('Failed to create tenant and invite admin.');
+			}
+		} finally {
+			setCreatingTenant(false);
+		}
+	}
+
 	if (loading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
@@ -255,6 +284,45 @@ export default function SuperAdminPage() {
 							</CardContent>
 						</Card>
 					</div>
+				)}
+
+				{isSuperAdmin && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Create Tenant &amp; Invite Admin</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="grid md:grid-cols-2 gap-3 items-end">
+								<div className="space-y-2">
+									<Label>Tenant Name</Label>
+									<Input
+										value={createTenantName}
+										onChange={e => setCreateTenantName(e.target.value)}
+										placeholder="Acme Events"
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label>Admin Email</Label>
+									<Input
+										type="email"
+										value={createTenantAdminEmail}
+										onChange={e => setCreateTenantAdminEmail(e.target.value)}
+										placeholder="admin@company.com"
+									/>
+								</div>
+							</div>
+							<div className="mt-4">
+								<Button
+									onClick={handleCreateTenantWithAdmin}
+									disabled={creatingTenant || !createTenantName.trim() || !createTenantAdminEmail.trim()}>
+									{creatingTenant ? 'Creating…' : 'Create Tenant and Send Invitation'}
+								</Button>
+							</div>
+							<p className="mt-3 text-xs text-muted-foreground">
+								The invitation email includes a link where the admin sets their password on first access.
+							</p>
+						</CardContent>
+					</Card>
 				)}
 
 				{isSuperAdmin && (

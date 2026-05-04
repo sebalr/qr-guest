@@ -19,6 +19,11 @@ function normalizeEmail(email: string): string {
 	return email.trim().toLowerCase();
 }
 
+function isValidEmail(email: string): boolean {
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return emailRegex.test(email);
+}
+
 function canManageTenantUsers(req: Request): boolean {
 	const user = req.user;
 	if (!user) return false;
@@ -293,6 +298,111 @@ router.get('/tenants', requireSuperAdmin, async (_req: Request, res: Response): 
 				events: eventCountByTenantId.get(t.id) ?? 0,
 			},
 		})),
+	});
+});
+
+router.post('/tenants', requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+	const { tenantName, adminEmail } = req.body as {
+		tenantName?: string;
+		adminEmail?: string;
+	};
+
+	const normalizedTenantName = tenantName?.trim() ?? '';
+	const normalizedAdminEmail = adminEmail ? normalizeEmail(adminEmail) : '';
+
+	if (!normalizedTenantName || !normalizedAdminEmail) {
+		res.status(400).json({ error: 'tenantName and adminEmail are required' });
+		return;
+	}
+
+	if (!isValidEmail(normalizedAdminEmail)) {
+		res.status(400).json({ error: 'adminEmail must be valid' });
+		return;
+	}
+
+	const existing = await prisma.user.findUnique({ where: { email: normalizedAdminEmail } });
+	if (existing) {
+		res.status(409).json({ error: 'Email already in use' });
+		return;
+	}
+
+	const inviterEmail = req.user?.email ?? (await prisma.user.findUnique({ where: { id: req.user!.userId } }))?.email ?? 'A super admin';
+
+	const tenant = await prisma.tenant.create({
+		data: {
+			name: normalizedTenantName,
+			plan: 'free',
+		},
+	});
+
+	const user = await prisma.user.create({
+		data: {
+			email: normalizedAdminEmail,
+			passwordHash: null,
+			isSuperAdmin: false,
+		},
+	});
+
+	const userTenant = await prisma.userTenant.create({
+		data: {
+			userId: user.id,
+			tenantId: tenant.id,
+			role: 'admin',
+		},
+		include: {
+			tenant: { select: { id: true, name: true, plan: true, createdAt: true } },
+			user: true,
+		},
+	});
+
+	const invitation = await issueUserAuthToken({
+		userId: user.id,
+		type: AUTH_TOKEN_TYPES.invitation,
+		ttlHours: 24 * 7,
+	});
+
+	let emailDispatched = true;
+	try {
+		await sendInvitationEmail({
+			to: userTenant.user.email,
+			tenantName: userTenant.tenant.name,
+			role: userTenant.role,
+			inviterEmail,
+			token: invitation.token,
+		});
+	} catch (error) {
+		emailDispatched = false;
+		console.error('Invitation email dispatch failed:', error);
+	}
+
+	res.status(201).json({
+		data: {
+			tenant: {
+				id: userTenant.tenant.id,
+				name: userTenant.tenant.name,
+				plan: userTenant.tenant.plan,
+				createdAt: userTenant.tenant.createdAt,
+				_count: {
+					users: 1,
+					events: 0,
+				},
+			},
+			user: {
+				id: userTenant.user.id,
+				email: userTenant.user.email,
+				accountStatus: getAccountStatus(userTenant.user),
+				tenantId: userTenant.tenant.id,
+				role: userTenant.role,
+				isSuperAdmin: userTenant.user.isSuperAdmin,
+				createdAt: userTenant.user.createdAt,
+				emailDispatched,
+				tenant: {
+					id: userTenant.tenant.id,
+					name: userTenant.tenant.name,
+					plan: userTenant.tenant.plan,
+				},
+			},
+		},
 	});
 });
 

@@ -167,6 +167,11 @@ export interface AdminUser {
 	tenant?: { id: string; name: string; plan: string };
 }
 
+export interface CreateTenantWithAdminResponse {
+	tenant: AdminTenant;
+	user: AdminUser;
+}
+
 export interface DeviceEventDebugUploadPayload {
 	eventId: string;
 	deviceId: string;
@@ -367,6 +372,8 @@ export const createAdminUserApi = (email: string, role: ManageableUserRole, tena
 	tenantId
 		? api.post<{ data: AdminUser }>('/admin/users', { email, role, tenantId })
 		: api.post<{ data: AdminUser }>('/admin/users', { email, role });
+export const createTenantWithAdminApi = (tenantName: string, adminEmail: string) =>
+	api.post<{ data: CreateTenantWithAdminResponse }>('/admin/tenants', { tenantName, adminEmail });
 export const upgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/upgrade`);
 export const downgradeTenantApi = (tenantId: string) => api.post<{ data: AdminTenant }>(`/admin/tenants/${tenantId}/downgrade`);
 export const updateUserRoleApi = (userId: string, role: ManageableUserRole, tenantId?: string) =>
