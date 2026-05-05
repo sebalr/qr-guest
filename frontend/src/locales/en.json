@@ -65,5 +65,397 @@
       "description": "You can still record this scan if this person needs to be counted again.",
       "recordAgain": "Record Again"
     }
+  },
+  "superAdmin": {
+    "page": {
+      "loading": "Loading user management...",
+      "loadingTenantData": "Loading tenant data...",
+      "noTenantSelected": "No tenant selected",
+      "title": {
+        "superAdmin": "Super Admin",
+        "userManagement": "User Management"
+      },
+      "subtitle": {
+        "superAdmin": "Global tenant, event and user management",
+        "userManagement": "Manage users and scanning roles in your tenant"
+      },
+      "summary": {
+        "tenants": "Tenants",
+        "users": "Users",
+        "events": "Events",
+        "proTenants": "Pro Tenants"
+      },
+      "cards": {
+        "createTenantInviteAdmin": "Create Tenant & Invite Admin",
+        "selectedTenant": "Selected Tenant",
+        "createUser": "Create User",
+        "createUserForTenant": "Create User for {{tenantName}}"
+      },
+      "form": {
+        "tenantName": "Tenant Name",
+        "tenantNamePlaceholder": "Acme Events",
+        "adminEmail": "Admin Email",
+        "adminEmailPlaceholder": "admin@company.com",
+        "tenant": "Tenant",
+        "selectTenant": "Select tenant",
+        "email": "Email",
+        "userEmailPlaceholder": "user@company.com",
+        "role": "Role"
+      },
+      "actions": {
+        "creating": "Creating...",
+        "createTenantSendInvitation": "Create Tenant and Send Invitation",
+        "sendInvitation": "Send Invitation"
+      },
+      "hints": {
+        "invitationLinkHint": "The invitation email includes a link where the admin sets their password on first access."
+      },
+      "errors": {
+        "loadSuperAdminDataFailed": "Failed to load super admin data.",
+        "loadTenantDataFailed": "Failed to load tenant data.",
+        "updateTenantPlanFailed": "Failed to update tenant plan.",
+        "updateUserRoleFailed": "Failed to update user role.",
+        "selectTenantBeforeCreateUser": "Select a tenant before creating a user.",
+        "userCreatedEmailNotSent": "User created, but the invitation email could not be sent.",
+        "createUserFailed": "Failed to create user.",
+        "tenantAdminCreatedEmailNotSent": "Tenant and admin were created, but invitation email could not be sent.",
+        "createTenantInviteAdminFailed": "Failed to create tenant and invite admin.",
+        "selectTenantBeforeCreateEvent": "Select a tenant before creating an event.",
+        "eventNameRequired": "Event name is required.",
+        "createEventFailed": "Failed to create event.",
+        "selectTenantBeforeCreateGuest": "Select a tenant before creating a guest.",
+        "selectEventBeforeCreateGuest": "Select an event before creating a guest.",
+        "guestNameRequired": "Guest name is required.",
+        "createGuestFailed": "Failed to create guest."
+      }
+    },
+    "events": {
+      "actions": {
+        "showArchived": "Show Archived",
+        "hideArchived": "Hide Archived",
+        "open": "Open",
+        "archive": "Archive",
+        "unarchive": "Unarchive",
+        "delete": "Delete",
+        "saving": "Saving..."
+      },
+      "labels": {
+        "archived": "Archived"
+      },
+      "dialog": {
+        "archiveTitle": "Archive event?",
+        "archiveDescription": "Are you sure you want to archive this event?",
+        "unarchiveTitle": "Unarchive event?",
+        "unarchiveDescription": "Are you sure you want to unarchive this event?",
+        "deleteTitle": "Delete event?",
+        "deleteDescription": "Are you sure you want to delete this event? This option could not be undone."
+      },
+      "errors": {
+        "archiveFailed": "Failed to archive event.",
+        "unarchiveFailed": "Failed to unarchive event.",
+        "deleteFailed": "Failed to delete event."
+      }
+    }
+  },
+  "eventsPage": {
+    "title": "Events",
+    "subtitle": {
+      "manage": "Manage your guest events",
+      "browse": "Browse your assigned events"
+    },
+    "actions": {
+      "users": "Users",
+      "logout": "Logout",
+      "newEvent": "New Event",
+      "scan": "Scan"
+    },
+    "form": {
+      "title": "Create Event",
+      "eventName": "Event Name",
+      "eventNamePlaceholder": "e.g. Annual Conference 2025",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional event description",
+      "startDateTime": "Start Date & Time",
+      "startDateTimePlaceholder": "Pick start date & time",
+      "endDateTime": "End Date & Time",
+      "endDateTimePlaceholder": "Pick end date & time",
+      "imageUrl": "Image URL",
+      "imageUrlPlaceholder": "https://example.com/event-image.jpg",
+      "creating": "Creating...",
+      "create": "Create Event"
+    },
+    "dateRange": {
+      "from": "From {{value}}",
+      "until": "Until {{value}}"
+    },
+    "loading": "Loading events...",
+    "empty": "No events yet. Create your first event above.",
+    "errors": {
+      "createFailed": "Failed to create event."
+    }
+  },
+  "eventSettingsPage": {
+    "fallbackEventName": "Event",
+    "loading": "Loading settings...",
+    "title": "Event Settings",
+    "tabs": {
+      "ticketTypes": "Ticket Types",
+      "temporalScanners": "Temporal Scanners"
+    },
+    "actions": {
+      "saving": "Saving...",
+      "save": "Save",
+      "close": "Close"
+    },
+    "toasts": {
+      "linkCopied": "Link copied successfully",
+      "emailSent": "Email sent successfully"
+    },
+    "errors": {
+      "loadFailed": "Failed to load settings data.",
+      "copyLinkFailed": "Unable to copy link to clipboard.",
+      "emailRequired": "Email is required.",
+      "sendEmailFailed": "Failed to send email."
+    },
+    "emailTemplate": {
+      "subject": "Scanner access for {{eventName}}",
+      "body": "Hi {{scannerName}},\n\nUse this link to access the scanner for {{eventName}}:\n{{link}}"
+    },
+    "ticketTypes": {
+      "title": "Ticket Types",
+      "description": "Create, edit, and delete ticket types for this event.",
+      "empty": "No ticket types configured yet.",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "VIP",
+        "price": "Price",
+        "pricePlaceholder": "49.90"
+      },
+      "actions": {
+        "addType": "Add Type",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "dialog": {
+        "editTitle": "Edit Ticket Type",
+        "editDescription": "Update ticket type name and price."
+      },
+      "errors": {
+        "nameRequired": "Ticket type name is required.",
+        "priceInvalid": "Price must be a valid non-negative number.",
+        "createFailed": "Failed to create ticket type.",
+        "updateFailed": "Failed to update ticket type.",
+        "deleteFailed": "Failed to delete ticket type."
+      }
+    },
+    "scanners": {
+      "title": "Temporal Scanners",
+      "description": "Create and manage temporary scanner links for this event.",
+      "accessInfo": "Users created here have scanner-only access for this event only. They cannot manage users, settings, or other events.",
+      "empty": "No temporal scanners created yet.",
+      "fields": {
+        "namePlaceholder": "Scanner name"
+      },
+      "meta": {
+        "createdAt": "Created {{value}}",
+        "lastUsedAt": "Last used {{value}}",
+        "neverUsed": "Last used Never"
+      },
+      "actions": {
+        "create": "Create",
+        "creating": "Creating...",
+        "enableAccess": "Enable Access",
+        "disableAccess": "Disable Access",
+        "share": "Share",
+        "copyLink": "Copy Link",
+        "showQr": "Show QR",
+        "sendEmail": "Send Email"
+      },
+      "errors": {
+        "nameRequired": "Name is required.",
+        "createFailed": "Failed to create temporary scanner.",
+        "updateAccessFailed": "Failed to update temporary scanner access."
+      }
+    },
+    "qrDialog": {
+      "title": "Scanner QR",
+      "description": "Share this scanner access QR.",
+      "descriptionNamed": "Share this QR with {{scannerName}}."
+    },
+    "emailDialog": {
+      "title": "Send Scanner Access Email",
+      "description": "Send scanner access email.",
+      "descriptionNamed": "Send login access for {{scannerName}} using your Resend setup.",
+      "recipientLabel": "Recipient Email",
+      "recipientPlaceholder": "scanner@example.com",
+      "sending": "Sending..."
+    }
+  },
+  "dashboardPage": {
+    "fallbackEventName": "Event",
+    "title": "Scan Dashboard",
+    "loading": "Loading dashboard...",
+    "lastUpdated": "Updated {{value}}",
+    "actions": {
+      "auto": "Auto",
+      "manual": "Manual"
+    },
+    "summary": {
+      "totalGuests": "Total Guests",
+      "checkedIn": "Checked In",
+      "notArrived": "Not Arrived",
+      "duplicateScans": "Duplicate Scans"
+    },
+    "attendance": {
+      "title": "Attendance Rate",
+      "detail": "{{scanned}} of {{total}} guests checked in"
+    },
+    "charts": {
+      "scanArrivals": "Scan Arrivals",
+      "scans": "Scans",
+      "cumulativeCheckins": "Cumulative Check-ins",
+      "scannerRanking": "Scanner Ranking",
+      "topScannerShare": "Top Scanner Share",
+      "multipleScansTitle": "QR Codes Scanned Multiple Times",
+      "topScannedGuests": "Top Scanned Guests"
+    },
+    "labels": {
+      "others": "others"
+    },
+    "debug": {
+      "title": "Device Debug Uploads",
+      "empty": "No device debug payloads uploaded for this event yet.",
+      "device": "Device {{deviceId}}",
+      "uploadedByOn": "Uploaded by {{uploader}} on {{date}}",
+      "bytes": "{{value}} bytes",
+      "downloading": "Downloading...",
+      "downloadJson": "Download JSON"
+    },
+    "table": {
+      "guest": "Guest",
+      "timesScanned": "Times Scanned",
+      "status": "Status",
+      "scanned": "Scanned",
+      "pending": "Pending"
+    },
+    "empty": {
+      "noScans": "No scans recorded yet."
+    },
+    "errors": {
+      "loadDeviceDebugFailed": "Failed to load uploaded device debug payloads.",
+      "downloadDeviceDebugFailed": "Failed to download device debug payload."
+    }
+  },
+  "eventDetailPage": {
+    "fallbackEventName": "Event",
+    "loading": "Loading event data...",
+    "loadingProgress": "Loaded {{ticketsLoaded}} tickets across {{pagesLoaded}} pages",
+    "actions": {
+      "dashboard": "Dashboard",
+      "settings": "Settings",
+      "scanner": "Scanner",
+      "saving": "Saving...",
+      "save": "Save",
+      "adding": "Adding...",
+      "add": "Add",
+      "addGuests": "Add Guests",
+      "bulkAdd": "Bulk Add",
+      "type": "Type",
+      "cancel": "Cancel",
+      "restore": "Restore",
+      "restoring": "Restoring...",
+      "hide": "Hide",
+      "qr": "QR",
+      "pdf": "PDF",
+      "share": "Share",
+      "sharing": "Sharing..."
+    },
+    "stats": {
+      "total": "Total",
+      "scanned": "Scanned",
+      "cancelled": "Cancelled",
+      "maxGuests": "Max Guests"
+    },
+    "maxGuests": {
+      "placeholder": "500",
+      "save": "Save Max Guests"
+    },
+    "singleAdd": {
+      "namePlaceholder": "Add guest by name...",
+      "existingGuest": "Existing guest",
+      "existingGuestsInOrg": "Existing guests in your organisation",
+      "notListed": "Not listed?",
+      "createNewGuest": "Create new guest \"{{name}}\""
+    },
+    "guests": {
+      "title": "Guests",
+      "full": "Full",
+      "compact": "Compact",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "empty": "No guests yet."
+    },
+    "bulk": {
+      "title": "Bulk Add Guests",
+      "guestNamesLabel": "Guest names (one per line)",
+      "ticketTypeLabel": "Ticket Type (applies to all)"
+    },
+    "ticketType": {
+      "label": "Ticket Type",
+      "placeholder": "Ticket type",
+      "selectPlaceholder": "Select ticket type",
+      "none": "No type",
+      "changeTitle": "Change Ticket Type"
+    },
+    "selection": {
+      "selectedCount": "{{count}} selected"
+    },
+    "cancelDialog": {
+      "title": "Cancel ticket?",
+      "description": "This will mark this ticket as cancelled.",
+      "descriptionNamed": "This will mark {{name}}'s ticket as cancelled.",
+      "keepActive": "Keep Active",
+      "confirm": "Cancel Ticket",
+      "cancelling": "Cancelling..."
+    },
+    "errorDialog": {
+      "title": "Action failed",
+      "ok": "OK"
+    },
+    "scanHistory": {
+      "title": "Scan History",
+      "loadingTicketDetails": "Loading ticket details...",
+      "loadingScans": "Loading scans...",
+      "empty": "No scans recorded for this ticket.",
+      "pendingSync": "Pending sync",
+      "scanNumber": "Scan #{{value}}",
+      "recordedOnThisDevice": "Recorded on this device",
+      "pendingSyncDevice": "Pending sync (this device)",
+      "scannedTimes": "Scanned {{count}}x"
+    },
+    "toasts": {
+      "cancelledTicketsCannotDisplayQr": "Cancelled tickets cannot display QR codes.",
+      "selectedTicketsCancelled": "Selected tickets are cancelled and cannot be shared as QR.",
+      "pdfDownloadedSkipped": "PDF downloaded. {{count}} cancelled ticket(s) were skipped.",
+      "pdfDownloadedAttachManually": "PDF downloaded. Open WhatsApp and attach it manually.",
+      "cancelledTicketsSkipped": "{{count}} cancelled ticket(s) were skipped."
+    },
+    "errors": {
+      "maxGuestsInvalid": "Max guests must be a whole number greater than 0.",
+      "updateMaxGuestsFailed": "Failed to update max guests.",
+      "eventGuestLimitReached": "Event guest limit reached ({{value}}).",
+      "addGuestFailed": "Failed to add guest.",
+      "enterAtLeastOneName": "Enter at least one name.",
+      "addingGuestsExceedsLimit": "Adding {{count}} guests exceeds event limit ({{max}}).",
+      "addTicketsFailed": "Failed to add tickets.",
+      "updateTicketTypeFailed": "Failed to update ticket type.",
+      "cancelTicketFailed": "Failed to cancel ticket.",
+      "restoreTicketFailed": "Failed to restore ticket.",
+      "ticketCancelled": "Ticket is cancelled",
+      "loadQrFailed": "Failed to load QR code.",
+      "generatePdfFailed": "Failed to generate PDF.",
+      "serverHistoryUnavailable": "Server history unavailable. Showing local records only.",
+      "loadScanHistoryFailed": "Failed to load scan history."
+    }
   }
 }

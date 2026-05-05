@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../prisma';
 import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
-import { requireSuperAdmin } from '../middleware/roles';
+import { requireRole, requireSuperAdmin } from '../middleware/roles';
 import { getAccountStatus } from '../lib/accountStatus';
 import { sendInvitationEmail } from '../lib/authEmails';
 import { AUTH_TOKEN_TYPES, issueUserAuthToken } from '../lib/userAuthTokens';
@@ -408,6 +408,7 @@ router.post('/tenants', requireSuperAdmin, async (req: Request, res: Response): 
 
 router.get('/events', requireSuperAdmin, async (_req: Request, res: Response): Promise<void> => {
 	const tenantId = (typeof _req.query.tenantId === 'string' ? _req.query.tenantId : '').trim();
+	const includeArchived = (typeof _req.query.includeArchived === 'string' ? _req.query.includeArchived : '').trim() === 'true';
 	if (!tenantId) {
 		res.status(400).json({ error: 'tenantId query parameter is required' });
 		return;
@@ -429,7 +430,11 @@ router.get('/events', requireSuperAdmin, async (_req: Request, res: Response): P
 
 	const events = await withRls({ tenantId: tenant.id, bypassRls: context.bypassRls }, async tenantPrisma => {
 		return tenantPrisma.event.findMany({
-			where: { tenantId: tenant.id },
+			where: {
+				tenantId: tenant.id,
+				isDeleted: false,
+				...(includeArchived ? {} : { archivedAt: null }),
+			},
 			orderBy: [{ startsAt: 'desc' }],
 			include: {
 				_count: { select: { tickets: true, scans: true } },
@@ -444,6 +449,156 @@ router.get('/events', requireSuperAdmin, async (_req: Request, res: Response): P
 			tenant,
 		})),
 	});
+});
+
+router.post('/events/:id/archive', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'Invalid event id' });
+		return;
+	}
+
+	const context = resolveRlsContext(req, {
+		allowSuperAdminTenantOverride: true,
+		allowSuperAdminBypass: true,
+	});
+
+	const existing = req.user?.isSuperAdmin
+		? await prisma.event.findUnique({
+				where: { id: eventId },
+				select: { id: true, tenantId: true, isDeleted: true, archivedAt: true },
+			})
+		: await withRls(context, async tenantPrisma => {
+				return tenantPrisma.event.findFirst({
+					where: { id: eventId },
+					select: { id: true, tenantId: true, isDeleted: true, archivedAt: true },
+				});
+			});
+
+	if (!existing) {
+		res.status(404).json({ error: 'Event not found' });
+		return;
+	}
+
+	if (existing.isDeleted) {
+		res.status(400).json({ error: 'Deleted events cannot be archived' });
+		return;
+	}
+
+	const archivedAt = existing.archivedAt ?? new Date();
+	const targetTenantId = req.user?.isSuperAdmin ? existing.tenantId : context.tenantId;
+	const updated = await withRls({ tenantId: targetTenantId, bypassRls: context.bypassRls }, async tenantPrisma => {
+		return tenantPrisma.event.update({
+			where: { id: eventId },
+			data: {
+				archivedAt,
+				version: { increment: 1 },
+			},
+		});
+	});
+
+	res.json({ data: updated });
+});
+
+router.post('/events/:id/unarchive', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'Invalid event id' });
+		return;
+	}
+
+	const context = resolveRlsContext(req, {
+		allowSuperAdminTenantOverride: true,
+		allowSuperAdminBypass: true,
+	});
+
+	const existing = req.user?.isSuperAdmin
+		? await prisma.event.findUnique({
+				where: { id: eventId },
+				select: { id: true, tenantId: true, isDeleted: true },
+			})
+		: await withRls(context, async tenantPrisma => {
+				return tenantPrisma.event.findFirst({
+					where: { id: eventId },
+					select: { id: true, tenantId: true, isDeleted: true },
+				});
+			});
+
+	if (!existing) {
+		res.status(404).json({ error: 'Event not found' });
+		return;
+	}
+
+	if (existing.isDeleted) {
+		res.status(400).json({ error: 'Deleted events cannot be unarchived' });
+		return;
+	}
+
+	const targetTenantId = req.user?.isSuperAdmin ? existing.tenantId : context.tenantId;
+	const updated = await withRls({ tenantId: targetTenantId, bypassRls: context.bypassRls }, async tenantPrisma => {
+		return tenantPrisma.event.update({
+			where: { id: eventId },
+			data: {
+				archivedAt: null,
+				version: { increment: 1 },
+			},
+		});
+	});
+
+	res.json({ data: updated });
+});
+
+router.post('/events/:id/delete', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'Invalid event id' });
+		return;
+	}
+
+	const context = resolveRlsContext(req, {
+		allowSuperAdminTenantOverride: true,
+		allowSuperAdminBypass: true,
+	});
+
+	const existing = req.user?.isSuperAdmin
+		? await prisma.event.findUnique({
+				where: { id: eventId },
+				select: { id: true, tenantId: true, isDeleted: true },
+			})
+		: await withRls(context, async tenantPrisma => {
+				return tenantPrisma.event.findFirst({
+					where: { id: eventId },
+					select: { id: true, tenantId: true, isDeleted: true },
+				});
+			});
+
+	if (!existing) {
+		res.status(404).json({ error: 'Event not found' });
+		return;
+	}
+
+	if (existing.isDeleted) {
+		res.json({ data: { id: existing.id, isDeleted: true } });
+		return;
+	}
+
+	const targetTenantId = req.user?.isSuperAdmin ? existing.tenantId : context.tenantId;
+	const updated = await withRls({ tenantId: targetTenantId, bypassRls: context.bypassRls }, async tenantPrisma => {
+		return tenantPrisma.event.update({
+			where: { id: eventId },
+			data: {
+				isDeleted: true,
+				deletedAt: new Date(),
+				archivedAt: null,
+				version: { increment: 1 },
+			},
+		});
+	});
+
+	res.json({ data: updated });
 });
 
 router.post('/tenants/:id/upgrade', requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {

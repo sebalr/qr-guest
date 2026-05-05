@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import {
 	getEventApi,
 	updateEventApi,
@@ -65,6 +66,7 @@ const COMPACT_GRID_COLUMNS = 4;
 const EVENT_TICKETS_PAGE_SIZE = 100;
 
 export default function EventDetailPage() {
+	const { t } = useTranslation();
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
@@ -261,7 +263,7 @@ export default function EventDetailPage() {
 		setMaxGuestsError('');
 		const parsed = Number(maxGuestsInput);
 		if (!Number.isInteger(parsed) || parsed < 1) {
-			setMaxGuestsError('Max guests must be a whole number greater than 0.');
+			setMaxGuestsError(t('eventDetailPage.errors.maxGuestsInvalid'));
 			return;
 		}
 
@@ -271,7 +273,7 @@ export default function EventDetailPage() {
 			setEvent(res.data.data);
 			setMaxGuestsInput(String(res.data.data.maxGuests ?? parsed));
 		} catch (error) {
-			setMaxGuestsError(getApiErrorMessage(error, 'Failed to update max guests.'));
+			setMaxGuestsError(getApiErrorMessage(error, t('eventDetailPage.errors.updateMaxGuestsFailed')));
 		} finally {
 			setSavingMaxGuests(false);
 		}
@@ -281,7 +283,7 @@ export default function EventDetailPage() {
 		e.preventDefault();
 		if (!id) return;
 		if (typeof event?.maxGuests === 'number' && tickets.length >= event.maxGuests) {
-			setSingleError(`Event guest limit reached (${event.maxGuests}).`);
+			setSingleError(t('eventDetailPage.errors.eventGuestLimitReached', { value: event.maxGuests }));
 			return;
 		}
 		setSingleError('');
@@ -306,7 +308,7 @@ export default function EventDetailPage() {
 			setSelectedGuest(null);
 			setGuestSuggestions([]);
 		} catch (error) {
-			setSingleError(getApiErrorMessage(error, 'Failed to add guest.'));
+			setSingleError(getApiErrorMessage(error, t('eventDetailPage.errors.addGuestFailed')));
 		} finally {
 			setAddingSingle(false);
 		}
@@ -322,13 +324,13 @@ export default function EventDetailPage() {
 			.map(n => n.trim())
 			.filter(Boolean);
 		if (names.length === 0) {
-			setBulkError('Enter at least one name.');
+			setBulkError(t('eventDetailPage.errors.enterAtLeastOneName'));
 			setAdding(false);
 			return;
 		}
 
 		if (typeof event?.maxGuests === 'number' && tickets.length + names.length > event.maxGuests) {
-			setBulkError(`Adding ${names.length} guests exceeds event limit (${event.maxGuests}).`);
+			setBulkError(t('eventDetailPage.errors.addingGuestsExceedsLimit', { count: names.length, max: event.maxGuests }));
 			setAdding(false);
 			return;
 		}
@@ -353,7 +355,7 @@ export default function EventDetailPage() {
 			setBulkTicketTypeId('none');
 			setShowBulk(false);
 		} catch (error) {
-			setBulkError(getApiErrorMessage(error, 'Failed to add tickets.'));
+			setBulkError(getApiErrorMessage(error, t('eventDetailPage.errors.addTicketsFailed')));
 		} finally {
 			setAdding(false);
 		}
@@ -379,7 +381,7 @@ export default function EventDetailPage() {
 			setTickets(prev => prev.map(t => (t.id === updated.id ? updated : t)));
 			setEditingTicket(null);
 		} catch {
-			setErrorDialogMessage('Failed to update ticket type.');
+			setErrorDialogMessage(t('eventDetailPage.errors.updateTicketTypeFailed'));
 		} finally {
 			setUpdatingTicket(false);
 		}
@@ -394,7 +396,7 @@ export default function EventDetailPage() {
 			db.tickets.update(cancelTargetTicketId, { status: 'cancelled' });
 			setCancelTargetTicketId(null);
 		} catch {
-			setErrorDialogMessage('Failed to cancel ticket.');
+			setErrorDialogMessage(t('eventDetailPage.errors.cancelTicketFailed'));
 		} finally {
 			setCancelingTicket(false);
 		}
@@ -407,7 +409,7 @@ export default function EventDetailPage() {
 			setTickets(prev => prev.map(t => (t.id === ticketId ? { ...t, status: 'active' } : t)));
 			db.tickets.update(ticketId, { status: 'active' });
 		} catch {
-			setErrorDialogMessage('Failed to restore ticket.');
+			setErrorDialogMessage(t('eventDetailPage.errors.restoreTicketFailed'));
 		} finally {
 			setRestoringTicketId(null);
 		}
@@ -417,7 +419,7 @@ export default function EventDetailPage() {
 		if (qrMap[ticketId]) return qrMap[ticketId];
 		const ticket = tickets.find(t => t.id === ticketId);
 		if (!ticket || ticket.status === 'cancelled') {
-			throw new Error('Ticket is cancelled');
+			throw new Error(t('eventDetailPage.errors.ticketCancelled'));
 		}
 		const res = await getTicketQRApi(ticketId, tenantScope);
 		const token = res.data.data.qrToken;
@@ -428,7 +430,7 @@ export default function EventDetailPage() {
 	async function handleShowQR(ticketId: string) {
 		const ticket = tickets.find(t => t.id === ticketId);
 		if (!ticket || ticket.status === 'cancelled') {
-			setPdfToast('Cancelled tickets cannot display QR codes.');
+			setPdfToast(t('eventDetailPage.toasts.cancelledTicketsCannotDisplayQr'));
 			return;
 		}
 
@@ -443,7 +445,7 @@ export default function EventDetailPage() {
 		try {
 			await fetchQrToken(ticketId);
 		} catch {
-			setErrorDialogMessage('Failed to load QR code.');
+			setErrorDialogMessage(t('eventDetailPage.errors.loadQrFailed'));
 		}
 	}
 
@@ -481,7 +483,7 @@ export default function EventDetailPage() {
 		const skippedCount = ticketIds.length - activeTicketIds.length;
 
 		if (activeTicketIds.length === 0) {
-			setPdfToast('Selected tickets are cancelled and cannot be shared as QR.');
+			setPdfToast(t('eventDetailPage.toasts.selectedTicketsCancelled'));
 			return;
 		}
 
@@ -495,14 +497,14 @@ export default function EventDetailPage() {
 			if (!shared) {
 				setPdfToast(
 					skippedCount > 0
-						? `PDF downloaded. ${skippedCount} cancelled ticket(s) were skipped.`
-						: 'PDF downloaded. Open WhatsApp and attach it manually.',
+						? t('eventDetailPage.toasts.pdfDownloadedSkipped', { count: skippedCount })
+						: t('eventDetailPage.toasts.pdfDownloadedAttachManually'),
 				);
 			} else if (skippedCount > 0) {
-				setPdfToast(`${skippedCount} cancelled ticket(s) were skipped.`);
+				setPdfToast(t('eventDetailPage.toasts.cancelledTicketsSkipped', { count: skippedCount }));
 			}
 		} catch {
-			setPdfToast('Failed to generate PDF.');
+			setPdfToast(t('eventDetailPage.errors.generatePdfFailed'));
 		} finally {
 			setGeneratingPdf(false);
 		}
@@ -535,7 +537,9 @@ export default function EventDetailPage() {
 					scannedAt: scan.scanned_at,
 					deviceId: 'local-device',
 					userId: 'local',
-					scannedBy: scan.synced ? 'Recorded on this device' : 'Pending sync (this device)',
+					scannedBy: scan.synced
+						? t('eventDetailPage.scanHistory.recordedOnThisDevice')
+						: t('eventDetailPage.scanHistory.pendingSyncDevice'),
 					pendingSync: !scan.synced,
 				}));
 
@@ -543,10 +547,10 @@ export default function EventDetailPage() {
 
 			setScanHistoryItems(merged);
 			if (remoteFailed) {
-				setScanHistoryError('Server history unavailable. Showing local records only.');
+				setScanHistoryError(t('eventDetailPage.errors.serverHistoryUnavailable'));
 			}
 		} catch {
-			setScanHistoryError('Failed to load scan history.');
+			setScanHistoryError(t('eventDetailPage.errors.loadScanHistoryFailed'));
 		} finally {
 			setScanHistoryLoading(false);
 		}
@@ -608,10 +612,12 @@ export default function EventDetailPage() {
 			<div className="min-h-screen flex items-center justify-center">
 				<div className="text-center space-y-2">
 					<div className="mx-auto h-6 w-6 rounded-full border-2 border-slate-300 border-t-slate-700 animate-spin" />
-					<p className="text-muted-foreground">Loading event data...</p>
+					<p className="text-muted-foreground">{t('eventDetailPage.loading')}</p>
 					<p className="text-xs text-muted-foreground">
-						Loaded {ticketLoadProgress.ticketsLoaded} tickets across {ticketLoadProgress.pagesLoaded} page
-						{ticketLoadProgress.pagesLoaded === 1 ? '' : 's'}
+						{t('eventDetailPage.loadingProgress', {
+							ticketsLoaded: ticketLoadProgress.ticketsLoaded,
+							pagesLoaded: ticketLoadProgress.pagesLoaded,
+						})}
 					</p>
 				</div>
 			</div>
@@ -637,7 +643,7 @@ export default function EventDetailPage() {
 								onError={e => ((e.target as HTMLImageElement).style.display = 'none')}
 							/>
 						)}
-						<h1 className="font-bold text-lg flex-1 truncate">{event?.name ?? 'Event'}</h1>
+						<h1 className="font-bold text-lg flex-1 truncate">{event?.name ?? t('eventDetailPage.fallbackEventName')}</h1>
 					</div>
 					{canManageTickets && (
 						<Button
@@ -646,7 +652,7 @@ export default function EventDetailPage() {
 							className="gap-1.5"
 							onClick={() => navigate(`/events/${id}/dashboard${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
 							<BarChart2 className="h-4 w-4" />
-							<span className="hidden sm:inline">Dashboard</span>
+							<span className="hidden sm:inline">{t('eventDetailPage.actions.dashboard')}</span>
 						</Button>
 					)}
 					{canManageTickets && (
@@ -656,7 +662,7 @@ export default function EventDetailPage() {
 							className="gap-1.5"
 							onClick={() => navigate(`/events/${id}/settings${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
 							<Settings className="h-4 w-4" />
-							<span className="hidden sm:inline">Settings</span>
+							<span className="hidden sm:inline">{t('eventDetailPage.actions.settings')}</span>
 						</Button>
 					)}
 					<Button
@@ -664,7 +670,7 @@ export default function EventDetailPage() {
 						className="gap-1.5"
 						onClick={() => navigate(`/events/${id}/scan${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
 						<Camera className="h-4 w-4" />
-						<span className="hidden sm:inline">Scanner</span>
+						<span className="hidden sm:inline">{t('eventDetailPage.actions.scanner')}</span>
 					</Button>
 				</div>
 			</header>
@@ -696,7 +702,7 @@ export default function EventDetailPage() {
 									</span>
 									<Users className="h-5 w-5 text-muted-foreground mb-1" />
 									<p className="text-2xl font-bold">{tickets.length}</p>
-									<p className="text-xs text-muted-foreground">Total</p>
+									<p className="text-xs text-muted-foreground">{t('eventDetailPage.stats.total')}</p>
 								</button>
 								<button
 									onClick={() => toggleFilter('scanned')}
@@ -712,7 +718,7 @@ export default function EventDetailPage() {
 									</span>
 									<CheckCircle2 className="h-5 w-5 text-green-600 mb-1" />
 									<p className="text-2xl font-bold text-green-600">{totalScanned}</p>
-									<p className="text-xs text-muted-foreground">Scanned</p>
+									<p className="text-xs text-muted-foreground">{t('eventDetailPage.stats.scanned')}</p>
 								</button>
 								<button
 									onClick={() => toggleFilter('cancelled')}
@@ -728,12 +734,12 @@ export default function EventDetailPage() {
 									</span>
 									<XCircle className="h-5 w-5 text-red-500 mb-1" />
 									<p className="text-2xl font-bold text-red-500">{cancelledCount}</p>
-									<p className="text-xs text-muted-foreground">Cancelled</p>
+									<p className="text-xs text-muted-foreground">{t('eventDetailPage.stats.cancelled')}</p>
 								</button>
 								<div className="flex flex-col items-center p-3 rounded-lg bg-blue-50 border-2 border-blue-300">
 									<Users className="h-5 w-5 text-blue-600 mb-1" />
 									<p className="text-2xl font-bold text-blue-600">{hasGuestLimit ? event.maxGuests : '∞'}</p>
-									<p className="text-xs text-muted-foreground">Max Guests</p>
+									<p className="text-xs text-muted-foreground">{t('eventDetailPage.stats.maxGuests')}</p>
 								</div>
 							</div>
 							{canEditGuestLimit && (
@@ -742,7 +748,7 @@ export default function EventDetailPage() {
 									className="mt-4 p-3 rounded-lg border bg-slate-50 space-y-2">
 									<div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
 										<div className="space-y-1">
-											<Label htmlFor="event-max-guests">Max Guests</Label>
+											<Label htmlFor="event-max-guests">{t('eventDetailPage.stats.maxGuests')}</Label>
 											<Input
 												id="event-max-guests"
 												type="number"
@@ -751,13 +757,13 @@ export default function EventDetailPage() {
 												step="1"
 												value={maxGuestsInput}
 												onChange={e => setMaxGuestsInput(e.target.value)}
-												placeholder="500"
+												placeholder={t('eventDetailPage.maxGuests.placeholder')}
 											/>
 										</div>
 										<Button
 											type="submit"
 											disabled={savingMaxGuests}>
-											{savingMaxGuests ? 'Saving…' : 'Save Max Guests'}
+											{savingMaxGuests ? t('eventDetailPage.actions.saving') : t('eventDetailPage.maxGuests.save')}
 										</Button>
 									</div>
 									{maxGuestsError && <p className="text-xs text-destructive">{maxGuestsError}</p>}
@@ -778,7 +784,7 @@ export default function EventDetailPage() {
 							<div className="flex gap-2 items-start">
 								<div className="relative flex-1">
 									<Input
-										placeholder="Add guest by name…"
+										placeholder={t('eventDetailPage.singleAdd.namePlaceholder')}
 										value={singleName}
 										onChange={e => handleSingleNameChange(e.target.value)}
 										onFocus={() => guestSuggestions.length > 0 && setShowSuggestions(true)}
@@ -786,7 +792,7 @@ export default function EventDetailPage() {
 									/>
 									{selectedGuest && (
 										<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium pointer-events-none">
-											Existing guest
+											{t('eventDetailPage.singleAdd.existingGuest')}
 										</span>
 									)}
 								</div>
@@ -795,10 +801,10 @@ export default function EventDetailPage() {
 										value={singleTicketTypeId}
 										onValueChange={setSingleTicketTypeId}>
 										<SelectTrigger>
-											<SelectValue placeholder="Ticket type" />
+											<SelectValue placeholder={t('eventDetailPage.ticketType.placeholder')} />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="none">No type</SelectItem>
+											<SelectItem value="none">{t('eventDetailPage.ticketType.none')}</SelectItem>
 											{ticketTypes.map(type => (
 												<SelectItem
 													key={type.id}
@@ -816,7 +822,7 @@ export default function EventDetailPage() {
 							{showSuggestions && guestSuggestions.length > 0 && (
 								<div className="absolute z-30 top-full mt-1 w-full bg-background border rounded-lg shadow-lg overflow-hidden">
 									<p className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b bg-slate-50">
-										Existing guests in your organisation
+										{t('eventDetailPage.singleAdd.existingGuestsInOrg')}
 									</p>
 									<ul className="max-h-56 overflow-y-auto divide-y">
 										{guestSuggestions.map(g => (
@@ -838,7 +844,7 @@ export default function EventDetailPage() {
 									</ul>
 									<div className="border-t px-3 py-2 bg-slate-50">
 										<p className="text-xs text-muted-foreground">
-											Not listed?{' '}
+											{t('eventDetailPage.singleAdd.notListed')}{' '}
 											<button
 												type="button"
 												className="underline hover:text-foreground"
@@ -846,7 +852,7 @@ export default function EventDetailPage() {
 													e.preventDefault();
 													setShowSuggestions(false);
 												}}>
-												Create new guest &quot;{singleName}&quot;
+												{t('eventDetailPage.singleAdd.createNewGuest', { name: singleName })}
 											</button>
 										</p>
 									</div>
@@ -859,7 +865,7 @@ export default function EventDetailPage() {
 							disabled={addingSingle || !singleName.trim() || guestLimitReached}
 							className="gap-1.5 shrink-0">
 							<UserPlus className="h-3.5 w-3.5" />
-							{addingSingle ? 'Adding…' : 'Add'}
+							{addingSingle ? t('eventDetailPage.actions.adding') : t('eventDetailPage.actions.add')}
 						</Button>
 					</form>
 				)}
@@ -867,13 +873,13 @@ export default function EventDetailPage() {
 				{guestLimitReached && hasGuestLimit && (
 					<Alert variant="destructive">
 						<AlertCircle className="h-4 w-4" />
-						<AlertDescription>Event guest limit reached ({event?.maxGuests}).</AlertDescription>
+						<AlertDescription>{t('eventDetailPage.errors.eventGuestLimitReached', { value: event?.maxGuests })}</AlertDescription>
 					</Alert>
 				)}
 
 				<div className="flex justify-between items-center">
 					<div className="flex items-center gap-2">
-						<h2 className="text-lg font-semibold">Guests</h2>
+						<h2 className="text-lg font-semibold">{t('eventDetailPage.guests.title')}</h2>
 						<div className="inline-flex items-center rounded-md border bg-background p-0.5">
 							<Button
 								type="button"
@@ -881,7 +887,7 @@ export default function EventDetailPage() {
 								variant={guestListView === 'full' ? 'secondary' : 'ghost'}
 								className="h-7 px-2"
 								onClick={() => setGuestListMode('full')}>
-								Full
+								{t('eventDetailPage.guests.full')}
 							</Button>
 							<Button
 								type="button"
@@ -889,7 +895,7 @@ export default function EventDetailPage() {
 								variant={guestListView === 'compact' ? 'secondary' : 'ghost'}
 								className="h-7 px-2"
 								onClick={() => setGuestListMode('compact')}>
-								Compact
+								{t('eventDetailPage.guests.compact')}
 							</Button>
 						</div>
 						{canManageTickets && tickets.length > 0 && (
@@ -897,7 +903,7 @@ export default function EventDetailPage() {
 								type="button"
 								className="text-xs text-muted-foreground hover:text-foreground underline"
 								onClick={toggleSelectAll}>
-								{selected.size === tickets.length ? 'Deselect all' : 'Select all'}
+								{selected.size === tickets.length ? t('eventDetailPage.guests.deselectAll') : t('eventDetailPage.guests.selectAll')}
 							</button>
 						)}
 					</div>
@@ -910,7 +916,7 @@ export default function EventDetailPage() {
 								className="gap-1.5"
 								onClick={() => setShowBulk(v => !v)}>
 								{showBulk ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-								{showBulk ? 'Cancel' : 'Bulk Add'}
+								{showBulk ? t('common.cancel') : t('eventDetailPage.actions.bulkAdd')}
 							</Button>
 						</div>
 					)}
@@ -919,14 +925,14 @@ export default function EventDetailPage() {
 				{canManageTickets && showBulk && (
 					<Card>
 						<CardHeader>
-							<CardTitle className="text-base">Bulk Add Guests</CardTitle>
+							<CardTitle className="text-base">{t('eventDetailPage.bulk.title')}</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<form
 								onSubmit={handleAddTickets}
 								className="space-y-3">
 								<div className="space-y-2">
-									<Label>Guest names (one per line)</Label>
+									<Label>{t('eventDetailPage.bulk.guestNamesLabel')}</Label>
 									<Textarea
 										rows={5}
 										value={bulkNames}
@@ -935,15 +941,15 @@ export default function EventDetailPage() {
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label>Ticket Type (applies to all)</Label>
+									<Label>{t('eventDetailPage.bulk.ticketTypeLabel')}</Label>
 									<Select
 										value={bulkTicketTypeId}
 										onValueChange={setBulkTicketTypeId}>
 										<SelectTrigger>
-											<SelectValue placeholder="Select ticket type" />
+											<SelectValue placeholder={t('eventDetailPage.ticketType.selectPlaceholder')} />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="none">No type</SelectItem>
+											<SelectItem value="none">{t('eventDetailPage.ticketType.none')}</SelectItem>
 											{ticketTypes.map(type => (
 												<SelectItem
 													key={type.id}
@@ -963,7 +969,7 @@ export default function EventDetailPage() {
 								<Button
 									type="submit"
 									disabled={adding || guestLimitReached}>
-									{adding ? 'Adding…' : 'Add Guests'}
+									{adding ? t('eventDetailPage.actions.adding') : t('eventDetailPage.actions.addGuests')}
 								</Button>
 							</form>
 						</CardContent>
@@ -974,7 +980,7 @@ export default function EventDetailPage() {
 					{displayTickets.length === 0 ? (
 						<Card className="py-12 text-center">
 							<CardContent>
-								<p className="text-muted-foreground">No guests yet.</p>
+								<p className="text-muted-foreground">{t('eventDetailPage.guests.empty')}</p>
 							</CardContent>
 						</Card>
 					) : guestListView === 'compact' ? (
@@ -1027,7 +1033,7 @@ export default function EventDetailPage() {
 																	type="button"
 																	onClick={() => openScanHistory(ticket)}
 																	className="inline-flex items-center rounded-full border border-transparent bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-																	Scanned {scanCounts[ticket.id]}x
+																	{t('eventDetailPage.scanHistory.scannedTimes', { count: scanCounts[ticket.id] })}
 																</button>
 															) : null}
 														</div>
@@ -1037,7 +1043,7 @@ export default function EventDetailPage() {
 																	variant="outline"
 																	size="sm"
 																	onClick={() => openEditTicketDialog(ticket)}>
-																	Type
+																	{t('eventDetailPage.actions.type')}
 																</Button>
 																<Button
 																	variant="outline"
@@ -1056,7 +1062,7 @@ export default function EventDetailPage() {
 																	variant="destructive"
 																	size="sm"
 																	onClick={() => setCancelTargetTicketId(ticket.id)}>
-																	Cancel
+																	{t('eventDetailPage.actions.cancel')}
 																</Button>
 															</div>
 														)}
@@ -1067,7 +1073,9 @@ export default function EventDetailPage() {
 																	size="sm"
 																	disabled={restoringTicketId === ticket.id}
 																	onClick={() => handleRestoreTicket(ticket.id)}>
-																	{restoringTicketId === ticket.id ? 'Restoring…' : 'Restore'}
+																	{restoringTicketId === ticket.id
+																		? t('eventDetailPage.actions.restoring')
+																		: t('eventDetailPage.actions.restore')}
 																</Button>
 															</div>
 														)}
@@ -1104,7 +1112,7 @@ export default function EventDetailPage() {
 															type="button"
 															onClick={() => openScanHistory(ticket)}
 															className="inline-flex items-center rounded-full border border-transparent bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-															Scanned {scanCounts[ticket.id]}x
+															{t('eventDetailPage.scanHistory.scannedTimes', { count: scanCounts[ticket.id] })}
 														</button>
 													) : null}
 												</div>
@@ -1116,7 +1124,7 @@ export default function EventDetailPage() {
 													variant="outline"
 													size="sm"
 													onClick={() => openEditTicketDialog(ticket)}>
-													Type
+													{t('eventDetailPage.actions.type')}
 												</Button>
 											)}
 											{canManageTickets && ticket.status === 'active' && (
@@ -1125,7 +1133,7 @@ export default function EventDetailPage() {
 													size="sm"
 													onClick={() => handleShowQR(ticket.id)}>
 													<QrCode className="h-3.5 w-3.5 mr-1" />
-													{qrMap[ticket.id] ? 'Hide' : 'QR'}
+													{qrMap[ticket.id] ? t('eventDetailPage.actions.hide') : t('eventDetailPage.actions.qr')}
 												</Button>
 											)}
 											{canManageTickets && ticket.status === 'active' && (
@@ -1142,7 +1150,7 @@ export default function EventDetailPage() {
 													variant="destructive"
 													size="sm"
 													onClick={() => setCancelTargetTicketId(ticket.id)}>
-													Cancel
+													{t('eventDetailPage.actions.cancel')}
 												</Button>
 											)}
 											{canManageTickets && ticket.status === 'cancelled' && (
@@ -1151,7 +1159,7 @@ export default function EventDetailPage() {
 													size="sm"
 													disabled={restoringTicketId === ticket.id}
 													onClick={() => handleRestoreTicket(ticket.id)}>
-													{restoringTicketId === ticket.id ? 'Restoring…' : 'Restore'}
+													{restoringTicketId === ticket.id ? t('eventDetailPage.actions.restoring') : t('eventDetailPage.actions.restore')}
 												</Button>
 											)}
 										</div>
@@ -1186,7 +1194,7 @@ export default function EventDetailPage() {
 			{/* Floating action bar */}
 			{canManageTickets && selected.size > 0 && (
 				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-background border shadow-xl rounded-2xl px-5 py-3 z-50">
-					<span className="text-sm font-medium">{selected.size} selected</span>
+					<span className="text-sm font-medium">{t('eventDetailPage.selection.selectedCount', { count: selected.size })}</span>
 					<Button
 						size="sm"
 						variant="outline"
@@ -1194,7 +1202,7 @@ export default function EventDetailPage() {
 						className="gap-1.5"
 						onClick={() => handleGeneratePdf(Array.from(selected))}>
 						<Download className="h-3.5 w-3.5" />
-						PDF
+						{t('eventDetailPage.actions.pdf')}
 					</Button>
 					<Button
 						size="sm"
@@ -1202,7 +1210,7 @@ export default function EventDetailPage() {
 						className="gap-1.5"
 						onClick={() => handleGeneratePdf(Array.from(selected))}>
 						<Share2 className="h-3.5 w-3.5" />
-						{generatingPdf ? 'Sharing…' : 'Share'}
+						{generatingPdf ? t('eventDetailPage.actions.sharing') : t('eventDetailPage.actions.share')}
 					</Button>
 					<Button
 						size="sm"
@@ -1220,11 +1228,11 @@ export default function EventDetailPage() {
 				}}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Cancel ticket?</DialogTitle>
+						<DialogTitle>{t('eventDetailPage.cancelDialog.title')}</DialogTitle>
 						<DialogDescription>
 							{cancelTargetTicket
-								? `This will mark ${cancelTargetTicket.name}'s ticket as cancelled.`
-								: 'This will mark this ticket as cancelled.'}
+								? t('eventDetailPage.cancelDialog.descriptionNamed', { name: cancelTargetTicket.name })
+								: t('eventDetailPage.cancelDialog.description')}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
@@ -1232,13 +1240,13 @@ export default function EventDetailPage() {
 							variant="outline"
 							disabled={cancelingTicket}
 							onClick={() => setCancelTargetTicketId(null)}>
-							Keep Active
+							{t('eventDetailPage.cancelDialog.keepActive')}
 						</Button>
 						<Button
 							variant="destructive"
 							disabled={cancelingTicket}
 							onClick={handleCancelConfirmed}>
-							{cancelingTicket ? 'Cancelling…' : 'Cancel Ticket'}
+							{cancelingTicket ? t('eventDetailPage.cancelDialog.cancelling') : t('eventDetailPage.cancelDialog.confirm')}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -1253,19 +1261,19 @@ export default function EventDetailPage() {
 				}}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Change Ticket Type</DialogTitle>
+						<DialogTitle>{t('eventDetailPage.ticketType.changeTitle')}</DialogTitle>
 						<DialogDescription>{editingTicket ? `${editingTicket.name} (${editingTicket.id})` : ''}</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-2">
-						<Label>Ticket Type</Label>
+						<Label>{t('eventDetailPage.ticketType.label')}</Label>
 						<Select
 							value={editingTicketTypeSelection}
 							onValueChange={setEditingTicketTypeSelection}>
 							<SelectTrigger>
-								<SelectValue placeholder="Select ticket type" />
+								<SelectValue placeholder={t('eventDetailPage.ticketType.selectPlaceholder')} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="none">No type</SelectItem>
+								<SelectItem value="none">{t('eventDetailPage.ticketType.none')}</SelectItem>
 								{ticketTypes.map(type => (
 									<SelectItem
 										key={type.id}
@@ -1281,12 +1289,12 @@ export default function EventDetailPage() {
 							variant="outline"
 							disabled={updatingTicket}
 							onClick={() => setEditingTicket(null)}>
-							Cancel
+							{t('common.cancel')}
 						</Button>
 						<Button
 							disabled={updatingTicket}
 							onClick={handleSaveTicketTypeForTicket}>
-							{updatingTicket ? 'Saving…' : 'Save'}
+							{updatingTicket ? t('eventDetailPage.actions.saving') : t('eventDetailPage.actions.save')}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -1299,11 +1307,11 @@ export default function EventDetailPage() {
 				}}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Action failed</DialogTitle>
+						<DialogTitle>{t('eventDetailPage.errorDialog.title')}</DialogTitle>
 						<DialogDescription>{errorDialogMessage}</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button onClick={() => setErrorDialogMessage(null)}>OK</Button>
+						<Button onClick={() => setErrorDialogMessage(null)}>{t('eventDetailPage.errorDialog.ok')}</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
@@ -1313,18 +1321,20 @@ export default function EventDetailPage() {
 				onOpenChange={setScanHistoryOpen}>
 				<DialogContent className="sm:max-w-lg">
 					<DialogHeader>
-						<DialogTitle>Scan History</DialogTitle>
+						<DialogTitle>{t('eventDetailPage.scanHistory.title')}</DialogTitle>
 						<DialogDescription>
-							{scanHistoryTicket ? `${scanHistoryTicket.name} (${scanHistoryTicket.id})` : 'Loading ticket details...'}
+							{scanHistoryTicket
+								? `${scanHistoryTicket.name} (${scanHistoryTicket.id})`
+								: t('eventDetailPage.scanHistory.loadingTicketDetails')}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="max-h-80 overflow-y-auto rounded-md border">
 						{scanHistoryLoading ? (
-							<p className="p-4 text-sm text-muted-foreground">Loading scans...</p>
+							<p className="p-4 text-sm text-muted-foreground">{t('eventDetailPage.scanHistory.loadingScans')}</p>
 						) : scanHistoryError ? (
 							<p className="p-4 text-sm text-destructive">{scanHistoryError}</p>
 						) : scanHistoryItems.length === 0 ? (
-							<p className="p-4 text-sm text-muted-foreground">No scans recorded for this ticket.</p>
+							<p className="p-4 text-sm text-muted-foreground">{t('eventDetailPage.scanHistory.empty')}</p>
 						) : (
 							<ul className="divide-y">
 								{scanHistoryItems.map((scan, index) => (
@@ -1337,12 +1347,14 @@ export default function EventDetailPage() {
 												<Badge
 													variant="warning"
 													className="text-[10px] px-1.5 py-0">
-													Pending sync
+													{t('eventDetailPage.scanHistory.pendingSync')}
 												</Badge>
 											) : null}
 										</div>
 										<p className="text-xs text-muted-foreground mt-0.5">{new Date(scan.scannedAt).toLocaleString()}</p>
-										<p className="text-[11px] text-muted-foreground mt-1">Scan #{scanHistoryItems.length - index}</p>
+										<p className="text-[11px] text-muted-foreground mt-1">
+											{t('eventDetailPage.scanHistory.scanNumber', { value: scanHistoryItems.length - index })}
+										</p>
 									</li>
 								))}
 							</ul>

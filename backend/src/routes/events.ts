@@ -32,6 +32,7 @@ router.use(authMiddleware);
 // Read access is also available to scanners.
 router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request, res: Response): Promise<void> => {
 	try {
+		const includeArchived = (typeof req.query.includeArchived === 'string' ? req.query.includeArchived : '').trim() === 'true';
 		const context = resolveRlsContext(req, {
 			allowSuperAdminTenantOverride: true,
 			allowSuperAdminBypass: true,
@@ -40,12 +41,16 @@ router.get('/', requireRole(['owner', 'admin', 'scanner']), async (req: Request,
 		const events = await withRls(context, async tenantPrisma => {
 			if (req.user?.isTemporaryScanner === true && req.user.eventId) {
 				const event = await tenantPrisma.event.findFirst({
-					where: { id: req.user.eventId },
+					where: { id: req.user.eventId, isDeleted: false, archivedAt: null },
 				});
 				return event ? [event] : [];
 			}
 
 			return tenantPrisma.event.findMany({
+				where: {
+					isDeleted: false,
+					...(includeArchived && req.user?.isTemporaryScanner !== true ? {} : { archivedAt: null }),
+				},
 				orderBy: { createdAt: 'desc' },
 			});
 		});
@@ -77,7 +82,7 @@ router.get(
 
 			const event = await withRls(context, async tenantPrisma => {
 				return tenantPrisma.event.findFirst({
-					where: { id: eventId },
+					where: { id: eventId, isDeleted: false, archivedAt: null },
 				});
 			});
 			if (!event) {
@@ -180,7 +185,7 @@ router.patch('/:id', requireSuperAdmin, async (req: Request, res: Response): Pro
 
 		const updated = await withRls(context, async tenantPrisma => {
 			const existing = await tenantPrisma.event.findFirst({
-				where: { id: eventId },
+				where: { id: eventId, isDeleted: false, archivedAt: null },
 				include: { _count: { select: { tickets: true } } },
 			});
 
@@ -231,7 +236,7 @@ router.get('/:id/temporary-scanners', requireRole(['owner', 'admin']), async (re
 		});
 
 		const scanners = await withRls(context, async tenantPrisma => {
-			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId, isDeleted: false, archivedAt: null } });
 			if (!event) {
 				res.status(404).json({ error: 'Event not found' });
 				return null;
@@ -291,7 +296,7 @@ router.post('/:id/temporary-scanners', requireRole(['owner', 'admin']), async (r
 		});
 
 		const created = await withRls(context, async tenantPrisma => {
-			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId, isDeleted: false, archivedAt: null } });
 			if (!event) {
 				res.status(404).json({ error: 'Event not found' });
 				return null;
@@ -438,7 +443,7 @@ router.post(
 
 			const scannerData = await withRls(context, async tenantPrisma => {
 				const event = await tenantPrisma.event.findFirst({
-					where: { id: eventId },
+					where: { id: eventId, isDeleted: false, archivedAt: null },
 					select: { id: true, name: true },
 				});
 				if (!event) {
@@ -507,7 +512,7 @@ router.get('/:id/ticket-types', requireRole(['owner', 'admin', 'scanner']), asyn
 		});
 
 		const ticketTypes = await withRls(context, async tenantPrisma => {
-			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId, isDeleted: false, archivedAt: null } });
 			if (!event) {
 				res.status(404).json({ error: 'Event not found' });
 				return null;
@@ -569,7 +574,7 @@ router.post('/:id/ticket-types', requireRole(['owner', 'admin']), async (req: Re
 		});
 
 		const created = await withRls(context, async tenantPrisma => {
-			const event = await tenantPrisma.event.findFirst({ where: { id: eventId } });
+			const event = await tenantPrisma.event.findFirst({ where: { id: eventId, isDeleted: false, archivedAt: null } });
 			if (!event) {
 				res.status(404).json({ error: 'Event not found' });
 				return null;

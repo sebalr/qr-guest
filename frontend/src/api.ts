@@ -27,6 +27,9 @@ export interface Event {
 	maxGuests?: number | null;
 	startsAt?: string | null;
 	endsAt?: string | null;
+	archivedAt?: string | null;
+	isDeleted?: boolean;
+	deletedAt?: string | null;
 	tenantId: string;
 }
 
@@ -150,6 +153,9 @@ export interface AdminEvent {
 	startsAt: string;
 	endsAt: string;
 	maxGuests?: number | null;
+	archivedAt?: string | null;
+	isDeleted: boolean;
+	deletedAt?: string | null;
 	tenantId: string;
 	tenant: { id: string; name: string; plan: string };
 	_count: { tickets: number; scans: number };
@@ -246,7 +252,7 @@ export const temporalLoginApi = (token: string) =>
 	api.post<{ data: { token: string; eventId: string } }>(`/auth/temporal-login`, { token });
 
 // Events
-export const getEventsApi = () => api.get<{ data: Event[] }>('/events');
+export const getEventsApi = (includeArchived = false) => api.get<{ data: Event[] }>('/events', { params: { includeArchived } });
 
 export const createEventApi = (data: { name: string; startsAt?: string; endsAt?: string; description?: string; imageUrl?: string }) =>
 	api.post<{ data: Event }>('/events', data);
@@ -365,7 +371,8 @@ export const syncApi = (payload: SyncPayload) => api.post<{ data: SyncResponse }
 
 // Super admin
 export const getAdminTenantsApi = () => api.get<{ data: AdminTenant[] }>('/admin/tenants');
-export const getAdminEventsApi = (tenantId: string) => api.get<{ data: AdminEvent[] }>('/admin/events', { params: { tenantId } });
+export const getAdminEventsApi = (tenantId: string, includeArchived = false) =>
+	api.get<{ data: AdminEvent[] }>('/admin/events', { params: { tenantId, includeArchived } });
 export const getAdminUsersApi = (tenantId?: string) =>
 	tenantId ? api.get<{ data: AdminUser[] }>('/admin/users', { params: { tenantId } }) : api.get<{ data: AdminUser[] }>('/admin/users');
 export const createAdminUserApi = (email: string, role: ManageableUserRole, tenantId?: string) =>
@@ -389,5 +396,9 @@ export const createAdminEventApi = (
 
 export const createAdminGuestApi = (tenantId: string, eventId: string, data: { name?: string; guestId?: string; ticketTypeId?: string }) =>
 	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data, { params: { tenantId } });
+
+export const archiveAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/archive`);
+export const unarchiveAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/unarchive`);
+export const deleteAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/delete`);
 
 export default api;

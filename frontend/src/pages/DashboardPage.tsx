@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
 	getEventApi,
 	getEventStatsApi,
@@ -51,6 +52,7 @@ function barFill(count: number, maxCount: number): string {
 }
 
 export default function DashboardPage() {
+	const { t } = useTranslation();
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const [event, setEvent] = useState<Event | null>(null);
@@ -91,11 +93,11 @@ export default function DashboardPage() {
 			const res = await getEventDeviceDebugDataApi(id);
 			setDebugDataRows(res.data.data);
 		} catch {
-			setDebugDataError('Failed to load uploaded device debug payloads.');
+			setDebugDataError(t('dashboardPage.errors.loadDeviceDebugFailed'));
 		} finally {
 			setDebugDataLoading(false);
 		}
-	}, [id]);
+	}, [id, t]);
 
 	useEffect(() => {
 		fetchDeviceDebugData();
@@ -121,12 +123,12 @@ export default function DashboardPage() {
 				anchor.remove();
 				URL.revokeObjectURL(url);
 			} catch {
-				setDebugDataError('Failed to download device debug payload.');
+				setDebugDataError(t('dashboardPage.errors.downloadDeviceDebugFailed'));
 			} finally {
 				setDownloadingDebugId(null);
 			}
 		},
-		[id],
+		[id, t],
 	);
 
 	useEffect(() => {
@@ -167,7 +169,7 @@ export default function DashboardPage() {
 
 		const others = ranking.slice(5).reduce((sum, row) => sum + row.scanCount, 0);
 		if (others > 0) {
-			top.push({ name: 'others', value: others });
+			top.push({ name: t('dashboardPage.labels.others'), value: others });
 		}
 
 		return top;
@@ -176,7 +178,7 @@ export default function DashboardPage() {
 	if (loading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
-				<p className="text-muted-foreground">Loading dashboard…</p>
+				<p className="text-muted-foreground">{t('dashboardPage.loading')}</p>
 			</div>
 		);
 	}
@@ -192,12 +194,14 @@ export default function DashboardPage() {
 						<ArrowLeft className="h-4 w-4" />
 					</Button>
 					<div className="flex-1 min-w-0">
-						<h1 className="font-bold text-lg truncate">{event?.name ?? 'Event'}</h1>
-						<p className="text-xs text-muted-foreground">Scan Dashboard</p>
+						<h1 className="font-bold text-lg truncate">{event?.name ?? t('dashboardPage.fallbackEventName')}</h1>
+						<p className="text-xs text-muted-foreground">{t('dashboardPage.title')}</p>
 					</div>
 					<div className="flex items-center gap-2">
 						{lastUpdated && (
-							<span className="text-xs text-muted-foreground hidden sm:block">Updated {lastUpdated.toLocaleTimeString()}</span>
+							<span className="text-xs text-muted-foreground hidden sm:block">
+								{t('dashboardPage.lastUpdated', { value: lastUpdated.toLocaleTimeString() })}
+							</span>
 						)}
 						<Button
 							variant={autoRefresh ? 'default' : 'outline'}
@@ -205,7 +209,7 @@ export default function DashboardPage() {
 							className="gap-1.5"
 							onClick={() => setAutoRefresh(v => !v)}>
 							<RefreshCw className={`h-3.5 w-3.5 ${autoRefresh ? 'animate-spin' : ''}`} />
-							<span className="hidden sm:inline">{autoRefresh ? 'Auto' : 'Manual'}</span>
+							<span className="hidden sm:inline">{autoRefresh ? t('dashboardPage.actions.auto') : t('dashboardPage.actions.manual')}</span>
 						</Button>
 						<Button
 							variant="outline"
@@ -224,28 +228,28 @@ export default function DashboardPage() {
 						<CardContent className="pt-5 flex flex-col items-center text-center">
 							<Users className="h-5 w-5 text-muted-foreground mb-2" />
 							<p className="text-3xl font-bold">{stats?.totalGuests ?? 0}</p>
-							<p className="text-xs text-muted-foreground mt-1">Total Guests</p>
+							<p className="text-xs text-muted-foreground mt-1">{t('dashboardPage.summary.totalGuests')}</p>
 						</CardContent>
 					</Card>
 					<Card className="border-green-100 bg-green-50">
 						<CardContent className="pt-5 flex flex-col items-center text-center">
 							<CheckCircle2 className="h-5 w-5 text-green-600 mb-2" />
 							<p className="text-3xl font-bold text-green-700">{stats?.scannedGuests ?? 0}</p>
-							<p className="text-xs text-muted-foreground mt-1">Checked In</p>
+							<p className="text-xs text-muted-foreground mt-1">{t('dashboardPage.summary.checkedIn')}</p>
 						</CardContent>
 					</Card>
 					<Card className="border-yellow-100 bg-yellow-50">
 						<CardContent className="pt-5 flex flex-col items-center text-center">
 							<XCircle className="h-5 w-5 text-yellow-600 mb-2" />
 							<p className="text-3xl font-bold text-yellow-700">{stats?.notScannedGuests ?? 0}</p>
-							<p className="text-xs text-muted-foreground mt-1">Not Arrived</p>
+							<p className="text-xs text-muted-foreground mt-1">{t('dashboardPage.summary.notArrived')}</p>
 						</CardContent>
 					</Card>
 					<Card className="border-red-100 bg-red-50">
 						<CardContent className="pt-5 flex flex-col items-center text-center">
 							<AlertTriangle className="h-5 w-5 text-red-500 mb-2" />
 							<p className="text-3xl font-bold text-red-600">{stats?.duplicates ?? 0}</p>
-							<p className="text-xs text-muted-foreground mt-1">Duplicate Scans</p>
+							<p className="text-xs text-muted-foreground mt-1">{t('dashboardPage.summary.duplicateScans')}</p>
 						</CardContent>
 					</Card>
 				</div>
@@ -253,7 +257,7 @@ export default function DashboardPage() {
 				{/* Attendance rate */}
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-base">Attendance Rate</CardTitle>
+						<CardTitle className="text-base">{t('dashboardPage.attendance.title')}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center gap-4">
@@ -266,7 +270,7 @@ export default function DashboardPage() {
 							<span className="font-bold text-lg w-14 text-right">{attendanceRate}%</span>
 						</div>
 						<p className="text-xs text-muted-foreground mt-2">
-							{stats?.scannedGuests ?? 0} of {stats?.totalGuests ?? 0} guests checked in
+							{t('dashboardPage.attendance.detail', { scanned: stats?.scannedGuests ?? 0, total: stats?.totalGuests ?? 0 })}
 						</p>
 					</CardContent>
 				</Card>
@@ -277,7 +281,7 @@ export default function DashboardPage() {
 						<div className="flex items-center justify-between flex-wrap gap-2">
 							<CardTitle className="text-base flex items-center gap-2">
 								<BarChart2 className="h-4 w-4" />
-								Scan Arrivals
+								{t('dashboardPage.charts.scanArrivals')}
 							</CardTitle>
 							<div className="flex items-center gap-1 text-xs">
 								<Clock className="h-3.5 w-3.5 text-muted-foreground" />
@@ -298,7 +302,7 @@ export default function DashboardPage() {
 					</CardHeader>
 					<CardContent>
 						{chartScansByInterval.length === 0 ? (
-							<p className="text-sm text-muted-foreground text-center py-8">No scans recorded yet.</p>
+							<p className="text-sm text-muted-foreground text-center py-8">{t('dashboardPage.empty.noScans')}</p>
 						) : (
 							<ResponsiveContainer
 								width="100%"
@@ -322,7 +326,7 @@ export default function DashboardPage() {
 										allowDecimals={false}
 									/>
 									<Tooltip
-										formatter={v => [v, 'Scans']}
+										formatter={v => [v, t('dashboardPage.charts.scans')]}
 										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
 									/>
 									<Bar
@@ -346,7 +350,7 @@ export default function DashboardPage() {
 						<div className="flex items-center justify-between gap-3 flex-wrap">
 							<CardTitle className="text-base flex items-center gap-2">
 								<Bug className="h-4 w-4" />
-								Device Debug Uploads
+								{t('dashboardPage.debug.title')}
 							</CardTitle>
 							<Button
 								variant="outline"
@@ -360,7 +364,7 @@ export default function DashboardPage() {
 					<CardContent>
 						{debugDataError && <p className="text-sm text-destructive mb-3">{debugDataError}</p>}
 						{debugDataRows.length === 0 ? (
-							<p className="text-sm text-muted-foreground">No device debug payloads uploaded for this event yet.</p>
+							<p className="text-sm text-muted-foreground">{t('dashboardPage.debug.empty')}</p>
 						) : (
 							<div className="space-y-2">
 								{debugDataRows.map(item => (
@@ -368,11 +372,16 @@ export default function DashboardPage() {
 										key={item.id}
 										className="border rounded-lg p-3 flex items-center justify-between gap-3 flex-wrap">
 										<div className="min-w-0">
-											<p className="text-sm font-medium">Device {item.deviceId}</p>
+											<p className="text-sm font-medium">{t('dashboardPage.debug.device', { deviceId: item.deviceId })}</p>
 											<p className="text-xs text-muted-foreground truncate">
-												Uploaded by {item.uploaderEmail || item.userId} on {new Date(item.createdAt).toLocaleString()}
+												{t('dashboardPage.debug.uploadedByOn', {
+													uploader: item.uploaderEmail || item.userId,
+													date: new Date(item.createdAt).toLocaleString(),
+												})}
 											</p>
-											<p className="text-[11px] text-muted-foreground">{item.payloadSizeBytes} bytes</p>
+											<p className="text-[11px] text-muted-foreground">
+												{t('dashboardPage.debug.bytes', { value: item.payloadSizeBytes })}
+											</p>
 										</div>
 										<Button
 											variant="outline"
@@ -381,7 +390,7 @@ export default function DashboardPage() {
 											disabled={downloadingDebugId === item.id}
 											className="gap-1.5">
 											<Download className="h-3.5 w-3.5" />
-											{downloadingDebugId === item.id ? 'Downloading…' : 'Download JSON'}
+											{downloadingDebugId === item.id ? t('dashboardPage.debug.downloading') : t('dashboardPage.debug.downloadJson')}
 										</Button>
 									</div>
 								))}
@@ -396,7 +405,7 @@ export default function DashboardPage() {
 						<CardHeader>
 							<CardTitle className="text-base flex items-center gap-2">
 								<CheckCircle2 className="h-4 w-4 text-green-600" />
-								Cumulative Check-ins
+								{t('dashboardPage.charts.cumulativeCheckins')}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -441,7 +450,7 @@ export default function DashboardPage() {
 										allowDecimals={false}
 									/>
 									<Tooltip
-										formatter={v => [v, 'Checked in']}
+										formatter={v => [v, t('dashboardPage.summary.checkedIn')]}
 										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
 									/>
 									<Area
@@ -463,7 +472,7 @@ export default function DashboardPage() {
 						<CardHeader>
 							<CardTitle className="text-base flex items-center gap-2">
 								<Shield className="h-4 w-4 text-indigo-500" />
-								Scanner Ranking
+								{t('dashboardPage.charts.scannerRanking')}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -491,7 +500,7 @@ export default function DashboardPage() {
 										width={90}
 									/>
 									<Tooltip
-										formatter={v => [v, 'Scans']}
+										formatter={v => [v, t('dashboardPage.charts.scans')]}
 										contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
 									/>
 									<Bar
@@ -510,7 +519,7 @@ export default function DashboardPage() {
 						<CardHeader>
 							<CardTitle className="text-base flex items-center gap-2">
 								<Shield className="h-4 w-4 text-indigo-500" />
-								Top Scanner Share
+								{t('dashboardPage.charts.topScannerShare')}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -533,7 +542,7 @@ export default function DashboardPage() {
 											/>
 										))}
 									</Pie>
-									<Tooltip formatter={value => [`${value}`, 'Scans']} />
+									<Tooltip formatter={value => [`${value}`, t('dashboardPage.charts.scans')]} />
 									<Legend />
 								</PieChart>
 							</ResponsiveContainer>
@@ -547,7 +556,7 @@ export default function DashboardPage() {
 						<CardHeader>
 							<CardTitle className="text-base flex items-center gap-2">
 								<AlertTriangle className="h-4 w-4 text-red-500" />
-								QR Codes Scanned Multiple Times
+								{t('dashboardPage.charts.multipleScansTitle')}
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="p-0">
@@ -555,8 +564,8 @@ export default function DashboardPage() {
 								<thead>
 									<tr className="border-b bg-slate-50">
 										<th className="text-left px-4 py-2 font-medium text-muted-foreground">#</th>
-										<th className="text-left px-4 py-2 font-medium text-muted-foreground">Guest</th>
-										<th className="text-right px-4 py-2 font-medium text-muted-foreground">Times Scanned</th>
+										<th className="text-left px-4 py-2 font-medium text-muted-foreground">{t('dashboardPage.table.guest')}</th>
+										<th className="text-right px-4 py-2 font-medium text-muted-foreground">{t('dashboardPage.table.timesScanned')}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -581,16 +590,16 @@ export default function DashboardPage() {
 				{stats && stats.topGuests.length > 0 && (
 					<Card>
 						<CardHeader>
-							<CardTitle className="text-base">Top Scanned Guests</CardTitle>
+							<CardTitle className="text-base">{t('dashboardPage.charts.topScannedGuests')}</CardTitle>
 						</CardHeader>
 						<CardContent className="p-0">
 							<table className="w-full text-sm">
 								<thead>
 									<tr className="border-b bg-slate-50">
 										<th className="text-left px-4 py-2 font-medium text-muted-foreground">#</th>
-										<th className="text-left px-4 py-2 font-medium text-muted-foreground">Guest</th>
-										<th className="text-right px-4 py-2 font-medium text-muted-foreground">Scans</th>
-										<th className="text-right px-4 py-2 font-medium text-muted-foreground">Status</th>
+										<th className="text-left px-4 py-2 font-medium text-muted-foreground">{t('dashboardPage.table.guest')}</th>
+										<th className="text-right px-4 py-2 font-medium text-muted-foreground">{t('dashboardPage.charts.scans')}</th>
+										<th className="text-right px-4 py-2 font-medium text-muted-foreground">{t('dashboardPage.table.status')}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -606,7 +615,11 @@ export default function DashboardPage() {
 												</Badge>
 											</td>
 											<td className="px-4 py-2 text-right">
-												{guest.scanCount >= 1 ? <Badge variant="success">Scanned</Badge> : <Badge variant="secondary">Pending</Badge>}
+												{guest.scanCount >= 1 ? (
+													<Badge variant="success">{t('dashboardPage.table.scanned')}</Badge>
+												) : (
+													<Badge variant="secondary">{t('dashboardPage.table.pending')}</Badge>
+												)}
 											</td>
 										</tr>
 									))}
@@ -620,7 +633,7 @@ export default function DashboardPage() {
 					<Card className="py-12 text-center">
 						<CardContent>
 							<BarChart2 className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-							<p className="text-muted-foreground">No scans recorded yet.</p>
+							<p className="text-muted-foreground">{t('dashboardPage.empty.noScans')}</p>
 						</CardContent>
 					</Card>
 				)}

@@ -45,6 +45,9 @@ export type EventMinAggregateOutputType = {
   maxGuests: number | null
   startsAt: Date | null
   endsAt: Date | null
+  archivedAt: Date | null
+  isDeleted: boolean | null
+  deletedAt: Date | null
   version: number | null
   createdAt: Date | null
 }
@@ -58,6 +61,9 @@ export type EventMaxAggregateOutputType = {
   maxGuests: number | null
   startsAt: Date | null
   endsAt: Date | null
+  archivedAt: Date | null
+  isDeleted: boolean | null
+  deletedAt: Date | null
   version: number | null
   createdAt: Date | null
 }
@@ -71,6 +77,9 @@ export type EventCountAggregateOutputType = {
   maxGuests: number
   startsAt: number
   endsAt: number
+  archivedAt: number
+  isDeleted: number
+  deletedAt: number
   version: number
   createdAt: number
   _all: number
@@ -96,6 +105,9 @@ export type EventMinAggregateInputType = {
   maxGuests?: true
   startsAt?: true
   endsAt?: true
+  archivedAt?: true
+  isDeleted?: true
+  deletedAt?: true
   version?: true
   createdAt?: true
 }
@@ -109,6 +121,9 @@ export type EventMaxAggregateInputType = {
   maxGuests?: true
   startsAt?: true
   endsAt?: true
+  archivedAt?: true
+  isDeleted?: true
+  deletedAt?: true
   version?: true
   createdAt?: true
 }
@@ -122,6 +137,9 @@ export type EventCountAggregateInputType = {
   maxGuests?: true
   startsAt?: true
   endsAt?: true
+  archivedAt?: true
+  isDeleted?: true
+  deletedAt?: true
   version?: true
   createdAt?: true
   _all?: true
@@ -222,6 +240,9 @@ export type EventGroupByOutputType = {
   maxGuests: number | null
   startsAt: Date | null
   endsAt: Date | null
+  archivedAt: Date | null
+  isDeleted: boolean
+  deletedAt: Date | null
   version: number
   createdAt: Date
   _count: EventCountAggregateOutputType | null
@@ -258,6 +279,9 @@ export type EventWhereInput = {
   maxGuests?: Prisma.IntNullableFilter<"Event"> | number | null
   startsAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   endsAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  archivedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  isDeleted?: Prisma.BoolFilter<"Event"> | boolean
+  deletedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   version?: Prisma.IntFilter<"Event"> | number
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
@@ -278,6 +302,9 @@ export type EventOrderByWithRelationInput = {
   maxGuests?: Prisma.SortOrderInput | Prisma.SortOrder
   startsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   endsAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   version?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   tenant?: Prisma.TenantOrderByWithRelationInput
@@ -302,6 +329,9 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
   maxGuests?: Prisma.IntNullableFilter<"Event"> | number | null
   startsAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   endsAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  archivedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  isDeleted?: Prisma.BoolFilter<"Event"> | boolean
+  deletedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   version?: Prisma.IntFilter<"Event"> | number
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
@@ -322,6 +352,9 @@ export type EventOrderByWithAggregationInput = {
   maxGuests?: Prisma.SortOrderInput | Prisma.SortOrder
   startsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   endsAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   version?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.EventCountOrderByAggregateInput
@@ -343,6 +376,9 @@ export type EventScalarWhereWithAggregatesInput = {
   maxGuests?: Prisma.IntNullableWithAggregatesFilter<"Event"> | number | null
   startsAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Event"> | Date | string | null
   endsAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Event"> | Date | string | null
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Event"> | Date | string | null
+  isDeleted?: Prisma.BoolWithAggregatesFilter<"Event"> | boolean
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Event"> | Date | string | null
   version?: Prisma.IntWithAggregatesFilter<"Event"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Event"> | Date | string
 }
@@ -355,6 +391,9 @@ export type EventCreateInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
@@ -375,6 +414,9 @@ export type EventUncheckedCreateInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
@@ -393,6 +435,9 @@ export type EventUpdateInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
@@ -413,6 +458,9 @@ export type EventUncheckedUpdateInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
@@ -432,6 +480,9 @@ export type EventCreateManyInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
 }
@@ -444,6 +495,9 @@ export type EventUpdateManyMutationInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -457,6 +511,9 @@ export type EventUncheckedUpdateManyInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -485,6 +542,9 @@ export type EventCountOrderByAggregateInput = {
   maxGuests?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   version?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -503,6 +563,9 @@ export type EventMaxOrderByAggregateInput = {
   maxGuests?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   version?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -516,6 +579,9 @@ export type EventMinOrderByAggregateInput = {
   maxGuests?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   endsAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   version?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -680,6 +746,9 @@ export type EventCreateWithoutTenantInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
@@ -698,6 +767,9 @@ export type EventUncheckedCreateWithoutTenantInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
@@ -746,6 +818,9 @@ export type EventScalarWhereInput = {
   maxGuests?: Prisma.IntNullableFilter<"Event"> | number | null
   startsAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   endsAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  archivedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  isDeleted?: Prisma.BoolFilter<"Event"> | boolean
+  deletedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   version?: Prisma.IntFilter<"Event"> | number
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
 }
@@ -758,6 +833,9 @@ export type EventCreateWithoutTicketsInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
@@ -777,6 +855,9 @@ export type EventUncheckedCreateWithoutTicketsInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
@@ -810,6 +891,9 @@ export type EventUpdateWithoutTicketsInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
@@ -829,6 +913,9 @@ export type EventUncheckedUpdateWithoutTicketsInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
@@ -846,6 +933,9 @@ export type EventCreateWithoutTemporaryScannersInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
@@ -865,6 +955,9 @@ export type EventUncheckedCreateWithoutTemporaryScannersInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
@@ -898,6 +991,9 @@ export type EventUpdateWithoutTemporaryScannersInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
@@ -917,6 +1013,9 @@ export type EventUncheckedUpdateWithoutTemporaryScannersInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
@@ -934,6 +1033,9 @@ export type EventCreateWithoutTicketTypesInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
@@ -953,6 +1055,9 @@ export type EventUncheckedCreateWithoutTicketTypesInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
@@ -986,6 +1091,9 @@ export type EventUpdateWithoutTicketTypesInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
@@ -1005,6 +1113,9 @@ export type EventUncheckedUpdateWithoutTicketTypesInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
@@ -1022,6 +1133,9 @@ export type EventCreateWithoutScansInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
@@ -1041,6 +1155,9 @@ export type EventUncheckedCreateWithoutScansInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
@@ -1074,6 +1191,9 @@ export type EventUpdateWithoutScansInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
@@ -1093,6 +1213,9 @@ export type EventUncheckedUpdateWithoutScansInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
@@ -1110,6 +1233,9 @@ export type EventCreateWithoutDebugDataInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
@@ -1129,6 +1255,9 @@ export type EventUncheckedCreateWithoutDebugDataInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
@@ -1162,6 +1291,9 @@ export type EventUpdateWithoutDebugDataInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
@@ -1181,6 +1313,9 @@ export type EventUncheckedUpdateWithoutDebugDataInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
@@ -1198,6 +1333,9 @@ export type EventCreateWithoutSyncStatesInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
@@ -1217,6 +1355,9 @@ export type EventUncheckedCreateWithoutSyncStatesInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
@@ -1250,6 +1391,9 @@ export type EventUpdateWithoutSyncStatesInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
@@ -1269,6 +1413,9 @@ export type EventUncheckedUpdateWithoutSyncStatesInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
@@ -1286,6 +1433,9 @@ export type EventCreateManyTenantInput = {
   maxGuests?: number | null
   startsAt?: Date | string | null
   endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
 }
@@ -1298,6 +1448,9 @@ export type EventUpdateWithoutTenantInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
@@ -1316,6 +1469,9 @@ export type EventUncheckedUpdateWithoutTenantInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
@@ -1334,6 +1490,9 @@ export type EventUncheckedUpdateManyWithoutTenantInput = {
   maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1423,6 +1582,9 @@ export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   maxGuests?: boolean
   startsAt?: boolean
   endsAt?: boolean
+  archivedAt?: boolean
+  isDeleted?: boolean
+  deletedAt?: boolean
   version?: boolean
   createdAt?: boolean
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
@@ -1444,6 +1606,9 @@ export type EventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   maxGuests?: boolean
   startsAt?: boolean
   endsAt?: boolean
+  archivedAt?: boolean
+  isDeleted?: boolean
+  deletedAt?: boolean
   version?: boolean
   createdAt?: boolean
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
@@ -1458,6 +1623,9 @@ export type EventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   maxGuests?: boolean
   startsAt?: boolean
   endsAt?: boolean
+  archivedAt?: boolean
+  isDeleted?: boolean
+  deletedAt?: boolean
   version?: boolean
   createdAt?: boolean
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
@@ -1472,11 +1640,14 @@ export type EventSelectScalar = {
   maxGuests?: boolean
   startsAt?: boolean
   endsAt?: boolean
+  archivedAt?: boolean
+  isDeleted?: boolean
+  deletedAt?: boolean
   version?: boolean
   createdAt?: boolean
 }
 
-export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "name" | "description" | "imageUrl" | "maxGuests" | "startsAt" | "endsAt" | "version" | "createdAt", ExtArgs["result"]["event"]>
+export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "name" | "description" | "imageUrl" | "maxGuests" | "startsAt" | "endsAt" | "archivedAt" | "isDeleted" | "deletedAt" | "version" | "createdAt", ExtArgs["result"]["event"]>
 export type EventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   tickets?: boolean | Prisma.Event$ticketsArgs<ExtArgs>
@@ -1514,6 +1685,9 @@ export type $EventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     maxGuests: number | null
     startsAt: Date | null
     endsAt: Date | null
+    archivedAt: Date | null
+    isDeleted: boolean
+    deletedAt: Date | null
     version: number
     createdAt: Date
   }, ExtArgs["result"]["event"]>
@@ -1954,6 +2128,9 @@ export interface EventFieldRefs {
   readonly maxGuests: Prisma.FieldRef<"Event", 'Int'>
   readonly startsAt: Prisma.FieldRef<"Event", 'DateTime'>
   readonly endsAt: Prisma.FieldRef<"Event", 'DateTime'>
+  readonly archivedAt: Prisma.FieldRef<"Event", 'DateTime'>
+  readonly isDeleted: Prisma.FieldRef<"Event", 'Boolean'>
+  readonly deletedAt: Prisma.FieldRef<"Event", 'DateTime'>
   readonly version: Prisma.FieldRef<"Event", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Event", 'DateTime'>
 }

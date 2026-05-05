@@ -65,5 +65,397 @@
       "description": "Aun puedes registrar este escaneo si esta persona necesita contarse otra vez.",
       "recordAgain": "Registrar de nuevo"
     }
+  },
+  "superAdmin": {
+    "page": {
+      "loading": "Cargando gestion de usuarios...",
+      "loadingTenantData": "Cargando datos del tenant...",
+      "noTenantSelected": "Ningun tenant seleccionado",
+      "title": {
+        "superAdmin": "Super Admin",
+        "userManagement": "Gestion de usuarios"
+      },
+      "subtitle": {
+        "superAdmin": "Gestion global de tenants, eventos y usuarios",
+        "userManagement": "Gestiona usuarios y roles de escaneo en tu tenant"
+      },
+      "summary": {
+        "tenants": "Tenants",
+        "users": "Usuarios",
+        "events": "Eventos",
+        "proTenants": "Tenants Pro"
+      },
+      "cards": {
+        "createTenantInviteAdmin": "Crear tenant e invitar admin",
+        "selectedTenant": "Tenant seleccionado",
+        "createUser": "Crear usuario",
+        "createUserForTenant": "Crear usuario para {{tenantName}}"
+      },
+      "form": {
+        "tenantName": "Nombre del tenant",
+        "tenantNamePlaceholder": "Acme Events",
+        "adminEmail": "Correo del admin",
+        "adminEmailPlaceholder": "admin@company.com",
+        "tenant": "Tenant",
+        "selectTenant": "Selecciona tenant",
+        "email": "Correo",
+        "userEmailPlaceholder": "user@company.com",
+        "role": "Rol"
+      },
+      "actions": {
+        "creating": "Creando...",
+        "createTenantSendInvitation": "Crear tenant y enviar invitacion",
+        "sendInvitation": "Enviar invitacion"
+      },
+      "hints": {
+        "invitationLinkHint": "El correo de invitacion incluye un enlace donde el admin define su contrasena en el primer acceso."
+      },
+      "errors": {
+        "loadSuperAdminDataFailed": "No se pudieron cargar los datos de super admin.",
+        "loadTenantDataFailed": "No se pudieron cargar los datos del tenant.",
+        "updateTenantPlanFailed": "No se pudo actualizar el plan del tenant.",
+        "updateUserRoleFailed": "No se pudo actualizar el rol del usuario.",
+        "selectTenantBeforeCreateUser": "Selecciona un tenant antes de crear un usuario.",
+        "userCreatedEmailNotSent": "Usuario creado, pero no se pudo enviar el correo de invitacion.",
+        "createUserFailed": "No se pudo crear el usuario.",
+        "tenantAdminCreatedEmailNotSent": "Tenant y admin creados, pero no se pudo enviar el correo de invitacion.",
+        "createTenantInviteAdminFailed": "No se pudo crear el tenant e invitar al admin.",
+        "selectTenantBeforeCreateEvent": "Selecciona un tenant antes de crear un evento.",
+        "eventNameRequired": "El nombre del evento es obligatorio.",
+        "createEventFailed": "No se pudo crear el evento.",
+        "selectTenantBeforeCreateGuest": "Selecciona un tenant antes de crear un invitado.",
+        "selectEventBeforeCreateGuest": "Selecciona un evento antes de crear un invitado.",
+        "guestNameRequired": "El nombre del invitado es obligatorio.",
+        "createGuestFailed": "No se pudo crear el invitado."
+      }
+    },
+    "events": {
+      "actions": {
+        "showArchived": "Mostrar archivados",
+        "hideArchived": "Ocultar archivados",
+        "open": "Abrir",
+        "archive": "Archivar",
+        "unarchive": "Desarchivar",
+        "delete": "Eliminar",
+        "saving": "Guardando..."
+      },
+      "labels": {
+        "archived": "Archivado"
+      },
+      "dialog": {
+        "archiveTitle": "Archivar evento?",
+        "archiveDescription": "Estas seguro de que quieres archivar este evento?",
+        "unarchiveTitle": "Desarchivar evento?",
+        "unarchiveDescription": "Estas seguro de que quieres desarchivar este evento?",
+        "deleteTitle": "Eliminar evento?",
+        "deleteDescription": "Estas seguro de que quieres eliminar este evento? Esta opcion no se puede deshacer."
+      },
+      "errors": {
+        "archiveFailed": "No se pudo archivar el evento.",
+        "unarchiveFailed": "No se pudo desarchivar el evento.",
+        "deleteFailed": "No se pudo eliminar el evento."
+      }
+    }
+  },
+  "eventsPage": {
+    "title": "Eventos",
+    "subtitle": {
+      "manage": "Gestiona tus eventos de invitados",
+      "browse": "Explora tus eventos asignados"
+    },
+    "actions": {
+      "users": "Usuarios",
+      "logout": "Cerrar sesion",
+      "newEvent": "Nuevo evento",
+      "scan": "Escanear"
+    },
+    "form": {
+      "title": "Crear evento",
+      "eventName": "Nombre del evento",
+      "eventNamePlaceholder": "p. ej. Conferencia anual 2025",
+      "description": "Descripcion",
+      "descriptionPlaceholder": "Descripcion opcional del evento",
+      "startDateTime": "Fecha y hora de inicio",
+      "startDateTimePlaceholder": "Selecciona fecha y hora de inicio",
+      "endDateTime": "Fecha y hora de fin",
+      "endDateTimePlaceholder": "Selecciona fecha y hora de fin",
+      "imageUrl": "URL de imagen",
+      "imageUrlPlaceholder": "https://example.com/event-image.jpg",
+      "creating": "Creando...",
+      "create": "Crear evento"
+    },
+    "dateRange": {
+      "from": "Desde {{value}}",
+      "until": "Hasta {{value}}"
+    },
+    "loading": "Cargando eventos...",
+    "empty": "Aun no hay eventos. Crea tu primer evento arriba.",
+    "errors": {
+      "createFailed": "No se pudo crear el evento."
+    }
+  },
+  "eventSettingsPage": {
+    "fallbackEventName": "Evento",
+    "loading": "Cargando configuracion...",
+    "title": "Configuracion del evento",
+    "tabs": {
+      "ticketTypes": "Tipos de ticket",
+      "temporalScanners": "Escaneres temporales"
+    },
+    "actions": {
+      "saving": "Guardando...",
+      "save": "Guardar",
+      "close": "Cerrar"
+    },
+    "toasts": {
+      "linkCopied": "Enlace copiado correctamente",
+      "emailSent": "Correo enviado correctamente"
+    },
+    "errors": {
+      "loadFailed": "No se pudieron cargar los datos de configuracion.",
+      "copyLinkFailed": "No se pudo copiar el enlace al portapapeles.",
+      "emailRequired": "El correo es obligatorio.",
+      "sendEmailFailed": "No se pudo enviar el correo."
+    },
+    "emailTemplate": {
+      "subject": "Acceso de escaner para {{eventName}}",
+      "body": "Hola {{scannerName}},\n\nUsa este enlace para acceder al escaner de {{eventName}}:\n{{link}}"
+    },
+    "ticketTypes": {
+      "title": "Tipos de ticket",
+      "description": "Crea, edita y elimina tipos de ticket para este evento.",
+      "empty": "Aun no hay tipos de ticket configurados.",
+      "fields": {
+        "name": "Nombre",
+        "namePlaceholder": "VIP",
+        "price": "Precio",
+        "pricePlaceholder": "49.90"
+      },
+      "actions": {
+        "addType": "Agregar tipo",
+        "edit": "Editar",
+        "delete": "Eliminar"
+      },
+      "dialog": {
+        "editTitle": "Editar tipo de ticket",
+        "editDescription": "Actualiza el nombre y precio del tipo de ticket."
+      },
+      "errors": {
+        "nameRequired": "El nombre del tipo de ticket es obligatorio.",
+        "priceInvalid": "El precio debe ser un numero valido no negativo.",
+        "createFailed": "No se pudo crear el tipo de ticket.",
+        "updateFailed": "No se pudo actualizar el tipo de ticket.",
+        "deleteFailed": "No se pudo eliminar el tipo de ticket."
+      }
+    },
+    "scanners": {
+      "title": "Escaneres temporales",
+      "description": "Crea y gestiona enlaces temporales de escaner para este evento.",
+      "accessInfo": "Los usuarios creados aqui solo tienen acceso de escaneo para este evento. No pueden gestionar usuarios, configuracion ni otros eventos.",
+      "empty": "Aun no hay escaneres temporales creados.",
+      "fields": {
+        "namePlaceholder": "Nombre del escaner"
+      },
+      "meta": {
+        "createdAt": "Creado {{value}}",
+        "lastUsedAt": "Ultimo uso {{value}}",
+        "neverUsed": "Ultimo uso Nunca"
+      },
+      "actions": {
+        "create": "Crear",
+        "creating": "Creando...",
+        "enableAccess": "Habilitar acceso",
+        "disableAccess": "Deshabilitar acceso",
+        "share": "Compartir",
+        "copyLink": "Copiar enlace",
+        "showQr": "Mostrar QR",
+        "sendEmail": "Enviar correo"
+      },
+      "errors": {
+        "nameRequired": "El nombre es obligatorio.",
+        "createFailed": "No se pudo crear el escaner temporal.",
+        "updateAccessFailed": "No se pudo actualizar el acceso del escaner temporal."
+      }
+    },
+    "qrDialog": {
+      "title": "QR del escaner",
+      "description": "Comparte este QR de acceso del escaner.",
+      "descriptionNamed": "Comparte este QR con {{scannerName}}."
+    },
+    "emailDialog": {
+      "title": "Enviar correo de acceso de escaner",
+      "description": "Enviar correo de acceso de escaner.",
+      "descriptionNamed": "Enviar acceso de inicio de sesion para {{scannerName}} usando tu configuracion de Resend.",
+      "recipientLabel": "Correo del destinatario",
+      "recipientPlaceholder": "scanner@example.com",
+      "sending": "Enviando..."
+    }
+  },
+  "dashboardPage": {
+    "fallbackEventName": "Evento",
+    "title": "Panel de escaneo",
+    "loading": "Cargando panel...",
+    "lastUpdated": "Actualizado {{value}}",
+    "actions": {
+      "auto": "Auto",
+      "manual": "Manual"
+    },
+    "summary": {
+      "totalGuests": "Invitados totales",
+      "checkedIn": "Registrados",
+      "notArrived": "No llegaron",
+      "duplicateScans": "Escaneos duplicados"
+    },
+    "attendance": {
+      "title": "Tasa de asistencia",
+      "detail": "{{scanned}} de {{total}} invitados registrados"
+    },
+    "charts": {
+      "scanArrivals": "Llegadas por escaneo",
+      "scans": "Escaneos",
+      "cumulativeCheckins": "Registros acumulados",
+      "scannerRanking": "Ranking de escaneres",
+      "topScannerShare": "Participacion de top escaneres",
+      "multipleScansTitle": "Codigos QR escaneados varias veces",
+      "topScannedGuests": "Invitados mas escaneados"
+    },
+    "labels": {
+      "others": "otros"
+    },
+    "debug": {
+      "title": "Cargas de depuracion de dispositivo",
+      "empty": "Aun no se cargaron payloads de depuracion de dispositivo para este evento.",
+      "device": "Dispositivo {{deviceId}}",
+      "uploadedByOn": "Cargado por {{uploader}} el {{date}}",
+      "bytes": "{{value}} bytes",
+      "downloading": "Descargando...",
+      "downloadJson": "Descargar JSON"
+    },
+    "table": {
+      "guest": "Invitado",
+      "timesScanned": "Veces escaneado",
+      "status": "Estado",
+      "scanned": "Escaneado",
+      "pending": "Pendiente"
+    },
+    "empty": {
+      "noScans": "Aun no hay escaneos registrados."
+    },
+    "errors": {
+      "loadDeviceDebugFailed": "No se pudieron cargar los payloads de depuracion del dispositivo.",
+      "downloadDeviceDebugFailed": "No se pudo descargar el payload de depuracion del dispositivo."
+    }
+  },
+  "eventDetailPage": {
+    "fallbackEventName": "Evento",
+    "loading": "Cargando datos del evento...",
+    "loadingProgress": "Cargados {{ticketsLoaded}} tickets en {{pagesLoaded}} paginas",
+    "actions": {
+      "dashboard": "Panel",
+      "settings": "Configuracion",
+      "scanner": "Escaner",
+      "saving": "Guardando...",
+      "save": "Guardar",
+      "adding": "Agregando...",
+      "add": "Agregar",
+      "addGuests": "Agregar invitados",
+      "bulkAdd": "Carga masiva",
+      "type": "Tipo",
+      "cancel": "Cancelar",
+      "restore": "Restaurar",
+      "restoring": "Restaurando...",
+      "hide": "Ocultar",
+      "qr": "QR",
+      "pdf": "PDF",
+      "share": "Compartir",
+      "sharing": "Compartiendo..."
+    },
+    "stats": {
+      "total": "Total",
+      "scanned": "Escaneados",
+      "cancelled": "Cancelados",
+      "maxGuests": "Maximo de invitados"
+    },
+    "maxGuests": {
+      "placeholder": "500",
+      "save": "Guardar maximo de invitados"
+    },
+    "singleAdd": {
+      "namePlaceholder": "Agregar invitado por nombre...",
+      "existingGuest": "Invitado existente",
+      "existingGuestsInOrg": "Invitados existentes en tu organizacion",
+      "notListed": "No aparece?",
+      "createNewGuest": "Crear nuevo invitado \"{{name}}\""
+    },
+    "guests": {
+      "title": "Invitados",
+      "full": "Completo",
+      "compact": "Compacto",
+      "selectAll": "Seleccionar todo",
+      "deselectAll": "Deseleccionar todo",
+      "empty": "Aun no hay invitados."
+    },
+    "bulk": {
+      "title": "Agregar invitados en lote",
+      "guestNamesLabel": "Nombres de invitados (uno por linea)",
+      "ticketTypeLabel": "Tipo de ticket (se aplica a todos)"
+    },
+    "ticketType": {
+      "label": "Tipo de ticket",
+      "placeholder": "Tipo de ticket",
+      "selectPlaceholder": "Selecciona tipo de ticket",
+      "none": "Sin tipo",
+      "changeTitle": "Cambiar tipo de ticket"
+    },
+    "selection": {
+      "selectedCount": "{{count}} seleccionados"
+    },
+    "cancelDialog": {
+      "title": "Cancelar ticket?",
+      "description": "Esto marcara este ticket como cancelado.",
+      "descriptionNamed": "Esto marcara el ticket de {{name}} como cancelado.",
+      "keepActive": "Mantener activo",
+      "confirm": "Cancelar ticket",
+      "cancelling": "Cancelando..."
+    },
+    "errorDialog": {
+      "title": "La accion fallo",
+      "ok": "OK"
+    },
+    "scanHistory": {
+      "title": "Historial de escaneos",
+      "loadingTicketDetails": "Cargando detalles del ticket...",
+      "loadingScans": "Cargando escaneos...",
+      "empty": "No hay escaneos registrados para este ticket.",
+      "pendingSync": "Pendiente de sincronizar",
+      "scanNumber": "Escaneo #{{value}}",
+      "recordedOnThisDevice": "Registrado en este dispositivo",
+      "pendingSyncDevice": "Pendiente de sincronizar (este dispositivo)",
+      "scannedTimes": "Escaneado {{count}}x"
+    },
+    "toasts": {
+      "cancelledTicketsCannotDisplayQr": "Los tickets cancelados no pueden mostrar codigos QR.",
+      "selectedTicketsCancelled": "Los tickets seleccionados estan cancelados y no se pueden compartir como QR.",
+      "pdfDownloadedSkipped": "PDF descargado. Se omitieron {{count}} ticket(s) cancelados.",
+      "pdfDownloadedAttachManually": "PDF descargado. Abre WhatsApp y adjuntalo manualmente.",
+      "cancelledTicketsSkipped": "Se omitieron {{count}} ticket(s) cancelados."
+    },
+    "errors": {
+      "maxGuestsInvalid": "El maximo de invitados debe ser un numero entero mayor que 0.",
+      "updateMaxGuestsFailed": "No se pudo actualizar el maximo de invitados.",
+      "eventGuestLimitReached": "Se alcanzo el limite de invitados del evento ({{value}}).",
+      "addGuestFailed": "No se pudo agregar el invitado.",
+      "enterAtLeastOneName": "Ingresa al menos un nombre.",
+      "addingGuestsExceedsLimit": "Agregar {{count}} invitados supera el limite del evento ({{max}}).",
+      "addTicketsFailed": "No se pudieron agregar los tickets.",
+      "updateTicketTypeFailed": "No se pudo actualizar el tipo de ticket.",
+      "cancelTicketFailed": "No se pudo cancelar el ticket.",
+      "restoreTicketFailed": "No se pudo restaurar el ticket.",
+      "ticketCancelled": "El ticket esta cancelado",
+      "loadQrFailed": "No se pudo cargar el codigo QR.",
+      "generatePdfFailed": "No se pudo generar el PDF.",
+      "serverHistoryUnavailable": "Historial del servidor no disponible. Se muestran solo registros locales.",
+      "loadScanHistoryFailed": "No se pudo cargar el historial de escaneos."
+    }
   }
 }

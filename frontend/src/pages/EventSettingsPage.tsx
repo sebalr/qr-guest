@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
 	createEventTemporaryScannerApi,
 	createEventTicketTypeApi,
@@ -27,6 +28,7 @@ import QRCodeDisplay from '../components/QRCodeDisplay';
 type SettingsTab = 'ticket-types' | 'temporal-scanners';
 
 export default function EventSettingsPage() {
+	const { t } = useTranslation();
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
@@ -34,7 +36,7 @@ export default function EventSettingsPage() {
 	const tenantId = (searchParams.get('tenantId') ?? '').trim() || undefined;
 	const tenantScope = useMemo(() => ({ ...(tenantId ? { tenantId } : {}) }), [tenantId]);
 
-	const [eventName, setEventName] = useState('Event');
+	const [eventName, setEventName] = useState(t('eventSettingsPage.fallbackEventName'));
 	const [loading, setLoading] = useState(true);
 	const [activeTab, setActiveTab] = useState<SettingsTab>('ticket-types');
 
@@ -76,10 +78,10 @@ export default function EventSettingsPage() {
 				setTemporalScanners(temporalRes.data.data);
 			})
 			.catch(() => {
-				setTicketTypeError('Failed to load settings data.');
+				setTicketTypeError(t('eventSettingsPage.errors.loadFailed'));
 			})
 			.finally(() => setLoading(false));
-	}, [id, tenantScope]);
+	}, [id, tenantScope, t]);
 
 	function scannerLoginLink(loginToken: string): string {
 		return `${window.location.origin}/temporal-scanner-login?token=${encodeURIComponent(loginToken)}`;
@@ -95,10 +97,10 @@ export default function EventSettingsPage() {
 	async function copyScannerLink(loginToken: string) {
 		try {
 			await navigator.clipboard.writeText(scannerLoginLink(loginToken));
-			showToast('Link copied successfully', 'success');
+			showToast(t('eventSettingsPage.toasts.linkCopied'), 'success');
 		} catch {
-			setScannerError('Unable to copy link to clipboard.');
-			showToast('Unable to copy link to clipboard', 'error');
+			setScannerError(t('eventSettingsPage.errors.copyLinkFailed'));
+			showToast(t('eventSettingsPage.errors.copyLinkFailed'), 'error');
 		}
 	}
 
@@ -115,7 +117,7 @@ export default function EventSettingsPage() {
 
 		const email = emailRecipient.trim().toLowerCase();
 		if (!email) {
-			setScannerError('Email is required.');
+			setScannerError(t('eventSettingsPage.errors.emailRequired'));
 			return;
 		}
 
@@ -126,10 +128,10 @@ export default function EventSettingsPage() {
 			setEmailDialogOpen(false);
 			setEmailDialogScanner(null);
 			setEmailRecipient('');
-			showToast('Email sent successfully', 'success');
+			showToast(t('eventSettingsPage.toasts.emailSent'), 'success');
 		} catch {
-			setScannerError('Failed to send email.');
-			showToast('Failed to send email', 'error');
+			setScannerError(t('eventSettingsPage.errors.sendEmailFailed'));
+			showToast(t('eventSettingsPage.errors.sendEmailFailed'), 'error');
 		} finally {
 			setSendingScannerEmail(false);
 		}
@@ -137,8 +139,14 @@ export default function EventSettingsPage() {
 
 	function sendScannerEmail(scanner: TemporaryScanner) {
 		const link = scannerLoginLink(scanner.loginToken);
-		const subject = encodeURIComponent(`Scanner access for ${eventName}`);
-		const body = encodeURIComponent(`Hi ${scanner.name},\n\nUse this link to access the scanner for ${eventName}:\n${link}`);
+		const subject = encodeURIComponent(t('eventSettingsPage.emailTemplate.subject', { eventName }));
+		const body = encodeURIComponent(
+			t('eventSettingsPage.emailTemplate.body', {
+				scannerName: scanner.name,
+				eventName,
+				link,
+			}),
+		);
 		window.location.href = `mailto:?subject=${subject}&body=${body}`;
 	}
 
@@ -151,12 +159,12 @@ export default function EventSettingsPage() {
 		const price = Number(newTicketTypePrice);
 
 		if (!name) {
-			setTicketTypeError('Ticket type name is required.');
+			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.nameRequired'));
 			setSavingTicketType(false);
 			return;
 		}
 		if (!Number.isFinite(price) || price < 0) {
-			setTicketTypeError('Price must be a valid non-negative number.');
+			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.priceInvalid'));
 			setSavingTicketType(false);
 			return;
 		}
@@ -167,7 +175,7 @@ export default function EventSettingsPage() {
 			setNewTicketTypeName('');
 			setNewTicketTypePrice('');
 		} catch {
-			setTicketTypeError('Failed to create ticket type.');
+			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.createFailed'));
 		} finally {
 			setSavingTicketType(false);
 		}
@@ -188,12 +196,12 @@ export default function EventSettingsPage() {
 		const price = Number(editingTicketTypePrice);
 
 		if (!name) {
-			setTicketTypeError('Ticket type name is required.');
+			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.nameRequired'));
 			setUpdatingTicketType(false);
 			return;
 		}
 		if (!Number.isFinite(price) || price < 0) {
-			setTicketTypeError('Price must be a valid non-negative number.');
+			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.priceInvalid'));
 			setUpdatingTicketType(false);
 			return;
 		}
@@ -205,7 +213,7 @@ export default function EventSettingsPage() {
 			setEditingTicketTypeName('');
 			setEditingTicketTypePrice('');
 		} catch {
-			setTicketTypeError('Failed to update ticket type.');
+			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.updateFailed'));
 		} finally {
 			setUpdatingTicketType(false);
 		}
@@ -216,7 +224,7 @@ export default function EventSettingsPage() {
 			await deleteEventTicketTypeApi(ticketTypeId, tenantScope);
 			setTicketTypes(prev => prev.filter(t => t.id !== ticketTypeId));
 		} catch {
-			setTicketTypeError('Failed to delete ticket type.');
+			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.deleteFailed'));
 		}
 	}
 
@@ -226,7 +234,7 @@ export default function EventSettingsPage() {
 		setScannerError('');
 		const name = newScannerName.trim();
 		if (!name) {
-			setScannerError('Name is required.');
+			setScannerError(t('eventSettingsPage.scanners.errors.nameRequired'));
 			return;
 		}
 
@@ -236,7 +244,7 @@ export default function EventSettingsPage() {
 			setTemporalScanners(prev => [res.data.data, ...prev]);
 			setNewScannerName('');
 		} catch {
-			setScannerError('Failed to create temporary scanner.');
+			setScannerError(t('eventSettingsPage.scanners.errors.createFailed'));
 		} finally {
 			setCreatingScanner(false);
 		}
@@ -250,7 +258,7 @@ export default function EventSettingsPage() {
 			const res = await updateEventTemporaryScannerApi(id, scanner.id, { isActive }, tenantScope);
 			setTemporalScanners(prev => prev.map(entry => (entry.id === scanner.id ? res.data.data : entry)));
 		} catch {
-			setScannerError('Failed to update temporary scanner access.');
+			setScannerError(t('eventSettingsPage.scanners.errors.updateAccessFailed'));
 		} finally {
 			setUpdatingScannerId(null);
 		}
@@ -259,7 +267,7 @@ export default function EventSettingsPage() {
 	if (loading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-slate-50">
-				<p className="text-muted-foreground">Loading settings...</p>
+				<p className="text-muted-foreground">{t('eventSettingsPage.loading')}</p>
 			</div>
 		);
 	}
@@ -275,7 +283,7 @@ export default function EventSettingsPage() {
 						<ArrowLeft className="h-4 w-4" />
 					</Button>
 					<div className="min-w-0">
-						<h1 className="font-bold text-lg truncate">Event Settings</h1>
+						<h1 className="font-bold text-lg truncate">{t('eventSettingsPage.title')}</h1>
 						<p className="text-xs text-muted-foreground truncate">{eventName}</p>
 					</div>
 				</div>
@@ -297,45 +305,45 @@ export default function EventSettingsPage() {
 						variant={activeTab === 'ticket-types' ? 'default' : 'ghost'}
 						size="sm"
 						onClick={() => setActiveTab('ticket-types')}>
-						Ticket Types
+						{t('eventSettingsPage.tabs.ticketTypes')}
 					</Button>
 					<Button
 						type="button"
 						variant={activeTab === 'temporal-scanners' ? 'default' : 'ghost'}
 						size="sm"
 						onClick={() => setActiveTab('temporal-scanners')}>
-						Temporal Scanners
+						{t('eventSettingsPage.tabs.temporalScanners')}
 					</Button>
 				</div>
 
 				{activeTab === 'ticket-types' && (
 					<Card>
 						<CardHeader>
-							<CardTitle>Ticket Types</CardTitle>
-							<CardDescription>Create, edit, and delete ticket types for this event.</CardDescription>
+							<CardTitle>{t('eventSettingsPage.ticketTypes.title')}</CardTitle>
+							<CardDescription>{t('eventSettingsPage.ticketTypes.description')}</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<form
 								onSubmit={handleCreateTicketType}
 								className="grid gap-3 md:grid-cols-[1fr_160px_auto] items-end">
 								<div className="space-y-1">
-									<Label htmlFor="new-ticket-type-name">Name</Label>
+									<Label htmlFor="new-ticket-type-name">{t('eventSettingsPage.ticketTypes.fields.name')}</Label>
 									<Input
 										id="new-ticket-type-name"
-										placeholder="VIP"
+										placeholder={t('eventSettingsPage.ticketTypes.fields.namePlaceholder')}
 										value={newTicketTypeName}
 										onChange={e => setNewTicketTypeName(e.target.value)}
 									/>
 								</div>
 								<div className="space-y-1">
-									<Label htmlFor="new-ticket-type-price">Price</Label>
+									<Label htmlFor="new-ticket-type-price">{t('eventSettingsPage.ticketTypes.fields.price')}</Label>
 									<Input
 										id="new-ticket-type-price"
 										type="number"
 										inputMode="decimal"
 										min="0"
 										step="0.01"
-										placeholder="49.90"
+										placeholder={t('eventSettingsPage.ticketTypes.fields.pricePlaceholder')}
 										value={newTicketTypePrice}
 										onChange={e => setNewTicketTypePrice(e.target.value)}
 									/>
@@ -343,7 +351,7 @@ export default function EventSettingsPage() {
 								<Button
 									type="submit"
 									disabled={savingTicketType}>
-									{savingTicketType ? 'Saving...' : 'Add Type'}
+									{savingTicketType ? t('eventSettingsPage.actions.saving') : t('eventSettingsPage.ticketTypes.actions.addType')}
 								</Button>
 							</form>
 
@@ -355,7 +363,7 @@ export default function EventSettingsPage() {
 							)}
 
 							{ticketTypes.length === 0 ? (
-								<p className="text-sm text-muted-foreground">No ticket types configured yet.</p>
+								<p className="text-sm text-muted-foreground">{t('eventSettingsPage.ticketTypes.empty')}</p>
 							) : (
 								<div className="space-y-2">
 									{ticketTypes.map(type => (
@@ -371,13 +379,13 @@ export default function EventSettingsPage() {
 													variant="outline"
 													size="sm"
 													onClick={() => startEditTicketType(type)}>
-													Edit
+													{t('eventSettingsPage.ticketTypes.actions.edit')}
 												</Button>
 												<Button
 													variant="destructive"
 													size="sm"
 													onClick={() => handleDeleteTicketType(type.id)}>
-													Delete
+													{t('eventSettingsPage.ticketTypes.actions.delete')}
 												</Button>
 											</div>
 										</div>
@@ -392,15 +400,13 @@ export default function EventSettingsPage() {
 					<div className="space-y-4">
 						<Alert>
 							<AlertCircle className="h-4 w-4" />
-							<AlertDescription>
-								Users created here have scanner-only access for this event only. They cannot manage users, settings, or other events.
-							</AlertDescription>
+							<AlertDescription>{t('eventSettingsPage.scanners.accessInfo')}</AlertDescription>
 						</Alert>
 
 						<Card>
 							<CardHeader>
-								<CardTitle>Temporal Scanners</CardTitle>
-								<CardDescription>Create and manage temporary scanner links for this event.</CardDescription>
+								<CardTitle>{t('eventSettingsPage.scanners.title')}</CardTitle>
+								<CardDescription>{t('eventSettingsPage.scanners.description')}</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<form
@@ -409,12 +415,12 @@ export default function EventSettingsPage() {
 									<Input
 										value={newScannerName}
 										onChange={e => setNewScannerName(e.target.value)}
-										placeholder="Scanner name"
+										placeholder={t('eventSettingsPage.scanners.fields.namePlaceholder')}
 									/>
 									<Button
 										type="submit"
 										disabled={creatingScanner}>
-										{creatingScanner ? 'Creating...' : 'Create'}
+										{creatingScanner ? t('eventSettingsPage.scanners.actions.creating') : t('eventSettingsPage.scanners.actions.create')}
 									</Button>
 								</form>
 
@@ -426,7 +432,7 @@ export default function EventSettingsPage() {
 
 								<div className="space-y-2">
 									{temporalScanners.length === 0 ? (
-										<p className="text-sm text-muted-foreground">No temporal scanners created yet.</p>
+										<p className="text-sm text-muted-foreground">{t('eventSettingsPage.scanners.empty')}</p>
 									) : (
 										temporalScanners.map(scanner => (
 											<div
@@ -434,9 +440,13 @@ export default function EventSettingsPage() {
 												className="rounded-lg border p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
 												<div>
 													<p className="font-medium">{scanner.name}</p>
-													<p className="text-xs text-muted-foreground">Created {new Date(scanner.createdAt).toLocaleString()}</p>
 													<p className="text-xs text-muted-foreground">
-														Last used {scanner.lastUsedAt ? new Date(scanner.lastUsedAt).toLocaleString() : 'Never'}
+														{t('eventSettingsPage.scanners.meta.createdAt', { value: new Date(scanner.createdAt).toLocaleString() })}
+													</p>
+													<p className="text-xs text-muted-foreground">
+														{scanner.lastUsedAt
+															? t('eventSettingsPage.scanners.meta.lastUsedAt', { value: new Date(scanner.lastUsedAt).toLocaleString() })
+															: t('eventSettingsPage.scanners.meta.neverUsed')}
 													</p>
 												</div>
 												<div className="flex flex-wrap items-center gap-2">
@@ -445,7 +455,11 @@ export default function EventSettingsPage() {
 														size="sm"
 														disabled={updatingScannerId === scanner.id}
 														onClick={() => toggleScannerActive(scanner, !scanner.isActive)}>
-														{updatingScannerId === scanner.id ? 'Saving...' : scanner.isActive ? 'Disable Access' : 'Enable Access'}
+														{updatingScannerId === scanner.id
+															? t('eventSettingsPage.actions.saving')
+															: scanner.isActive
+																? t('eventSettingsPage.scanners.actions.disableAccess')
+																: t('eventSettingsPage.scanners.actions.enableAccess')}
 													</Button>
 													<Popover>
 														<PopoverTrigger asChild>
@@ -454,7 +468,7 @@ export default function EventSettingsPage() {
 																size="sm"
 																className="gap-1.5">
 																<Share2 className="h-3.5 w-3.5" />
-																Share
+																{t('eventSettingsPage.scanners.actions.share')}
 															</Button>
 														</PopoverTrigger>
 														<PopoverContent className="w-44 p-2">
@@ -464,7 +478,7 @@ export default function EventSettingsPage() {
 																	size="sm"
 																	className="w-full justify-start"
 																	onClick={() => copyScannerLink(scanner.loginToken)}>
-																	Copy Link
+																	{t('eventSettingsPage.scanners.actions.copyLink')}
 																</Button>
 																<Button
 																	variant="ghost"
@@ -474,14 +488,14 @@ export default function EventSettingsPage() {
 																		setQrShareName(scanner.name);
 																		setQrShareLink(scannerLoginLink(scanner.loginToken));
 																	}}>
-																	Show QR
+																	{t('eventSettingsPage.scanners.actions.showQr')}
 																</Button>
 																<Button
 																	variant="ghost"
 																	size="sm"
 																	className="w-full justify-start"
 																	onClick={() => openSendEmailDialog(scanner)}>
-																	Send Email
+																	{t('eventSettingsPage.scanners.actions.sendEmail')}
 																</Button>
 															</div>
 														</PopoverContent>
@@ -508,12 +522,12 @@ export default function EventSettingsPage() {
 				}}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Edit Ticket Type</DialogTitle>
-						<DialogDescription>Update ticket type name and price.</DialogDescription>
+						<DialogTitle>{t('eventSettingsPage.ticketTypes.dialog.editTitle')}</DialogTitle>
+						<DialogDescription>{t('eventSettingsPage.ticketTypes.dialog.editDescription')}</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-3">
 						<div className="space-y-1">
-							<Label htmlFor="edit-ticket-type-name">Name</Label>
+							<Label htmlFor="edit-ticket-type-name">{t('eventSettingsPage.ticketTypes.fields.name')}</Label>
 							<Input
 								id="edit-ticket-type-name"
 								value={editingTicketTypeName}
@@ -521,7 +535,7 @@ export default function EventSettingsPage() {
 							/>
 						</div>
 						<div className="space-y-1">
-							<Label htmlFor="edit-ticket-type-price">Price</Label>
+							<Label htmlFor="edit-ticket-type-price">{t('eventSettingsPage.ticketTypes.fields.price')}</Label>
 							<Input
 								id="edit-ticket-type-price"
 								type="number"
@@ -538,12 +552,12 @@ export default function EventSettingsPage() {
 							variant="outline"
 							disabled={updatingTicketType}
 							onClick={() => setEditingTicketTypeId(null)}>
-							Cancel
+							{t('common.cancel')}
 						</Button>
 						<Button
 							disabled={updatingTicketType}
 							onClick={handleSaveEditedTicketType}>
-							{updatingTicketType ? 'Saving...' : 'Save'}
+							{updatingTicketType ? t('eventSettingsPage.actions.saving') : t('eventSettingsPage.actions.save')}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -559,8 +573,12 @@ export default function EventSettingsPage() {
 				}}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Scanner QR</DialogTitle>
-						<DialogDescription>{qrShareName ? `Share this QR with ${qrShareName}.` : 'Share this scanner access QR.'}</DialogDescription>
+						<DialogTitle>{t('eventSettingsPage.qrDialog.title')}</DialogTitle>
+						<DialogDescription>
+							{qrShareName
+								? t('eventSettingsPage.qrDialog.descriptionNamed', { scannerName: qrShareName })
+								: t('eventSettingsPage.qrDialog.description')}
+						</DialogDescription>
 					</DialogHeader>
 					<div className="flex justify-center">{qrShareLink ? <QRCodeDisplay value={qrShareLink} /> : null}</div>
 					<DialogFooter>
@@ -569,13 +587,13 @@ export default function EventSettingsPage() {
 							onClick={() => {
 								if (qrShareLink) {
 									void navigator.clipboard.writeText(qrShareLink).then(() => {
-										showToast('Link copied successfully', 'success');
+										showToast(t('eventSettingsPage.toasts.linkCopied'), 'success');
 									});
 								}
 							}}>
-							Copy Link
+							{t('eventSettingsPage.scanners.actions.copyLink')}
 						</Button>
-						<Button onClick={() => setQrShareLink(null)}>Close</Button>
+						<Button onClick={() => setQrShareLink(null)}>{t('eventSettingsPage.actions.close')}</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
@@ -593,22 +611,22 @@ export default function EventSettingsPage() {
 				}}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Send Scanner Access Email</DialogTitle>
+						<DialogTitle>{t('eventSettingsPage.emailDialog.title')}</DialogTitle>
 						<DialogDescription>
 							{emailDialogScanner
-								? `Send login access for ${emailDialogScanner.name} using your Resend setup.`
-								: 'Send scanner access email.'}
+								? t('eventSettingsPage.emailDialog.descriptionNamed', { scannerName: emailDialogScanner.name })
+								: t('eventSettingsPage.emailDialog.description')}
 						</DialogDescription>
 					</DialogHeader>
 					<form
 						onSubmit={handleSendScannerEmail}
 						className="space-y-3">
 						<div className="space-y-1">
-							<Label htmlFor="scanner-email-recipient">Recipient Email</Label>
+							<Label htmlFor="scanner-email-recipient">{t('eventSettingsPage.emailDialog.recipientLabel')}</Label>
 							<Input
 								id="scanner-email-recipient"
 								type="email"
-								placeholder="scanner@example.com"
+								placeholder={t('eventSettingsPage.emailDialog.recipientPlaceholder')}
 								value={emailRecipient}
 								onChange={e => setEmailRecipient(e.target.value)}
 								required
@@ -620,12 +638,12 @@ export default function EventSettingsPage() {
 								variant="outline"
 								disabled={sendingScannerEmail}
 								onClick={() => setEmailDialogOpen(false)}>
-								Cancel
+								{t('common.cancel')}
 							</Button>
 							<Button
 								type="submit"
 								disabled={sendingScannerEmail}>
-								{sendingScannerEmail ? 'Sending...' : 'Send Email'}
+								{sendingScannerEmail ? t('eventSettingsPage.emailDialog.sending') : t('eventSettingsPage.scanners.actions.sendEmail')}
 							</Button>
 						</DialogFooter>
 					</form>

@@ -23,11 +23,15 @@ const prismaMocks = vi.hoisted(() => ({
 	tenantFindMany: vi.fn(),
 	tenantCreate: vi.fn(),
 	tenantUpdate: vi.fn(),
+	eventFindUnique: vi.fn(),
+	eventUpdate: vi.fn(),
 }));
 
 const tenantPrismaMocks = vi.hoisted(() => ({
 	eventCount: vi.fn(),
 	eventFindMany: vi.fn(),
+	eventFindFirst: vi.fn(),
+	eventGroupBy: vi.fn(),
 }));
 
 vi.mock('../src/prisma', () => ({
@@ -48,13 +52,22 @@ vi.mock('../src/prisma', () => ({
 			create: prismaMocks.tenantCreate,
 			update: prismaMocks.tenantUpdate,
 		},
-	},
-	getPrismaForTenant: vi.fn(async () => ({
 		event: {
-			count: tenantPrismaMocks.eventCount,
-			findMany: tenantPrismaMocks.eventFindMany,
+			findUnique: prismaMocks.eventFindUnique,
+			update: prismaMocks.eventUpdate,
 		},
-	})),
+	},
+	withRls: vi.fn(async (_context: any, work: any) =>
+		work({
+			event: {
+				count: tenantPrismaMocks.eventCount,
+				findMany: tenantPrismaMocks.eventFindMany,
+				findFirst: tenantPrismaMocks.eventFindFirst,
+				groupBy: tenantPrismaMocks.eventGroupBy,
+				update: prismaMocks.eventUpdate,
+			},
+		}),
+	),
 }));
 
 vi.mock('../src/middleware/auth', () => ({
@@ -98,6 +111,9 @@ describe('admin route tenant scoping', () => {
 		prismaMocks.userTenantFindMany.mockResolvedValue([]);
 		prismaMocks.tenantFindUnique.mockResolvedValue({ id: 'tenant-1', name: 'Tenant One', plan: 'free' });
 		tenantPrismaMocks.eventFindMany.mockResolvedValue([]);
+		tenantPrismaMocks.eventFindFirst.mockResolvedValue(null);
+		prismaMocks.eventFindUnique.mockResolvedValue(null);
+		prismaMocks.eventUpdate.mockResolvedValue(null);
 		prismaMocks.userFindUnique.mockResolvedValue(null);
 	});
 
@@ -192,6 +208,147 @@ describe('admin route tenant scoping', () => {
 		const badRequestRes = await request(app).get('/admin/events');
 		expect(badRequestRes.status).toBe(400);
 		expect(badRequestRes.body.error).toContain('tenantId query parameter is required');
+	});
+
+	it('lists non-deleted and non-archived events by default in GET /admin/events', async () => {
+		authState.currentUser = {
+			userId: 'su-1',
+			tenantId: 'tenant-1',
+			role: 'owner',
+			isSuperAdmin: true,
+			email: 'su@example.com',
+		};
+
+		tenantPrismaMocks.eventFindMany.mockResolvedValue([]);
+
+		const app = createApp();
+		const res = await request(app).get('/admin/events').query({ tenantId: 'tenant-1' });
+
+		expect(res.status).toBe(200);
+		expect(tenantPrismaMocks.eventFindMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: expect.objectContaining({
+					tenantId: 'tenant-1',
+					isDeleted: false,
+					archivedAt: null,
+				}),
+			}),
+		);
+	});
+
+	it('includes archived events when includeArchived=true in GET /admin/events', async () => {
+		authState.currentUser = {
+			userId: 'su-1',
+			tenantId: 'tenant-1',
+			role: 'owner',
+			isSuperAdmin: true,
+			email: 'su@example.com',
+		};
+
+		tenantPrismaMocks.eventFindMany.mockResolvedValue([]);
+
+		const app = createApp();
+		const res = await request(app).get('/admin/events').query({ tenantId: 'tenant-1', includeArchived: 'true' });
+
+		expect(res.status).toBe(200);
+		expect(tenantPrismaMocks.eventFindMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: expect.objectContaining({
+					tenantId: 'tenant-1',
+					isDeleted: false,
+				}),
+			}),
+		);
+
+		const lastCallArg = tenantPrismaMocks.eventFindMany.mock.calls.at(-1)?.[0] as { where: { archivedAt?: null } };
+		expect(lastCallArg.where.archivedAt).toBeUndefined();
+	});
+
+	it('archives, unarchives and logically deletes events', async () => {
+		authState.currentUser = {
+			userId: 'su-1',
+			tenantId: 'tenant-1',
+			role: 'owner',
+			isSuperAdmin: true,
+			email: 'su@example.com',
+		};
+
+		prismaMocks.eventFindUnique
+			.mockResolvedValueOnce({ id: 'event-1', tenantId: 'tenant-1', isDeleted: false, archivedAt: null })
+			.mockResolvedValueOnce({ id: 'event-1', tenantId: 'tenant-1', isDeleted: false })
+			.mockResolvedValueOnce({ id: 'event-1', tenantId: 'tenant-1', isDeleted: false });
+
+		prismaMocks.eventUpdate.mockResolvedValue({ id: 'event-1' });
+
+		const app = createApp();
+
+		const archiveRes = await request(app).post('/admin/events/event-1/archive');
+		expect(archiveRes.status).toBe(200);
+		expect(prismaMocks.eventUpdate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: { id: 'event-1' },
+				data: expect.objectContaining({ version: { increment: 1 } }),
+			}),
+		);
+
+		const unarchiveRes = await request(app).post('/admin/events/event-1/unarchive');
+		expect(unarchiveRes.status).toBe(200);
+
+		const deleteRes = await request(app).post('/admin/events/event-1/delete');
+		expect(deleteRes.status).toBe(200);
+		expect(prismaMocks.eventUpdate).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				where: { id: 'event-1' },
+				data: expect.objectContaining({ isDeleted: true }),
+			}),
+		);
+	});
+
+	it('allows owner/admin to archive events in their own tenant', async () => {
+		authState.currentUser = {
+			userId: 'owner-1',
+			tenantId: 'tenant-1',
+			role: 'owner',
+			isSuperAdmin: false,
+			email: 'owner@example.com',
+		};
+
+		tenantPrismaMocks.eventFindFirst.mockResolvedValueOnce({
+			id: 'event-1',
+			tenantId: 'tenant-1',
+			isDeleted: false,
+			archivedAt: null,
+		});
+		prismaMocks.eventUpdate.mockResolvedValue({ id: 'event-1' });
+
+		const app = createApp();
+		const res = await request(app).post('/admin/events/event-1/archive');
+
+		expect(res.status).toBe(200);
+		expect(tenantPrismaMocks.eventFindFirst).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: { id: 'event-1' },
+			}),
+		);
+		expect(prismaMocks.eventFindUnique).not.toHaveBeenCalled();
+	});
+
+	it('does not allow owner/admin to archive events from other tenants', async () => {
+		authState.currentUser = {
+			userId: 'admin-1',
+			tenantId: 'tenant-1',
+			role: 'admin',
+			isSuperAdmin: false,
+			email: 'admin@example.com',
+		};
+
+		tenantPrismaMocks.eventFindFirst.mockResolvedValueOnce(null);
+
+		const app = createApp();
+		const res = await request(app).post('/admin/events/event-foreign/archive');
+
+		expect(res.status).toBe(404);
+		expect(prismaMocks.eventUpdate).not.toHaveBeenCalled();
 	});
 
 	it('creates tenant and invites admin with POST /admin/tenants', async () => {

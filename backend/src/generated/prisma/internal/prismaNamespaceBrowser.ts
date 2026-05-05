@@ -136,6 +136,9 @@ export const EventScalarFieldEnum = {
   maxGuests: 'maxGuests',
   startsAt: 'startsAt',
   endsAt: 'endsAt',
+  archivedAt: 'archivedAt',
+  isDeleted: 'isDeleted',
+  deletedAt: 'deletedAt',
   version: 'version',
   createdAt: 'createdAt'
 } as const

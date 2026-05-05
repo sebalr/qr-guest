@@ -80,6 +80,9 @@ model Event {
   maxGuests   Int?                   @map("max_guests")
   startsAt    DateTime?              @map("starts_at")
   endsAt      DateTime?              @map("ends_at")
+  archivedAt  DateTime?              @map("archived_at")
+  isDeleted   Boolean                @default(false) @map("is_deleted")
+  deletedAt   DateTime?              @map("deleted_at")
   version     Int                    @default(0)
   createdAt   DateTime               @default(now()) @map("created_at")
   tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -92,6 +95,7 @@ model Event {
 
   @@unique([id, tenantId])
   @@index([tenantId, createdAt])
+  @@index([tenantId, isDeleted, archivedAt, createdAt])
   @@map("events")
 }
 
