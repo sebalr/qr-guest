@@ -1091,7 +1091,7 @@ export default function EventDetailPage() {
 						displayTickets.map(ticket => (
 							<Card key={ticket.id}>
 								<CardContent className="p-4">
-									<div className="flex justify-between items-start gap-4">
+									<div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-start md:gap-4">
 										<div className="flex items-start gap-3 min-w-0">
 											{canManageTickets && (
 												<Checkbox
@@ -1118,7 +1118,7 @@ export default function EventDetailPage() {
 												</div>
 											</div>
 										</div>
-										<div className="flex gap-2 shrink-0 flex-wrap justify-end">
+										<div className="flex w-full gap-2 flex-wrap justify-start md:w-auto md:shrink-0 md:justify-end">
 											{canManageTickets && ticket.status === 'active' && (
 												<Button
 													variant="outline"
