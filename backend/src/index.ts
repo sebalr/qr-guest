@@ -14,7 +14,31 @@ import { assertRlsSafeDatabaseRole } from './prisma';
 
 const app = express();
 
-app.use(cors());
+const configuredCorsOrigins = (process.env.CORS_ORIGINS ?? process.env.FRONTEND_URL ?? '')
+	.split(',')
+	.map(origin => origin.trim().replace(/\/$/, ''))
+	.filter(Boolean);
+
+const corsOptions: cors.CorsOptions = {
+	origin(origin, callback) {
+		if (!origin) {
+			callback(null, true);
+			return;
+		}
+
+		if (configuredCorsOrigins.length === 0 || configuredCorsOrigins.includes(origin)) {
+			callback(null, true);
+			return;
+		}
+
+		callback(new Error(`CORS blocked origin: ${origin}`));
+	},
+	methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+	allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 app.use('/auth', authRouter);

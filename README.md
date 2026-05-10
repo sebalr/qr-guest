@@ -129,19 +129,20 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 
 ### Backend
 
-| Variable              | Description                                    |
-| --------------------- | ---------------------------------------------- |
-| `DATABASE_URL`        | PostgreSQL connection string                   |
-| `SHADOW_DATABASE_URL` | Shadow DB connection for `prisma migrate dev`  |
-| `JWT_SECRET`          | Secret for auth JWTs                           |
-| `QR_SECRET`           | Secret for QR ticket JWTs                      |
-| `PORT`                | HTTP port (default: 3000)                      |
-| `FRONTEND_URL`        | Public frontend URL used in verification links |
-| `RESEND_API_KEY`      | Resend API key for auth emails                 |
-| `RESEND_FROM_EMAIL`   | Verified sender address used for auth emails   |
-| `APP_DB_NAME`         | Local Docker database name (default: `tiqra`)  |
-| `APP_DB_USER`         | Runtime DB role used by backend in Docker      |
-| `APP_DB_PASSWORD`     | Runtime DB role password in Docker             |
+| Variable              | Description                                                                       |
+| --------------------- | --------------------------------------------------------------------------------- |
+| `DATABASE_URL`        | PostgreSQL connection string                                                      |
+| `SHADOW_DATABASE_URL` | Shadow DB connection for `prisma migrate dev`                                     |
+| `JWT_SECRET`          | Secret for auth JWTs                                                              |
+| `QR_SECRET`           | Secret for QR ticket JWTs                                                         |
+| `PORT`                | HTTP port (default: 3000)                                                         |
+| `FRONTEND_URL`        | Public frontend URL used in verification links                                    |
+| `CORS_ORIGINS`        | Comma-separated allowed browser origins for API CORS (defaults to `FRONTEND_URL`) |
+| `RESEND_API_KEY`      | Resend API key for auth emails                                                    |
+| `RESEND_FROM_EMAIL`   | Verified sender address used for auth emails                                      |
+| `APP_DB_NAME`         | Local Docker database name (default: `tiqra`)                                     |
+| `APP_DB_USER`         | Runtime DB role used by backend in Docker                                         |
+| `APP_DB_PASSWORD`     | Runtime DB role password in Docker                                                |
 
 ## Coolify Production Setup
 
@@ -213,6 +214,7 @@ Set at least:
 - `JWT_SECRET=<strong-secret>`
 - `QR_SECRET=<strong-secret>`
 - `FRONTEND_URL=<public-frontend-url>`
+- `CORS_ORIGINS=<public-frontend-url[,additional-allowed-origin]>`
 - `RESEND_API_KEY=<resend-key>`
 - `RESEND_FROM_EMAIL=<verified-email>`
 
