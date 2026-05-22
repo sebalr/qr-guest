@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import {
@@ -37,6 +38,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateQrPdf, sharePdfOrDownload } from '@/lib/generateQrPdf';
+import { eventQueryKeys } from '@/lib/queryKeys';
 import {
 	ArrowLeft,
 	QrCode,
@@ -75,10 +77,7 @@ export default function EventDetailPage() {
 	const tenantScope = useMemo(() => ({ ...(tenantId ? { tenantId } : {}) }), [tenantId]);
 	const canManageTickets = user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin';
 	const canEditGuestLimit = user?.isSuperAdmin === true;
-	const [event, setEvent] = useState<Event | null>(null);
-	const [tickets, setTickets] = useState<Ticket[]>([]);
-	const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
-	const [loading, setLoading] = useState(true);
+	const queryClient = useQueryClient();
 	const [ticketLoadProgress, setTicketLoadProgress] = useState({ pagesLoaded: 0, ticketsLoaded: 0 });
 
 	// Bulk add
@@ -133,12 +132,28 @@ export default function EventDetailPage() {
 
 	useEffect(() => {
 		if (!id) return;
-		setLoading(true);
-		setTicketLoadProgress({ pagesLoaded: 0, ticketsLoaded: 0 });
 		setHasManualGuestListViewSelection(false);
 		setGuestListView('full');
+	}, [id]);
 
-		const fetchAllTickets = async (eventId: string): Promise<Ticket[]> => {
+	const eventQuery = useQuery({
+		queryKey: id ? eventQueryKeys.event(id, tenantId) : [...eventQueryKeys.all, 'missing-event', 'event'],
+		enabled: Boolean(id),
+		staleTime: 5 * 60 * 1000,
+		queryFn: async () => {
+			if (!id) return null as Event | null;
+			const evRes = await getEventApi(id, tenantScope);
+			return evRes.data.data;
+		},
+	});
+
+	const ticketsQuery = useQuery({
+		queryKey: id ? eventQueryKeys.tickets(id, tenantId) : [...eventQueryKeys.all, 'missing-event', 'tickets'],
+		enabled: Boolean(id),
+		staleTime: 30 * 1000,
+		queryFn: async () => {
+			if (!id) return [] as Ticket[];
+			setTicketLoadProgress({ pagesLoaded: 0, ticketsLoaded: 0 });
 			const allTickets: Ticket[] = [];
 			let cursorCreatedAt: string | undefined;
 			let cursorId: string | undefined;
@@ -147,7 +162,7 @@ export default function EventDetailPage() {
 
 			while (hasMore) {
 				const tkRes = await getTicketsApi(
-					eventId,
+					id,
 					{
 						pageSize: EVENT_TICKETS_PAGE_SIZE,
 						...(cursorCreatedAt ? { cursorCreatedAt } : {}),
@@ -165,43 +180,127 @@ export default function EventDetailPage() {
 			}
 
 			return allTickets;
-		};
+		},
+	});
 
-		Promise.all([getEventApi(id, tenantScope), fetchAllTickets(id), getEventTicketTypesApi(id, tenantScope)])
-			.then(([evRes, tks, typeRes]) => {
-				setEvent(evRes.data.data);
-				setMaxGuestsInput(typeof evRes.data.data.maxGuests === 'number' ? String(evRes.data.data.maxGuests) : '');
-				setTickets(tks);
-				setTicketTypes(typeRes.data.data);
-				db.tickets.bulkPut(
-					tks.map(t => ({
-						id: t.id,
-						event_id: t.eventId,
-						name: t.name,
-						status: t.status,
-						version: t.version,
-					})),
-				);
-				return Promise.all(
-					tks.map(t =>
-						db.scans
-							.where('ticket_id')
-							.equals(t.id)
-							.count()
-							.then(c => ({ id: t.id, count: Math.max(c, t.scanCount ?? 0) })),
-					),
-				);
-			})
-			.then(counts => {
-				const map: Record<string, number> = {};
-				counts.forEach(({ id: tid, count }) => {
-					map[tid] = count;
-				});
-				setScanCounts(map);
-			})
-			.catch(() => {})
-			.finally(() => setLoading(false));
-	}, [id, tenantScope]);
+	const ticketTypesQuery = useQuery({
+		queryKey: id ? eventQueryKeys.ticketTypes(id, tenantId) : [...eventQueryKeys.all, 'missing-event', 'ticket-types'],
+		enabled: Boolean(id),
+		staleTime: 2 * 60 * 1000,
+		queryFn: async () => {
+			if (!id) return [] as TicketType[];
+			const typeRes = await getEventTicketTypesApi(id, tenantScope);
+			return typeRes.data.data;
+		},
+	});
+
+	const event = eventQuery.data ?? null;
+	const tickets = ticketsQuery.data ?? [];
+	const ticketTypes = ticketTypesQuery.data ?? [];
+	const loading = eventQuery.isLoading || ticketsQuery.isLoading || ticketTypesQuery.isLoading;
+
+	useEffect(() => {
+		if (!event) return;
+		setMaxGuestsInput(typeof event.maxGuests === 'number' ? String(event.maxGuests) : '');
+	}, [event?.id, event?.maxGuests]);
+
+	useEffect(() => {
+		let isActive = true;
+		if (tickets.length === 0) {
+			setScanCounts({});
+			return;
+		}
+
+		db.tickets.bulkPut(
+			tickets.map(t => ({
+				id: t.id,
+				event_id: t.eventId,
+				name: t.name,
+				status: t.status,
+				version: t.version,
+			})),
+		);
+
+		Promise.all(
+			tickets.map(t =>
+				db.scans
+					.where('ticket_id')
+					.equals(t.id)
+					.count()
+					.then(c => ({ id: t.id, count: Math.max(c, t.scanCount ?? 0) })),
+			),
+		).then(counts => {
+			if (!isActive) return;
+			const map: Record<string, number> = {};
+			counts.forEach(({ id: tid, count }) => {
+				map[tid] = count;
+			});
+			setScanCounts(map);
+		});
+
+		return () => {
+			isActive = false;
+		};
+	}, [tickets]);
+
+	const createTicketMutation = useMutation({
+		mutationFn: (payload: { name?: string; guestId?: string; ticketTypeId?: string }) => {
+			if (!id) throw new Error('Missing event id');
+			return createTicketApi(id, payload, tenantScope);
+		},
+		onSuccess: response => {
+			if (!id) return;
+			const createdTicket = response.data.data;
+			queryClient.setQueryData<Ticket[]>(eventQueryKeys.tickets(id, tenantId), current => {
+				if (!current) return [createdTicket];
+				if (current.some(ticket => ticket.id === createdTicket.id)) return current;
+				return [...current, createdTicket];
+			});
+		},
+	});
+
+	const addTicketsMutation = useMutation({
+		mutationFn: (payload: Array<{ name: string; ticketTypeId?: string }>) => {
+			if (!id) throw new Error('Missing event id');
+			return addTicketsApi(id, payload, tenantScope);
+		},
+		onSuccess: response => {
+			if (!id) return;
+			const addedTickets = response.data.data;
+			queryClient.setQueryData<Ticket[]>(eventQueryKeys.tickets(id, tenantId), current => {
+				if (!current) return addedTickets;
+				const existingById = new Set(current.map(ticket => ticket.id));
+				const uniqueNew = addedTickets.filter(ticket => !existingById.has(ticket.id));
+				if (uniqueNew.length === 0) return current;
+				return [...current, ...uniqueNew];
+			});
+		},
+	});
+
+	const updateTicketMutation = useMutation({
+		mutationFn: (payload: { ticketId: string; ticketTypeId: string | null }) =>
+			updateTicketApi(payload.ticketId, { ticketTypeId: payload.ticketTypeId }, tenantScope),
+		onSuccess: async () => {
+			if (!id) return;
+			await queryClient.invalidateQueries({ queryKey: eventQueryKeys.tickets(id, tenantId) });
+		},
+	});
+
+	const cancelTicketMutation = useMutation({
+		mutationFn: (ticketId: string) => cancelTicketApi(ticketId, tenantScope),
+		onSuccess: async () => {
+			if (!id) return;
+			await queryClient.invalidateQueries({ queryKey: eventQueryKeys.tickets(id, tenantId) });
+		},
+	});
+
+	const restoreTicketMutation = useMutation({
+		mutationFn: (ticketId: string) => restoreTicketApi(ticketId, tenantScope),
+		onSuccess: async () => {
+			if (!id) return;
+			await queryClient.invalidateQueries({ queryKey: eventQueryKeys.tickets(id, tenantId) });
+		},
+	});
 
 	useEffect(() => {
 		if (hasManualGuestListViewSelection) return;
@@ -270,7 +369,7 @@ export default function EventDetailPage() {
 		setSavingMaxGuests(true);
 		try {
 			const res = await updateEventApi(id, { maxGuests: parsed }, tenantScope);
-			setEvent(res.data.data);
+			queryClient.setQueryData(eventQueryKeys.event(id, tenantId), res.data.data);
 			setMaxGuestsInput(String(res.data.data.maxGuests ?? parsed));
 		} catch (error) {
 			setMaxGuestsError(getApiErrorMessage(error, t('eventDetailPage.errors.updateMaxGuestsFailed')));
@@ -293,16 +392,7 @@ export default function EventDetailPage() {
 				...(selectedGuest ? { guestId: selectedGuest.id } : { name: singleName.trim() }),
 				...(singleTicketTypeId !== 'none' ? { ticketTypeId: singleTicketTypeId } : {}),
 			};
-			const res = await createTicketApi(id, payload, tenantScope);
-			const newTicket = res.data.data;
-			setTickets(prev => [...prev, newTicket]);
-			db.tickets.put({
-				id: newTicket.id,
-				event_id: newTicket.eventId,
-				name: newTicket.name,
-				status: newTicket.status,
-				version: newTicket.version,
-			});
+			await createTicketMutation.mutateAsync(payload);
 			setSingleName('');
 			setSingleTicketTypeId('none');
 			setSelectedGuest(null);
@@ -339,18 +429,7 @@ export default function EventDetailPage() {
 				name,
 				...(bulkTicketTypeId !== 'none' ? { ticketTypeId: bulkTicketTypeId } : {}),
 			}));
-			const res = await addTicketsApi(id, payload, tenantScope);
-			const newTickets = res.data.data;
-			setTickets(prev => [...prev, ...newTickets]);
-			db.tickets.bulkPut(
-				newTickets.map(t => ({
-					id: t.id,
-					event_id: t.eventId,
-					name: t.name,
-					status: t.status,
-					version: t.version,
-				})),
-			);
+			await addTicketsMutation.mutateAsync(payload);
 			setBulkNames('');
 			setBulkTicketTypeId('none');
 			setShowBulk(false);
@@ -370,15 +449,10 @@ export default function EventDetailPage() {
 		if (!editingTicket) return;
 		setUpdatingTicket(true);
 		try {
-			const res = await updateTicketApi(
-				editingTicket.id,
-				{
-					ticketTypeId: editingTicketTypeSelection === 'none' ? null : editingTicketTypeSelection,
-				},
-				tenantScope,
-			);
-			const updated = res.data.data;
-			setTickets(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+			await updateTicketMutation.mutateAsync({
+				ticketId: editingTicket.id,
+				ticketTypeId: editingTicketTypeSelection === 'none' ? null : editingTicketTypeSelection,
+			});
 			setEditingTicket(null);
 		} catch {
 			setErrorDialogMessage(t('eventDetailPage.errors.updateTicketTypeFailed'));
@@ -391,9 +465,7 @@ export default function EventDetailPage() {
 		if (!cancelTargetTicketId) return;
 		setCancelingTicket(true);
 		try {
-			await cancelTicketApi(cancelTargetTicketId, tenantScope);
-			setTickets(prev => prev.map(t => (t.id === cancelTargetTicketId ? { ...t, status: 'cancelled' } : t)));
-			db.tickets.update(cancelTargetTicketId, { status: 'cancelled' });
+			await cancelTicketMutation.mutateAsync(cancelTargetTicketId);
 			setCancelTargetTicketId(null);
 		} catch {
 			setErrorDialogMessage(t('eventDetailPage.errors.cancelTicketFailed'));
@@ -405,9 +477,7 @@ export default function EventDetailPage() {
 	async function handleRestoreTicket(ticketId: string) {
 		setRestoringTicketId(ticketId);
 		try {
-			await restoreTicketApi(ticketId, tenantScope);
-			setTickets(prev => prev.map(t => (t.id === ticketId ? { ...t, status: 'active' } : t)));
-			db.tickets.update(ticketId, { status: 'active' });
+			await restoreTicketMutation.mutateAsync(ticketId);
 		} catch {
 			setErrorDialogMessage(t('eventDetailPage.errors.restoreTicketFailed'));
 		} finally {

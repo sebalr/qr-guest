@@ -10,7 +10,7 @@ api.interceptors.request.use(config => {
 	return config;
 });
 
-interface TenantScopedRequestOptions {
+export interface TenantScopedRequestOptions {
 	tenantId?: string;
 }
 

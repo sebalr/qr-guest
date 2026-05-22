@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
 	createEventTemporaryScannerApi,
 	createEventTicketTypeApi,
@@ -27,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, AlertCircle, Share2 } from 'lucide-react';
 import QRCodeDisplay from '../components/QRCodeDisplay';
+import { eventQueryKeys } from '@/lib/queryKeys';
 
 type SettingsTab = 'ticket-types' | 'temporal-scanners' | 'pdf';
 
@@ -38,9 +40,9 @@ export default function EventSettingsPage() {
 	const { user } = useAuth();
 	const tenantId = (searchParams.get('tenantId') ?? '').trim() || undefined;
 	const tenantScope = useMemo(() => ({ ...(tenantId ? { tenantId } : {}) }), [tenantId]);
+	const queryClient = useQueryClient();
 
 	const [eventName, setEventName] = useState(t('eventSettingsPage.fallbackEventName'));
-	const [loading, setLoading] = useState(true);
 	const [activeTab, setActiveTab] = useState<SettingsTab>('ticket-types');
 	const [eventDescription, setEventDescription] = useState('');
 	const [eventImageUrl, setEventImageUrl] = useState('');
@@ -49,7 +51,6 @@ export default function EventSettingsPage() {
 	const [pdfSettingsError, setPdfSettingsError] = useState('');
 	const [savingPdfSettings, setSavingPdfSettings] = useState(false);
 
-	const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 	const [newTicketTypeName, setNewTicketTypeName] = useState('');
 	const [newTicketTypePrice, setNewTicketTypePrice] = useState('');
 	const [ticketTypeError, setTicketTypeError] = useState('');
@@ -76,25 +77,87 @@ export default function EventSettingsPage() {
 	const [emailRecipient, setEmailRecipient] = useState('');
 	const [sendingScannerEmail, setSendingScannerEmail] = useState(false);
 
-	useEffect(() => {
-		if (!id) return;
-		setLoading(true);
+	const eventQuery = useQuery({
+		queryKey: id ? eventQueryKeys.event(id, tenantId) : [...eventQueryKeys.all, 'missing-event', 'event'],
+		enabled: Boolean(id),
+		staleTime: 5 * 60 * 1000,
+		queryFn: async () => {
+			if (!id) return null;
+			const eventRes = await getEventApi(id, tenantScope);
+			return eventRes.data.data;
+		},
+	});
 
-		Promise.all([getEventApi(id, tenantScope), getEventTicketTypesApi(id, tenantScope), getEventTemporaryScannersApi(id, tenantScope)])
-			.then(([eventRes, ticketTypeRes, temporalRes]) => {
-				setEventName(eventRes.data.data.name);
-				setEventDescription(eventRes.data.data.description ?? '');
-				setEventImageUrl(eventRes.data.data.imageUrl ?? '');
-				setIncludeDescriptionInPdf(eventRes.data.data.includeDescriptionInPdf === true);
-				setIncludeImageInPdf(eventRes.data.data.includeImageInPdf === true);
-				setTicketTypes(ticketTypeRes.data.data);
-				setTemporalScanners(temporalRes.data.data);
-			})
-			.catch(() => {
-				setTicketTypeError(t('eventSettingsPage.errors.loadFailed'));
-			})
-			.finally(() => setLoading(false));
-	}, [id, tenantScope, t]);
+	const temporaryScannersQuery = useQuery({
+		queryKey: id ? eventQueryKeys.temporaryScanners(id, tenantId) : [...eventQueryKeys.all, 'missing-event', 'temporary-scanners'],
+		enabled: Boolean(id),
+		staleTime: 2 * 60 * 1000,
+		queryFn: async () => {
+			if (!id) return [] as TemporaryScanner[];
+			const scannersRes = await getEventTemporaryScannersApi(id, tenantScope);
+			return scannersRes.data.data;
+		},
+	});
+
+	const ticketTypesQuery = useQuery({
+		queryKey: id ? eventQueryKeys.ticketTypes(id, tenantId) : [...eventQueryKeys.all, 'missing-event', 'ticket-types'],
+		enabled: Boolean(id),
+		staleTime: 2 * 60 * 1000,
+		queryFn: async () => {
+			if (!id) return [] as TicketType[];
+			const ticketTypeRes = await getEventTicketTypesApi(id, tenantScope);
+			return ticketTypeRes.data.data;
+		},
+	});
+
+	const ticketTypes = ticketTypesQuery.data ?? [];
+
+	const invalidateEventTicketData = async () => {
+		if (!id) return;
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: eventQueryKeys.ticketTypes(id, tenantId) }),
+			queryClient.invalidateQueries({ queryKey: eventQueryKeys.tickets(id, tenantId) }),
+		]);
+	};
+
+	const createTicketTypeMutation = useMutation({
+		mutationFn: (payload: { name: string; price: number }) => {
+			if (!id) throw new Error('Missing event id');
+			return createEventTicketTypeApi(id, payload, tenantScope);
+		},
+		onSuccess: invalidateEventTicketData,
+	});
+
+	const updateTicketTypeMutation = useMutation({
+		mutationFn: (payload: { ticketTypeId: string; name: string; price: number }) =>
+			updateEventTicketTypeApi(payload.ticketTypeId, { name: payload.name, price: payload.price }, tenantScope),
+		onSuccess: invalidateEventTicketData,
+	});
+
+	const deleteTicketTypeMutation = useMutation({
+		mutationFn: (ticketTypeId: string) => deleteEventTicketTypeApi(ticketTypeId, tenantScope),
+		onSuccess: invalidateEventTicketData,
+	});
+
+	useEffect(() => {
+		if (!eventQuery.data) return;
+		setEventName(eventQuery.data.name);
+		setEventDescription(eventQuery.data.description ?? '');
+		setEventImageUrl(eventQuery.data.imageUrl ?? '');
+		setIncludeDescriptionInPdf(eventQuery.data.includeDescriptionInPdf === true);
+		setIncludeImageInPdf(eventQuery.data.includeImageInPdf === true);
+	}, [eventQuery.data]);
+
+	useEffect(() => {
+		if (!temporaryScannersQuery.data) return;
+		setTemporalScanners(temporaryScannersQuery.data);
+	}, [temporaryScannersQuery.data]);
+
+	useEffect(() => {
+		if (eventQuery.isError || temporaryScannersQuery.isError || ticketTypesQuery.isError) {
+			setTicketTypeError(t('eventSettingsPage.errors.loadFailed'));
+		}
+	}, [eventQuery.isError, temporaryScannersQuery.isError, ticketTypesQuery.isError, t]);
 
 	function scannerLoginLink(loginToken: string): string {
 		return `${window.location.origin}/temporal-scanner-login?token=${encodeURIComponent(loginToken)}`;
@@ -180,6 +243,7 @@ export default function EventSettingsPage() {
 				},
 				tenantScope,
 			);
+			queryClient.setQueryData(eventQueryKeys.event(id, tenantId), res.data.data);
 
 			setEventDescription(res.data.data.description ?? '');
 			setEventImageUrl(res.data.data.imageUrl ?? '');
@@ -212,8 +276,7 @@ export default function EventSettingsPage() {
 		}
 
 		try {
-			const res = await createEventTicketTypeApi(id, { name, price }, tenantScope);
-			setTicketTypes(prev => [...prev, res.data.data]);
+			await createTicketTypeMutation.mutateAsync({ name, price });
 			setNewTicketTypeName('');
 			setNewTicketTypePrice('');
 		} catch {
@@ -249,8 +312,7 @@ export default function EventSettingsPage() {
 		}
 
 		try {
-			const res = await updateEventTicketTypeApi(editingTicketTypeId, { name, price }, tenantScope);
-			setTicketTypes(prev => prev.map(t => (t.id === editingTicketTypeId ? res.data.data : t)));
+			await updateTicketTypeMutation.mutateAsync({ ticketTypeId: editingTicketTypeId, name, price });
 			setEditingTicketTypeId(null);
 			setEditingTicketTypeName('');
 			setEditingTicketTypePrice('');
@@ -263,8 +325,7 @@ export default function EventSettingsPage() {
 
 	async function handleDeleteTicketType(ticketTypeId: string) {
 		try {
-			await deleteEventTicketTypeApi(ticketTypeId, tenantScope);
-			setTicketTypes(prev => prev.filter(t => t.id !== ticketTypeId));
+			await deleteTicketTypeMutation.mutateAsync(ticketTypeId);
 		} catch {
 			setTicketTypeError(t('eventSettingsPage.ticketTypes.errors.deleteFailed'));
 		}
@@ -283,7 +344,11 @@ export default function EventSettingsPage() {
 		setCreatingScanner(true);
 		try {
 			const res = await createEventTemporaryScannerApi(id, { name }, tenantScope);
-			setTemporalScanners(prev => [res.data.data, ...prev]);
+			setTemporalScanners(prev => {
+				const next = [res.data.data, ...prev];
+				queryClient.setQueryData(eventQueryKeys.temporaryScanners(id, tenantId), next);
+				return next;
+			});
 			setNewScannerName('');
 		} catch {
 			setScannerError(t('eventSettingsPage.scanners.errors.createFailed'));
@@ -298,7 +363,11 @@ export default function EventSettingsPage() {
 		setScannerError('');
 		try {
 			const res = await updateEventTemporaryScannerApi(id, scanner.id, { isActive }, tenantScope);
-			setTemporalScanners(prev => prev.map(entry => (entry.id === scanner.id ? res.data.data : entry)));
+			setTemporalScanners(prev => {
+				const next = prev.map(entry => (entry.id === scanner.id ? res.data.data : entry));
+				queryClient.setQueryData(eventQueryKeys.temporaryScanners(id, tenantId), next);
+				return next;
+			});
 		} catch {
 			setScannerError(t('eventSettingsPage.scanners.errors.updateAccessFailed'));
 		} finally {
@@ -306,7 +375,7 @@ export default function EventSettingsPage() {
 		}
 	}
 
-	if (loading) {
+	if (eventQuery.isLoading || temporaryScannersQuery.isLoading || ticketTypesQuery.isLoading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-slate-50">
 				<p className="text-muted-foreground">{t('eventSettingsPage.loading')}</p>

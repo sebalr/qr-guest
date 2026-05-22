@@ -19,9 +19,25 @@ const configuredCorsOrigins = (process.env.CORS_ORIGINS ?? process.env.FRONTEND_
 	.map(origin => origin.trim().replace(/\/$/, ''))
 	.filter(Boolean);
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+function isLocalhostOrigin(origin: string): boolean {
+	try {
+		const url = new URL(origin);
+		return url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+	} catch {
+		return false;
+	}
+}
+
 const corsOptions: cors.CorsOptions = {
 	origin(origin, callback) {
 		if (!origin) {
+			callback(null, true);
+			return;
+		}
+
+		if (!isProduction && isLocalhostOrigin(origin)) {
 			callback(null, true);
 			return;
 		}
