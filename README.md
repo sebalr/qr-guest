@@ -221,7 +221,16 @@ Set at least:
 Production note:
 
 - Do not set `SHADOW_DATABASE_URL` in production. It is only for local `prisma migrate dev` workflows.
+- Do not run `npm run prisma:migrate` against production if it would use your local dev database flow. Production should use `prisma migrate deploy` with the migrator role.
 - Keep runtime and migration credentials separate to reduce blast radius.
+
+If you need to run migrations manually against the production database, use the migrator role and the deploy command:
+
+```bash
+DATABASE_URL="$MIGRATION_DATABASE_URL" npx prisma migrate deploy
+```
+
+In Coolify, this is already handled by the one-shot `migrate` service in [docker-compose.coolify.yml](docker-compose.coolify.yml).
 
 ### 3) Run migrations in production
 
@@ -286,6 +295,15 @@ In Docker Compose, a `db-bootstrap` service ensures the app role exists and has 
 
 ### Frontend
 
-| Variable       | Description     |
-| -------------- | --------------- |
-| `VITE_API_URL` | Backend API URL |
+| Variable         | Description                                  |
+| ---------------- | -------------------------------------------- |
+| `VITE_API_URL`   | Backend API URL                              |
+| `VITE_TIQRA_URL` | Tiqra website URL shown in generated QR PDFs |
+
+`VITE_TIQRA_URL` is a frontend build-time variable. Set it in the environment where the frontend is built or served:
+
+- Local development: add it to [frontend/.env.example](frontend/.env.example) or your local `frontend/.env`.
+- Coolify: set it on the frontend service environment.
+- GitHub Actions: only set it there if your workflow builds the frontend image or static bundle in CI.
+
+Do not place it in backend env files.
