@@ -27,6 +27,19 @@ function isValidMoneyAmount(value: number): boolean {
 	return Math.abs(cents - Math.round(cents)) < 1e-9;
 }
 
+function hasOwnProperty(obj: object, key: string): boolean {
+	return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function isValidHttpUrl(value: string): boolean {
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+	} catch {
+		return false;
+	}
+}
+
 router.use(authMiddleware);
 
 // Read access is also available to scanners.
@@ -160,6 +173,115 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 	} catch (error) {
 		console.error('Error creating event:', error);
 		res.status(500).json({ error: 'Failed to create event' });
+	}
+});
+
+router.patch('/:id/settings', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+	if (!eventId) {
+		res.status(400).json({ error: 'event id is required' });
+		return;
+	}
+
+	const body = typeof req.body === 'object' && req.body !== null ? req.body : {};
+	const canUpdateDescription = hasOwnProperty(body, 'description');
+	const canUpdateImageUrl = hasOwnProperty(body, 'imageUrl');
+	const canUpdateIncludeDescriptionInPdf = hasOwnProperty(body, 'includeDescriptionInPdf');
+	const canUpdateIncludeImageInPdf = hasOwnProperty(body, 'includeImageInPdf');
+
+	if (!canUpdateDescription && !canUpdateImageUrl && !canUpdateIncludeDescriptionInPdf && !canUpdateIncludeImageInPdf) {
+		res.status(400).json({ error: 'At least one settings field is required' });
+		return;
+	}
+
+	const updateData: {
+		description?: string | null;
+		imageUrl?: string | null;
+		includeDescriptionInPdf?: boolean;
+		includeImageInPdf?: boolean;
+		version: { increment: number };
+	} = {
+		version: { increment: 1 },
+	};
+
+	if (canUpdateDescription) {
+		const rawDescription = (body as { description?: unknown }).description;
+		if (rawDescription !== null && typeof rawDescription !== 'string') {
+			res.status(400).json({ error: 'description must be a string or null' });
+			return;
+		}
+
+		const normalizedDescription = typeof rawDescription === 'string' ? rawDescription.trim() : null;
+		updateData.description = normalizedDescription ? normalizedDescription : null;
+	}
+
+	if (canUpdateImageUrl) {
+		const rawImageUrl = (body as { imageUrl?: unknown }).imageUrl;
+		if (rawImageUrl !== null && typeof rawImageUrl !== 'string') {
+			res.status(400).json({ error: 'imageUrl must be a string or null' });
+			return;
+		}
+
+		const normalizedImageUrl = typeof rawImageUrl === 'string' ? rawImageUrl.trim() : '';
+		if (normalizedImageUrl && !isValidHttpUrl(normalizedImageUrl)) {
+			res.status(400).json({ error: 'imageUrl must be a valid http(s) URL' });
+			return;
+		}
+
+		updateData.imageUrl = normalizedImageUrl || null;
+	}
+
+	if (canUpdateIncludeDescriptionInPdf) {
+		const rawIncludeDescriptionInPdf = (body as { includeDescriptionInPdf?: unknown }).includeDescriptionInPdf;
+		if (typeof rawIncludeDescriptionInPdf !== 'boolean') {
+			res.status(400).json({ error: 'includeDescriptionInPdf must be a boolean' });
+			return;
+		}
+
+		updateData.includeDescriptionInPdf = rawIncludeDescriptionInPdf;
+	}
+
+	if (canUpdateIncludeImageInPdf) {
+		const rawIncludeImageInPdf = (body as { includeImageInPdf?: unknown }).includeImageInPdf;
+		if (typeof rawIncludeImageInPdf !== 'boolean') {
+			res.status(400).json({ error: 'includeImageInPdf must be a boolean' });
+			return;
+		}
+
+		updateData.includeImageInPdf = rawIncludeImageInPdf;
+	}
+
+	try {
+		const context = resolveRlsContext(req, {
+			allowSuperAdminTenantOverride: true,
+			allowSuperAdminBypass: true,
+		});
+
+		const updatedEvent = await withRls(context, async tenantPrisma => {
+			const existing = await tenantPrisma.event.findFirst({
+				where: { id: eventId, isDeleted: false, archivedAt: null },
+			});
+
+			if (!existing) {
+				res.status(404).json({ error: 'Event not found' });
+				return null;
+			}
+
+			return tenantPrisma.event.update({
+				where: { id: existing.id },
+				data: updateData,
+			});
+		});
+
+		if (!updatedEvent) {
+			return;
+		}
+
+		res.json({ data: updatedEvent });
+	} catch (error) {
+		console.error('Error updating event settings:', error);
+		res.status(500).json({ error: 'Failed to update event settings' });
 	}
 });
 

@@ -77,6 +77,8 @@ model Event {
   name        String
   description String?
   imageUrl    String?                @map("image_url")
+  includeDescriptionInPdf Boolean    @default(false) @map("include_description_in_pdf")
+  includeImageInPdf       Boolean    @default(false) @map("include_image_in_pdf")
   maxGuests   Int?                   @map("max_guests")
   startsAt    DateTime?              @map("starts_at")
   endsAt      DateTime?              @map("ends_at")

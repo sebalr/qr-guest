@@ -24,6 +24,8 @@ export interface Event {
 	name: string;
 	description?: string | null;
 	imageUrl?: string | null;
+	includeDescriptionInPdf?: boolean;
+	includeImageInPdf?: boolean;
 	maxGuests?: number | null;
 	startsAt?: string | null;
 	endsAt?: string | null;
@@ -261,6 +263,16 @@ export const getEventApi = (id: string, options?: TenantScopedRequestOptions) =>
 	api.get<{ data: Event }>(`/events/${id}`, { params: tenantScopedParams(options) });
 export const updateEventApi = (id: string, data: { maxGuests: number }, options?: TenantScopedRequestOptions) =>
 	api.patch<{ data: Event }>(`/events/${id}`, data, { params: tenantScopedParams(options) });
+export const updateEventSettingsApi = (
+	id: string,
+	data: {
+		description?: string | null;
+		imageUrl?: string | null;
+		includeDescriptionInPdf?: boolean;
+		includeImageInPdf?: boolean;
+	},
+	options?: TenantScopedRequestOptions,
+) => api.patch<{ data: Event }>(`/events/${id}/settings`, data, { params: tenantScopedParams(options) });
 export const getEventTicketTypesApi = (eventId: string, options?: TenantScopedRequestOptions) =>
 	api.get<{ data: TicketType[] }>(`/events/${eventId}/ticket-types`, { params: tenantScopedParams(options) });
 export const createEventTicketTypeApi = (eventId: string, data: { name: string; price: number }, options?: TenantScopedRequestOptions) =>

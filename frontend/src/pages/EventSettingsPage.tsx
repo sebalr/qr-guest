@@ -11,21 +11,24 @@ import {
 	sendEventTemporaryScannerEmailApi,
 	TemporaryScanner,
 	TicketType,
+	updateEventSettingsApi,
 	updateEventTemporaryScannerApi,
 	updateEventTicketTypeApi,
 } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, AlertCircle, Share2 } from 'lucide-react';
 import QRCodeDisplay from '../components/QRCodeDisplay';
 
-type SettingsTab = 'ticket-types' | 'temporal-scanners';
+type SettingsTab = 'ticket-types' | 'temporal-scanners' | 'pdf';
 
 export default function EventSettingsPage() {
 	const { t } = useTranslation();
@@ -39,6 +42,12 @@ export default function EventSettingsPage() {
 	const [eventName, setEventName] = useState(t('eventSettingsPage.fallbackEventName'));
 	const [loading, setLoading] = useState(true);
 	const [activeTab, setActiveTab] = useState<SettingsTab>('ticket-types');
+	const [eventDescription, setEventDescription] = useState('');
+	const [eventImageUrl, setEventImageUrl] = useState('');
+	const [includeDescriptionInPdf, setIncludeDescriptionInPdf] = useState(false);
+	const [includeImageInPdf, setIncludeImageInPdf] = useState(false);
+	const [pdfSettingsError, setPdfSettingsError] = useState('');
+	const [savingPdfSettings, setSavingPdfSettings] = useState(false);
 
 	const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 	const [newTicketTypeName, setNewTicketTypeName] = useState('');
@@ -74,6 +83,10 @@ export default function EventSettingsPage() {
 		Promise.all([getEventApi(id, tenantScope), getEventTicketTypesApi(id, tenantScope), getEventTemporaryScannersApi(id, tenantScope)])
 			.then(([eventRes, ticketTypeRes, temporalRes]) => {
 				setEventName(eventRes.data.data.name);
+				setEventDescription(eventRes.data.data.description ?? '');
+				setEventImageUrl(eventRes.data.data.imageUrl ?? '');
+				setIncludeDescriptionInPdf(eventRes.data.data.includeDescriptionInPdf === true);
+				setIncludeImageInPdf(eventRes.data.data.includeImageInPdf === true);
 				setTicketTypes(ticketTypeRes.data.data);
 				setTemporalScanners(temporalRes.data.data);
 			})
@@ -148,6 +161,35 @@ export default function EventSettingsPage() {
 			}),
 		);
 		window.location.href = `mailto:?subject=${subject}&body=${body}`;
+	}
+
+	async function handleSavePdfSettings(e: FormEvent) {
+		e.preventDefault();
+		if (!id) return;
+
+		setSavingPdfSettings(true);
+		setPdfSettingsError('');
+		try {
+			const res = await updateEventSettingsApi(
+				id,
+				{
+					description: eventDescription.trim() ? eventDescription.trim() : null,
+					imageUrl: eventImageUrl.trim() ? eventImageUrl.trim() : null,
+					includeDescriptionInPdf,
+					includeImageInPdf,
+				},
+				tenantScope,
+			);
+
+			setEventDescription(res.data.data.description ?? '');
+			setEventImageUrl(res.data.data.imageUrl ?? '');
+			setIncludeDescriptionInPdf(res.data.data.includeDescriptionInPdf === true);
+			setIncludeImageInPdf(res.data.data.includeImageInPdf === true);
+			showToast(t('eventSettingsPage.toasts.pdfSettingsSaved'), 'success');
+		} catch {
+			setPdfSettingsError(t('eventSettingsPage.pdf.errors.saveFailed'));
+		}
+		setSavingPdfSettings(false);
 	}
 
 	async function handleCreateTicketType(e: FormEvent) {
@@ -313,6 +355,13 @@ export default function EventSettingsPage() {
 						size="sm"
 						onClick={() => setActiveTab('temporal-scanners')}>
 						{t('eventSettingsPage.tabs.temporalScanners')}
+					</Button>
+					<Button
+						type="button"
+						variant={activeTab === 'pdf' ? 'default' : 'ghost'}
+						size="sm"
+						onClick={() => setActiveTab('pdf')}>
+						{t('eventSettingsPage.tabs.pdf')}
 					</Button>
 				</div>
 
@@ -508,6 +557,67 @@ export default function EventSettingsPage() {
 							</CardContent>
 						</Card>
 					</div>
+				)}
+
+				{activeTab === 'pdf' && (
+					<Card>
+						<CardHeader>
+							<CardTitle>{t('eventSettingsPage.pdf.title')}</CardTitle>
+							<CardDescription>{t('eventSettingsPage.pdf.description')}</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<form
+								onSubmit={handleSavePdfSettings}
+								className="space-y-4">
+								<div className="space-y-1">
+									<Label htmlFor="event-pdf-description">{t('eventSettingsPage.pdf.fields.description')}</Label>
+									<Textarea
+										id="event-pdf-description"
+										placeholder={t('eventSettingsPage.pdf.fields.descriptionPlaceholder')}
+										value={eventDescription}
+										onChange={e => setEventDescription(e.target.value)}
+										rows={4}
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label htmlFor="event-pdf-image-url">{t('eventSettingsPage.pdf.fields.imageUrl')}</Label>
+									<Input
+										id="event-pdf-image-url"
+										type="url"
+										placeholder={t('eventSettingsPage.pdf.fields.imageUrlPlaceholder')}
+										value={eventImageUrl}
+										onChange={e => setEventImageUrl(e.target.value)}
+									/>
+								</div>
+								<div className="space-y-3 rounded-lg border p-3">
+									<Checkbox
+										id="include-description-in-pdf"
+										checked={includeDescriptionInPdf}
+										onChange={e => setIncludeDescriptionInPdf(e.target.checked)}
+										label={t('eventSettingsPage.pdf.fields.includeDescriptionInPdf')}
+									/>
+									<Checkbox
+										id="include-image-in-pdf"
+										checked={includeImageInPdf}
+										onChange={e => setIncludeImageInPdf(e.target.checked)}
+										label={t('eventSettingsPage.pdf.fields.includeImageInPdf')}
+									/>
+								</div>
+
+								{pdfSettingsError && (
+									<Alert variant="destructive">
+										<AlertDescription>{pdfSettingsError}</AlertDescription>
+									</Alert>
+								)}
+
+								<Button
+									type="submit"
+									disabled={savingPdfSettings}>
+									{savingPdfSettings ? t('eventSettingsPage.actions.saving') : t('eventSettingsPage.actions.save')}
+								</Button>
+							</form>
+						</CardContent>
+					</Card>
 				)}
 			</main>
 

@@ -491,7 +491,13 @@ export default function EventDetailPage() {
 		setPdfToast('');
 		try {
 			const guests = await buildGuestPdfData(activeTicketIds);
-			const blob = await generateQrPdf(guests, event.name);
+			const blob = await generateQrPdf(guests, event.name, {
+				description: event.description,
+				imageUrl: event.imageUrl,
+				includeDescriptionInPdf: event.includeDescriptionInPdf,
+				includeImageInPdf: event.includeImageInPdf,
+				tiqraUrl: import.meta.env.VITE_TIQRA_URL,
+			});
 			const filename = `${event.name.replace(/[^a-z0-9]/gi, '_')}-guests.pdf`;
 			const shared = await sharePdfOrDownload(blob, filename, `${event.name} – Guest QR Codes`);
 			if (!shared) {

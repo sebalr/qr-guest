@@ -206,7 +206,8 @@
     "title": "Configuracion del evento",
     "tabs": {
       "ticketTypes": "Tipos de ticket",
-      "temporalScanners": "Escaneres temporales"
+      "temporalScanners": "Escaneres temporales",
+      "pdf": "PDF"
     },
     "actions": {
       "saving": "Guardando...",
@@ -215,7 +216,8 @@
     },
     "toasts": {
       "linkCopied": "Enlace copiado correctamente",
-      "emailSent": "Correo enviado correctamente"
+      "emailSent": "Correo enviado correctamente",
+      "pdfSettingsSaved": "Configuracion PDF guardada correctamente"
     },
     "errors": {
       "loadFailed": "No se pudieron cargar los datos de configuracion.",
@@ -226,6 +228,21 @@
     "emailTemplate": {
       "subject": "Acceso de escaner para {{eventName}}",
       "body": "Hola {{scannerName}},\n\nUsa este enlace para acceder al escaner de {{eventName}}:\n{{link}}"
+    },
+    "pdf": {
+      "title": "Configuracion PDF",
+      "description": "Edita el contenido que aparece en los PDF de QR generados.",
+      "fields": {
+        "description": "Mensaje del evento",
+        "descriptionPlaceholder": "Mensaje opcional que aparece debajo del titulo del evento en el PDF",
+        "imageUrl": "URL de la imagen del evento",
+        "imageUrlPlaceholder": "https://example.com/event-image.jpg",
+        "includeDescriptionInPdf": "Incluir el mensaje del evento en el PDF",
+        "includeImageInPdf": "Incluir la imagen del evento en el PDF"
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar la configuracion PDF."
+      }
     },
     "ticketTypes": {
       "title": "Tipos de ticket",

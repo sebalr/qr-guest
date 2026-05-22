@@ -206,7 +206,8 @@
     "title": "Event Settings",
     "tabs": {
       "ticketTypes": "Ticket Types",
-      "temporalScanners": "Temporal Scanners"
+      "temporalScanners": "Temporal Scanners",
+      "pdf": "PDF"
     },
     "actions": {
       "saving": "Saving...",
@@ -215,7 +216,8 @@
     },
     "toasts": {
       "linkCopied": "Link copied successfully",
-      "emailSent": "Email sent successfully"
+      "emailSent": "Email sent successfully",
+      "pdfSettingsSaved": "PDF settings saved successfully"
     },
     "errors": {
       "loadFailed": "Failed to load settings data.",
@@ -226,6 +228,21 @@
     "emailTemplate": {
       "subject": "Scanner access for {{eventName}}",
       "body": "Hi {{scannerName}},\n\nUse this link to access the scanner for {{eventName}}:\n{{link}}"
+    },
+    "pdf": {
+      "title": "PDF Settings",
+      "description": "Edit the content shown in generated QR PDFs.",
+      "fields": {
+        "description": "Event message",
+        "descriptionPlaceholder": "Optional message shown below the event title in the PDF",
+        "imageUrl": "Event image URL",
+        "imageUrlPlaceholder": "https://example.com/event-image.jpg",
+        "includeDescriptionInPdf": "Include the event message in the PDF",
+        "includeImageInPdf": "Include the event image in the PDF"
+      },
+      "errors": {
+        "saveFailed": "Failed to save PDF settings."
+      }
     },
     "ticketTypes": {
       "title": "Ticket Types",
