@@ -8,13 +8,18 @@
     "actions": {
       "tools": "Scanner tools",
       "sendingLocalData": "Sending local data...",
-      "sendLocalDataToApi": "Send local device data to API",
+      "sendLocalDataToApi": "Enviar informacion para debug",
       "clearingLocalData": "Clearing local data...",
       "clearLocalEventData": "Clear local event data",
       "resyncing": "Resyncing...",
       "fullResync": "Full Resync",
       "clearing": "Clearing...",
       "clearLocalData": "Clear Local Data"
+    },
+    "debugConfirmDialog": {
+      "title": "Send debug information",
+      "description": "Esta accion no es necesaria para sincronizar la informacion.",
+      "confirm": "Send"
     },
     "feedback": {
       "localDataSent": "Local device event data sent to API.",
@@ -44,7 +49,8 @@
     },
     "clearDataDialog": {
       "title": "Clear local event data?",
-      "description": "This removes local tickets, scans, and sync metadata on this device only. Server data is not affected."
+      "description": "This removes local tickets, scans, and sync metadata on this device only. Server data is not affected.",
+      "warning": "This action cannot be undone."
     },
     "syncStatus": {
       "online": "Online",

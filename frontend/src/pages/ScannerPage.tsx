@@ -119,6 +119,7 @@ export default function ScannerPage() {
 	const [totalCount, setTotalCount] = useState(0);
 	const [unsyncedCount, setUnsyncedCount] = useState(0);
 	const [uploadingDebugData, setUploadingDebugData] = useState(false);
+	const [uploadDebugConfirmDialogOpen, setUploadDebugConfirmDialogOpen] = useState(false);
 	const [clearingLocalData, setClearingLocalData] = useState(false);
 	const [isFullResyncing, setIsFullResyncing] = useState(false);
 	const [clearLocalDataDialogOpen, setClearLocalDataDialogOpen] = useState(false);
@@ -572,7 +573,7 @@ export default function ScannerPage() {
 							variant="ghost"
 							className="w-full justify-start gap-2 text-gray-100 hover:bg-gray-800"
 							disabled={uploadingDebugData || clearingLocalData}
-							onClick={handleUploadDeviceDebugData}>
+							onClick={() => setUploadDebugConfirmDialogOpen(true)}>
 							<UploadCloud className="h-4 w-4" />
 							{uploadingDebugData ? t('scanner.actions.sendingLocalData') : t('scanner.actions.sendLocalDataToApi')}
 						</Button>
@@ -701,6 +702,35 @@ export default function ScannerPage() {
 			)}
 
 			<Dialog
+				open={uploadDebugConfirmDialogOpen}
+				onOpenChange={open => {
+					if (!uploadingDebugData) setUploadDebugConfirmDialogOpen(open);
+				}}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>{t('scanner.debugConfirmDialog.title')}</DialogTitle>
+						<DialogDescription>{t('scanner.debugConfirmDialog.description')}</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							disabled={uploadingDebugData}
+							onClick={() => setUploadDebugConfirmDialogOpen(false)}>
+							{t('common.cancel')}
+						</Button>
+						<Button
+							disabled={uploadingDebugData}
+							onClick={async () => {
+								setUploadDebugConfirmDialogOpen(false);
+								await handleUploadDeviceDebugData();
+							}}>
+							{uploadingDebugData ? t('scanner.actions.sendingLocalData') : t('scanner.debugConfirmDialog.confirm')}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
 				open={clearLocalDataDialogOpen}
 				onOpenChange={open => {
 					if (!clearingLocalData) setClearLocalDataDialogOpen(open);
@@ -710,6 +740,10 @@ export default function ScannerPage() {
 						<DialogTitle>{t('scanner.clearDataDialog.title')}</DialogTitle>
 						<DialogDescription>{t('scanner.clearDataDialog.description')}</DialogDescription>
 					</DialogHeader>
+					<div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+						<AlertTriangle className="h-4 w-4 shrink-0" />
+						{t('scanner.clearDataDialog.warning')}
+					</div>
 					<DialogFooter>
 						<Button
 							variant="outline"
