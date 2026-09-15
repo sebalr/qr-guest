@@ -62,7 +62,14 @@ export const ModelName = {
   Scan: 'Scan',
   DeviceEventDebugData: 'DeviceEventDebugData',
   SyncState: 'SyncState',
-  Guest: 'Guest'
+  Guest: 'Guest',
+  CreditLedger: 'CreditLedger',
+  IssuanceRequest: 'IssuanceRequest',
+  PaymentOrder: 'PaymentOrder',
+  ExchangeRate: 'ExchangeRate',
+  ContactRequest: 'ContactRequest',
+  EventAsset: 'EventAsset',
+  ScanAttempt: 'ScanAttempt'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -83,6 +90,8 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const TenantScalarFieldEnum = {
   id: 'id',
+  freeRemaining: 'freeRemaining',
+  eventsCreated: 'eventsCreated',
   name: 'name',
   plan: 'plan',
   createdAt: 'createdAt'
@@ -130,6 +139,7 @@ export type UserTenantScalarFieldEnum = (typeof UserTenantScalarFieldEnum)[keyof
 export const EventScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
+  paidCredits: 'paidCredits',
   name: 'name',
   description: 'description',
   imageUrl: 'imageUrl',
@@ -241,6 +251,108 @@ export const GuestScalarFieldEnum = {
 } as const
 
 export type GuestScalarFieldEnum = (typeof GuestScalarFieldEnum)[keyof typeof GuestScalarFieldEnum]
+
+
+export const CreditLedgerScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  eventId: 'eventId',
+  kind: 'kind',
+  freeDelta: 'freeDelta',
+  paidDelta: 'paidDelta',
+  reference: 'reference',
+  createdAt: 'createdAt'
+} as const
+
+export type CreditLedgerScalarFieldEnum = (typeof CreditLedgerScalarFieldEnum)[keyof typeof CreditLedgerScalarFieldEnum]
+
+
+export const IssuanceRequestScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  key: 'key',
+  hash: 'hash',
+  result: 'result'
+} as const
+
+export type IssuanceRequestScalarFieldEnum = (typeof IssuanceRequestScalarFieldEnum)[keyof typeof IssuanceRequestScalarFieldEnum]
+
+
+export const PaymentOrderScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  eventId: 'eventId',
+  quantity: 'quantity',
+  amount: 'amount',
+  rate: 'rate',
+  rateAt: 'rateAt',
+  country: 'country',
+  currency: 'currency',
+  provider: 'provider',
+  status: 'status',
+  checkoutUrl: 'checkoutUrl',
+  preferenceId: 'preferenceId',
+  paymentId: 'paymentId',
+  credited: 'credited',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type PaymentOrderScalarFieldEnum = (typeof PaymentOrderScalarFieldEnum)[keyof typeof PaymentOrderScalarFieldEnum]
+
+
+export const ExchangeRateScalarFieldEnum = {
+  id: 'id',
+  rate: 'rate',
+  sourceAt: 'sourceAt',
+  fetchedAt: 'fetchedAt'
+} as const
+
+export type ExchangeRateScalarFieldEnum = (typeof ExchangeRateScalarFieldEnum)[keyof typeof ExchangeRateScalarFieldEnum]
+
+
+export const ContactRequestScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  email: 'email',
+  message: 'message',
+  status: 'status',
+  createdAt: 'createdAt'
+} as const
+
+export type ContactRequestScalarFieldEnum = (typeof ContactRequestScalarFieldEnum)[keyof typeof ContactRequestScalarFieldEnum]
+
+
+export const EventAssetScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  eventId: 'eventId',
+  kind: 'kind',
+  mime: 'mime',
+  bytes: 'bytes',
+  x: 'x',
+  y: 'y',
+  width: 'width',
+  height: 'height'
+} as const
+
+export type EventAssetScalarFieldEnum = (typeof EventAssetScalarFieldEnum)[keyof typeof EventAssetScalarFieldEnum]
+
+
+export const ScanAttemptScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  eventId: 'eventId',
+  ticketId: 'ticketId',
+  deviceId: 'deviceId',
+  userId: 'userId',
+  scannedAt: 'scannedAt',
+  confirmed: 'confirmed',
+  outcome: 'outcome',
+  createdAt: 'createdAt'
+} as const
+
+export type ScanAttemptScalarFieldEnum = (typeof ScanAttemptScalarFieldEnum)[keyof typeof ScanAttemptScalarFieldEnum]
 
 
 export const SortOrder = {

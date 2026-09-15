@@ -13,7 +13,7 @@ export default function QRCodeDisplay({ value, size = 200 }: Props) {
     if (!canvasRef.current) return;
     QRCode.toCanvas(canvasRef.current, value, {
       width: size,
-      margin: 2,
+      margin: 4,
       color: { dark: '#000000', light: '#ffffff' },
     }).catch(() => {});
   }, [value, size]);

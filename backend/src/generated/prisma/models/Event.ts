@@ -27,11 +27,13 @@ export type AggregateEvent = {
 }
 
 export type EventAvgAggregateOutputType = {
+  paidCredits: number | null
   maxGuests: number | null
   version: number | null
 }
 
 export type EventSumAggregateOutputType = {
+  paidCredits: number | null
   maxGuests: number | null
   version: number | null
 }
@@ -39,6 +41,7 @@ export type EventSumAggregateOutputType = {
 export type EventMinAggregateOutputType = {
   id: string | null
   tenantId: string | null
+  paidCredits: number | null
   name: string | null
   description: string | null
   imageUrl: string | null
@@ -57,6 +60,7 @@ export type EventMinAggregateOutputType = {
 export type EventMaxAggregateOutputType = {
   id: string | null
   tenantId: string | null
+  paidCredits: number | null
   name: string | null
   description: string | null
   imageUrl: string | null
@@ -75,6 +79,7 @@ export type EventMaxAggregateOutputType = {
 export type EventCountAggregateOutputType = {
   id: number
   tenantId: number
+  paidCredits: number
   name: number
   description: number
   imageUrl: number
@@ -93,11 +98,13 @@ export type EventCountAggregateOutputType = {
 
 
 export type EventAvgAggregateInputType = {
+  paidCredits?: true
   maxGuests?: true
   version?: true
 }
 
 export type EventSumAggregateInputType = {
+  paidCredits?: true
   maxGuests?: true
   version?: true
 }
@@ -105,6 +112,7 @@ export type EventSumAggregateInputType = {
 export type EventMinAggregateInputType = {
   id?: true
   tenantId?: true
+  paidCredits?: true
   name?: true
   description?: true
   imageUrl?: true
@@ -123,6 +131,7 @@ export type EventMinAggregateInputType = {
 export type EventMaxAggregateInputType = {
   id?: true
   tenantId?: true
+  paidCredits?: true
   name?: true
   description?: true
   imageUrl?: true
@@ -141,6 +150,7 @@ export type EventMaxAggregateInputType = {
 export type EventCountAggregateInputType = {
   id?: true
   tenantId?: true
+  paidCredits?: true
   name?: true
   description?: true
   imageUrl?: true
@@ -246,6 +256,7 @@ export type EventGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 export type EventGroupByOutputType = {
   id: string
   tenantId: string
+  paidCredits: number
   name: string
   description: string | null
   imageUrl: string | null
@@ -287,6 +298,7 @@ export type EventWhereInput = {
   NOT?: Prisma.EventWhereInput | Prisma.EventWhereInput[]
   id?: Prisma.StringFilter<"Event"> | string
   tenantId?: Prisma.StringFilter<"Event"> | string
+  paidCredits?: Prisma.IntFilter<"Event"> | number
   name?: Prisma.StringFilter<"Event"> | string
   description?: Prisma.StringNullableFilter<"Event"> | string | null
   imageUrl?: Prisma.StringNullableFilter<"Event"> | string | null
@@ -300,6 +312,10 @@ export type EventWhereInput = {
   deletedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   version?: Prisma.IntFilter<"Event"> | number
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
+  creditLedger?: Prisma.CreditLedgerListRelationFilter
+  paymentOrders?: Prisma.PaymentOrderListRelationFilter
+  assets?: Prisma.EventAssetListRelationFilter
+  scanAttempts?: Prisma.ScanAttemptListRelationFilter
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   tickets?: Prisma.TicketListRelationFilter
   ticketTypes?: Prisma.TicketTypeListRelationFilter
@@ -312,6 +328,7 @@ export type EventWhereInput = {
 export type EventOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   tenantId?: Prisma.SortOrder
+  paidCredits?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -325,6 +342,10 @@ export type EventOrderByWithRelationInput = {
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   version?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  creditLedger?: Prisma.CreditLedgerOrderByRelationAggregateInput
+  paymentOrders?: Prisma.PaymentOrderOrderByRelationAggregateInput
+  assets?: Prisma.EventAssetOrderByRelationAggregateInput
+  scanAttempts?: Prisma.ScanAttemptOrderByRelationAggregateInput
   tenant?: Prisma.TenantOrderByWithRelationInput
   tickets?: Prisma.TicketOrderByRelationAggregateInput
   ticketTypes?: Prisma.TicketTypeOrderByRelationAggregateInput
@@ -341,6 +362,7 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.EventWhereInput[]
   NOT?: Prisma.EventWhereInput | Prisma.EventWhereInput[]
   tenantId?: Prisma.StringFilter<"Event"> | string
+  paidCredits?: Prisma.IntFilter<"Event"> | number
   name?: Prisma.StringFilter<"Event"> | string
   description?: Prisma.StringNullableFilter<"Event"> | string | null
   imageUrl?: Prisma.StringNullableFilter<"Event"> | string | null
@@ -354,6 +376,10 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
   deletedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   version?: Prisma.IntFilter<"Event"> | number
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
+  creditLedger?: Prisma.CreditLedgerListRelationFilter
+  paymentOrders?: Prisma.PaymentOrderListRelationFilter
+  assets?: Prisma.EventAssetListRelationFilter
+  scanAttempts?: Prisma.ScanAttemptListRelationFilter
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   tickets?: Prisma.TicketListRelationFilter
   ticketTypes?: Prisma.TicketTypeListRelationFilter
@@ -366,6 +392,7 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
 export type EventOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   tenantId?: Prisma.SortOrder
+  paidCredits?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -392,6 +419,7 @@ export type EventScalarWhereWithAggregatesInput = {
   NOT?: Prisma.EventScalarWhereWithAggregatesInput | Prisma.EventScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Event"> | string
   tenantId?: Prisma.StringWithAggregatesFilter<"Event"> | string
+  paidCredits?: Prisma.IntWithAggregatesFilter<"Event"> | number
   name?: Prisma.StringWithAggregatesFilter<"Event"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   imageUrl?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
@@ -409,6 +437,7 @@ export type EventScalarWhereWithAggregatesInput = {
 
 export type EventCreateInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -422,6 +451,10 @@ export type EventCreateInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
@@ -434,6 +467,7 @@ export type EventCreateInput = {
 export type EventUncheckedCreateInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -447,6 +481,10 @@ export type EventUncheckedCreateInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
@@ -457,6 +495,7 @@ export type EventUncheckedCreateInput = {
 
 export type EventUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -470,6 +509,10 @@ export type EventUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
@@ -482,6 +525,7 @@ export type EventUpdateInput = {
 export type EventUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -495,6 +539,10 @@ export type EventUncheckedUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
@@ -506,6 +554,7 @@ export type EventUncheckedUpdateInput = {
 export type EventCreateManyInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -523,6 +572,7 @@ export type EventCreateManyInput = {
 
 export type EventUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -541,6 +591,7 @@ export type EventUpdateManyMutationInput = {
 export type EventUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -574,6 +625,7 @@ export type EventIdTenantIdCompoundUniqueInput = {
 export type EventCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   tenantId?: Prisma.SortOrder
+  paidCredits?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrder
@@ -590,6 +642,7 @@ export type EventCountOrderByAggregateInput = {
 }
 
 export type EventAvgOrderByAggregateInput = {
+  paidCredits?: Prisma.SortOrder
   maxGuests?: Prisma.SortOrder
   version?: Prisma.SortOrder
 }
@@ -597,6 +650,7 @@ export type EventAvgOrderByAggregateInput = {
 export type EventMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   tenantId?: Prisma.SortOrder
+  paidCredits?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrder
@@ -615,6 +669,7 @@ export type EventMaxOrderByAggregateInput = {
 export type EventMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   tenantId?: Prisma.SortOrder
+  paidCredits?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrder
@@ -631,6 +686,7 @@ export type EventMinOrderByAggregateInput = {
 }
 
 export type EventSumOrderByAggregateInput = {
+  paidCredits?: Prisma.SortOrder
   maxGuests?: Prisma.SortOrder
   version?: Prisma.SortOrder
 }
@@ -684,14 +740,6 @@ export type EventUncheckedUpdateManyWithoutTenantNestedInput = {
 
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
-export type IntFieldUpdateOperationsInput = {
-  set?: number
   increment?: number
   decrement?: number
   multiply?: number
@@ -782,8 +830,65 @@ export type EventUpdateOneRequiredWithoutSyncStatesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutSyncStatesInput, Prisma.EventUpdateWithoutSyncStatesInput>, Prisma.EventUncheckedUpdateWithoutSyncStatesInput>
 }
 
+export type EventCreateNestedOneWithoutCreditLedgerInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutCreditLedgerInput, Prisma.EventUncheckedCreateWithoutCreditLedgerInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutCreditLedgerInput
+  connect?: Prisma.EventWhereUniqueInput
+}
+
+export type EventUpdateOneRequiredWithoutCreditLedgerNestedInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutCreditLedgerInput, Prisma.EventUncheckedCreateWithoutCreditLedgerInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutCreditLedgerInput
+  upsert?: Prisma.EventUpsertWithoutCreditLedgerInput
+  connect?: Prisma.EventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutCreditLedgerInput, Prisma.EventUpdateWithoutCreditLedgerInput>, Prisma.EventUncheckedUpdateWithoutCreditLedgerInput>
+}
+
+export type EventCreateNestedOneWithoutPaymentOrdersInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutPaymentOrdersInput, Prisma.EventUncheckedCreateWithoutPaymentOrdersInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutPaymentOrdersInput
+  connect?: Prisma.EventWhereUniqueInput
+}
+
+export type EventUpdateOneRequiredWithoutPaymentOrdersNestedInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutPaymentOrdersInput, Prisma.EventUncheckedCreateWithoutPaymentOrdersInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutPaymentOrdersInput
+  upsert?: Prisma.EventUpsertWithoutPaymentOrdersInput
+  connect?: Prisma.EventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutPaymentOrdersInput, Prisma.EventUpdateWithoutPaymentOrdersInput>, Prisma.EventUncheckedUpdateWithoutPaymentOrdersInput>
+}
+
+export type EventCreateNestedOneWithoutAssetsInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutAssetsInput, Prisma.EventUncheckedCreateWithoutAssetsInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutAssetsInput
+  connect?: Prisma.EventWhereUniqueInput
+}
+
+export type EventUpdateOneRequiredWithoutAssetsNestedInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutAssetsInput, Prisma.EventUncheckedCreateWithoutAssetsInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutAssetsInput
+  upsert?: Prisma.EventUpsertWithoutAssetsInput
+  connect?: Prisma.EventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutAssetsInput, Prisma.EventUpdateWithoutAssetsInput>, Prisma.EventUncheckedUpdateWithoutAssetsInput>
+}
+
+export type EventCreateNestedOneWithoutScanAttemptsInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutScanAttemptsInput, Prisma.EventUncheckedCreateWithoutScanAttemptsInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutScanAttemptsInput
+  connect?: Prisma.EventWhereUniqueInput
+}
+
+export type EventUpdateOneRequiredWithoutScanAttemptsNestedInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutScanAttemptsInput, Prisma.EventUncheckedCreateWithoutScanAttemptsInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutScanAttemptsInput
+  upsert?: Prisma.EventUpsertWithoutScanAttemptsInput
+  connect?: Prisma.EventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutScanAttemptsInput, Prisma.EventUpdateWithoutScanAttemptsInput>, Prisma.EventUncheckedUpdateWithoutScanAttemptsInput>
+}
+
 export type EventCreateWithoutTenantInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -797,6 +902,10 @@ export type EventCreateWithoutTenantInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutEventInput
@@ -807,6 +916,7 @@ export type EventCreateWithoutTenantInput = {
 
 export type EventUncheckedCreateWithoutTenantInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -820,6 +930,10 @@ export type EventUncheckedCreateWithoutTenantInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
@@ -860,6 +974,7 @@ export type EventScalarWhereInput = {
   NOT?: Prisma.EventScalarWhereInput | Prisma.EventScalarWhereInput[]
   id?: Prisma.StringFilter<"Event"> | string
   tenantId?: Prisma.StringFilter<"Event"> | string
+  paidCredits?: Prisma.IntFilter<"Event"> | number
   name?: Prisma.StringFilter<"Event"> | string
   description?: Prisma.StringNullableFilter<"Event"> | string | null
   imageUrl?: Prisma.StringNullableFilter<"Event"> | string | null
@@ -877,6 +992,7 @@ export type EventScalarWhereInput = {
 
 export type EventCreateWithoutTicketsInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -890,6 +1006,10 @@ export type EventCreateWithoutTicketsInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
   ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutEventInput
@@ -901,6 +1021,7 @@ export type EventCreateWithoutTicketsInput = {
 export type EventUncheckedCreateWithoutTicketsInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -914,6 +1035,10 @@ export type EventUncheckedCreateWithoutTicketsInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutEventInput
@@ -939,6 +1064,7 @@ export type EventUpdateToOneWithWhereWithoutTicketsInput = {
 
 export type EventUpdateWithoutTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -952,6 +1078,10 @@ export type EventUpdateWithoutTicketsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
   ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutEventNestedInput
@@ -963,6 +1093,7 @@ export type EventUpdateWithoutTicketsInput = {
 export type EventUncheckedUpdateWithoutTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -976,6 +1107,10 @@ export type EventUncheckedUpdateWithoutTicketsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutEventNestedInput
@@ -985,6 +1120,7 @@ export type EventUncheckedUpdateWithoutTicketsInput = {
 
 export type EventCreateWithoutTemporaryScannersInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -998,6 +1134,10 @@ export type EventCreateWithoutTemporaryScannersInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
@@ -1009,6 +1149,7 @@ export type EventCreateWithoutTemporaryScannersInput = {
 export type EventUncheckedCreateWithoutTemporaryScannersInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1022,6 +1163,10 @@ export type EventUncheckedCreateWithoutTemporaryScannersInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutEventInput
@@ -1047,6 +1192,7 @@ export type EventUpdateToOneWithWhereWithoutTemporaryScannersInput = {
 
 export type EventUpdateWithoutTemporaryScannersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1060,6 +1206,10 @@ export type EventUpdateWithoutTemporaryScannersInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
@@ -1071,6 +1221,7 @@ export type EventUpdateWithoutTemporaryScannersInput = {
 export type EventUncheckedUpdateWithoutTemporaryScannersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1084,6 +1235,10 @@ export type EventUncheckedUpdateWithoutTemporaryScannersInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutEventNestedInput
@@ -1093,6 +1248,7 @@ export type EventUncheckedUpdateWithoutTemporaryScannersInput = {
 
 export type EventCreateWithoutTicketTypesInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1106,6 +1262,10 @@ export type EventCreateWithoutTicketTypesInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutEventInput
@@ -1117,6 +1277,7 @@ export type EventCreateWithoutTicketTypesInput = {
 export type EventUncheckedCreateWithoutTicketTypesInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1130,6 +1291,10 @@ export type EventUncheckedCreateWithoutTicketTypesInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutEventInput
@@ -1155,6 +1320,7 @@ export type EventUpdateToOneWithWhereWithoutTicketTypesInput = {
 
 export type EventUpdateWithoutTicketTypesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1168,6 +1334,10 @@ export type EventUpdateWithoutTicketTypesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutEventNestedInput
@@ -1179,6 +1349,7 @@ export type EventUpdateWithoutTicketTypesInput = {
 export type EventUncheckedUpdateWithoutTicketTypesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1192,6 +1363,10 @@ export type EventUncheckedUpdateWithoutTicketTypesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutEventNestedInput
@@ -1201,6 +1376,7 @@ export type EventUncheckedUpdateWithoutTicketTypesInput = {
 
 export type EventCreateWithoutScansInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1214,6 +1390,10 @@ export type EventCreateWithoutScansInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
@@ -1225,6 +1405,7 @@ export type EventCreateWithoutScansInput = {
 export type EventUncheckedCreateWithoutScansInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1238,6 +1419,10 @@ export type EventUncheckedCreateWithoutScansInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
@@ -1263,6 +1448,7 @@ export type EventUpdateToOneWithWhereWithoutScansInput = {
 
 export type EventUpdateWithoutScansInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1276,6 +1462,10 @@ export type EventUpdateWithoutScansInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
@@ -1287,6 +1477,7 @@ export type EventUpdateWithoutScansInput = {
 export type EventUncheckedUpdateWithoutScansInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1300,6 +1491,10 @@ export type EventUncheckedUpdateWithoutScansInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
@@ -1309,6 +1504,7 @@ export type EventUncheckedUpdateWithoutScansInput = {
 
 export type EventCreateWithoutDebugDataInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1322,6 +1518,10 @@ export type EventCreateWithoutDebugDataInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
@@ -1333,6 +1533,7 @@ export type EventCreateWithoutDebugDataInput = {
 export type EventUncheckedCreateWithoutDebugDataInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1346,6 +1547,10 @@ export type EventUncheckedCreateWithoutDebugDataInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
@@ -1371,6 +1576,7 @@ export type EventUpdateToOneWithWhereWithoutDebugDataInput = {
 
 export type EventUpdateWithoutDebugDataInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1384,6 +1590,10 @@ export type EventUpdateWithoutDebugDataInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
@@ -1395,6 +1605,7 @@ export type EventUpdateWithoutDebugDataInput = {
 export type EventUncheckedUpdateWithoutDebugDataInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1408,6 +1619,10 @@ export type EventUncheckedUpdateWithoutDebugDataInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
@@ -1417,6 +1632,7 @@ export type EventUncheckedUpdateWithoutDebugDataInput = {
 
 export type EventCreateWithoutSyncStatesInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1430,6 +1646,10 @@ export type EventCreateWithoutSyncStatesInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
   tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
   tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
@@ -1441,6 +1661,7 @@ export type EventCreateWithoutSyncStatesInput = {
 export type EventUncheckedCreateWithoutSyncStatesInput = {
   id?: string
   tenantId: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1454,6 +1675,10 @@ export type EventUncheckedCreateWithoutSyncStatesInput = {
   deletedAt?: Date | string | null
   version?: number
   createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
   ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
@@ -1479,6 +1704,7 @@ export type EventUpdateToOneWithWhereWithoutSyncStatesInput = {
 
 export type EventUpdateWithoutSyncStatesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1492,6 +1718,10 @@ export type EventUpdateWithoutSyncStatesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
@@ -1503,6 +1733,7 @@ export type EventUpdateWithoutSyncStatesInput = {
 export type EventUncheckedUpdateWithoutSyncStatesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1516,6 +1747,10 @@ export type EventUncheckedUpdateWithoutSyncStatesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
@@ -1523,8 +1758,521 @@ export type EventUncheckedUpdateWithoutSyncStatesInput = {
   debugData?: Prisma.DeviceEventDebugDataUncheckedUpdateManyWithoutEventNestedInput
 }
 
+export type EventCreateWithoutCreditLedgerInput = {
+  id?: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
+  tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
+  tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataCreateNestedManyWithoutEventInput
+}
+
+export type EventUncheckedCreateWithoutCreditLedgerInput = {
+  id?: string
+  tenantId: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateUncheckedCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedCreateNestedManyWithoutEventInput
+}
+
+export type EventCreateOrConnectWithoutCreditLedgerInput = {
+  where: Prisma.EventWhereUniqueInput
+  create: Prisma.XOR<Prisma.EventCreateWithoutCreditLedgerInput, Prisma.EventUncheckedCreateWithoutCreditLedgerInput>
+}
+
+export type EventUpsertWithoutCreditLedgerInput = {
+  update: Prisma.XOR<Prisma.EventUpdateWithoutCreditLedgerInput, Prisma.EventUncheckedUpdateWithoutCreditLedgerInput>
+  create: Prisma.XOR<Prisma.EventCreateWithoutCreditLedgerInput, Prisma.EventUncheckedCreateWithoutCreditLedgerInput>
+  where?: Prisma.EventWhereInput
+}
+
+export type EventUpdateToOneWithWhereWithoutCreditLedgerInput = {
+  where?: Prisma.EventWhereInput
+  data: Prisma.XOR<Prisma.EventUpdateWithoutCreditLedgerInput, Prisma.EventUncheckedUpdateWithoutCreditLedgerInput>
+}
+
+export type EventUpdateWithoutCreditLedgerInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
+  tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUpdateManyWithoutEventNestedInput
+}
+
+export type EventUncheckedUpdateWithoutCreditLedgerInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUncheckedUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedUpdateManyWithoutEventNestedInput
+}
+
+export type EventCreateWithoutPaymentOrdersInput = {
+  id?: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
+  tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
+  tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataCreateNestedManyWithoutEventInput
+}
+
+export type EventUncheckedCreateWithoutPaymentOrdersInput = {
+  id?: string
+  tenantId: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateUncheckedCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedCreateNestedManyWithoutEventInput
+}
+
+export type EventCreateOrConnectWithoutPaymentOrdersInput = {
+  where: Prisma.EventWhereUniqueInput
+  create: Prisma.XOR<Prisma.EventCreateWithoutPaymentOrdersInput, Prisma.EventUncheckedCreateWithoutPaymentOrdersInput>
+}
+
+export type EventUpsertWithoutPaymentOrdersInput = {
+  update: Prisma.XOR<Prisma.EventUpdateWithoutPaymentOrdersInput, Prisma.EventUncheckedUpdateWithoutPaymentOrdersInput>
+  create: Prisma.XOR<Prisma.EventCreateWithoutPaymentOrdersInput, Prisma.EventUncheckedCreateWithoutPaymentOrdersInput>
+  where?: Prisma.EventWhereInput
+}
+
+export type EventUpdateToOneWithWhereWithoutPaymentOrdersInput = {
+  where?: Prisma.EventWhereInput
+  data: Prisma.XOR<Prisma.EventUpdateWithoutPaymentOrdersInput, Prisma.EventUncheckedUpdateWithoutPaymentOrdersInput>
+}
+
+export type EventUpdateWithoutPaymentOrdersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
+  tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUpdateManyWithoutEventNestedInput
+}
+
+export type EventUncheckedUpdateWithoutPaymentOrdersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUncheckedUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedUpdateManyWithoutEventNestedInput
+}
+
+export type EventCreateWithoutAssetsInput = {
+  id?: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutEventInput
+  tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
+  tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataCreateNestedManyWithoutEventInput
+}
+
+export type EventUncheckedCreateWithoutAssetsInput = {
+  id?: string
+  tenantId: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutEventInput
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateUncheckedCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedCreateNestedManyWithoutEventInput
+}
+
+export type EventCreateOrConnectWithoutAssetsInput = {
+  where: Prisma.EventWhereUniqueInput
+  create: Prisma.XOR<Prisma.EventCreateWithoutAssetsInput, Prisma.EventUncheckedCreateWithoutAssetsInput>
+}
+
+export type EventUpsertWithoutAssetsInput = {
+  update: Prisma.XOR<Prisma.EventUpdateWithoutAssetsInput, Prisma.EventUncheckedUpdateWithoutAssetsInput>
+  create: Prisma.XOR<Prisma.EventCreateWithoutAssetsInput, Prisma.EventUncheckedCreateWithoutAssetsInput>
+  where?: Prisma.EventWhereInput
+}
+
+export type EventUpdateToOneWithWhereWithoutAssetsInput = {
+  where?: Prisma.EventWhereInput
+  data: Prisma.XOR<Prisma.EventUpdateWithoutAssetsInput, Prisma.EventUncheckedUpdateWithoutAssetsInput>
+}
+
+export type EventUpdateWithoutAssetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
+  tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUpdateManyWithoutEventNestedInput
+}
+
+export type EventUncheckedUpdateWithoutAssetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUncheckedUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedUpdateManyWithoutEventNestedInput
+}
+
+export type EventCreateWithoutScanAttemptsInput = {
+  id?: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetCreateNestedManyWithoutEventInput
+  tenant: Prisma.TenantCreateNestedOneWithoutEventsInput
+  tickets?: Prisma.TicketCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataCreateNestedManyWithoutEventInput
+}
+
+export type EventUncheckedCreateWithoutScanAttemptsInput = {
+  id?: string
+  tenantId: string
+  paidCredits?: number
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  includeDescriptionInPdf?: boolean
+  includeImageInPdf?: boolean
+  maxGuests?: number | null
+  startsAt?: Date | string | null
+  endsAt?: Date | string | null
+  archivedAt?: Date | string | null
+  isDeleted?: boolean
+  deletedAt?: Date | string | null
+  version?: number
+  createdAt?: Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedCreateNestedManyWithoutEventInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedCreateNestedManyWithoutEventInput
+  assets?: Prisma.EventAssetUncheckedCreateNestedManyWithoutEventInput
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutEventInput
+  ticketTypes?: Prisma.TicketTypeUncheckedCreateNestedManyWithoutEventInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutEventInput
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutEventInput
+  syncStates?: Prisma.SyncStateUncheckedCreateNestedManyWithoutEventInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedCreateNestedManyWithoutEventInput
+}
+
+export type EventCreateOrConnectWithoutScanAttemptsInput = {
+  where: Prisma.EventWhereUniqueInput
+  create: Prisma.XOR<Prisma.EventCreateWithoutScanAttemptsInput, Prisma.EventUncheckedCreateWithoutScanAttemptsInput>
+}
+
+export type EventUpsertWithoutScanAttemptsInput = {
+  update: Prisma.XOR<Prisma.EventUpdateWithoutScanAttemptsInput, Prisma.EventUncheckedUpdateWithoutScanAttemptsInput>
+  create: Prisma.XOR<Prisma.EventCreateWithoutScanAttemptsInput, Prisma.EventUncheckedCreateWithoutScanAttemptsInput>
+  where?: Prisma.EventWhereInput
+}
+
+export type EventUpdateToOneWithWhereWithoutScanAttemptsInput = {
+  where?: Prisma.EventWhereInput
+  data: Prisma.XOR<Prisma.EventUpdateWithoutScanAttemptsInput, Prisma.EventUncheckedUpdateWithoutScanAttemptsInput>
+}
+
+export type EventUpdateWithoutScanAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutEventsNestedInput
+  tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUpdateManyWithoutEventNestedInput
+}
+
+export type EventUncheckedUpdateWithoutScanAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includeDescriptionInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  includeImageInPdf?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  maxGuests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
+  ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
+  temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutEventNestedInput
+  syncStates?: Prisma.SyncStateUncheckedUpdateManyWithoutEventNestedInput
+  debugData?: Prisma.DeviceEventDebugDataUncheckedUpdateManyWithoutEventNestedInput
+}
+
 export type EventCreateManyTenantInput = {
   id?: string
+  paidCredits?: number
   name: string
   description?: string | null
   imageUrl?: string | null
@@ -1542,6 +2290,7 @@ export type EventCreateManyTenantInput = {
 
 export type EventUpdateWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1555,6 +2304,10 @@ export type EventUpdateWithoutTenantInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutEventNestedInput
@@ -1565,6 +2318,7 @@ export type EventUpdateWithoutTenantInput = {
 
 export type EventUncheckedUpdateWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1578,6 +2332,10 @@ export type EventUncheckedUpdateWithoutTenantInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditLedger?: Prisma.CreditLedgerUncheckedUpdateManyWithoutEventNestedInput
+  paymentOrders?: Prisma.PaymentOrderUncheckedUpdateManyWithoutEventNestedInput
+  assets?: Prisma.EventAssetUncheckedUpdateManyWithoutEventNestedInput
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutEventNestedInput
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutEventNestedInput
   ticketTypes?: Prisma.TicketTypeUncheckedUpdateManyWithoutEventNestedInput
   temporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutEventNestedInput
@@ -1588,6 +2346,7 @@ export type EventUncheckedUpdateWithoutTenantInput = {
 
 export type EventUncheckedUpdateManyWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1609,6 +2368,10 @@ export type EventUncheckedUpdateManyWithoutTenantInput = {
  */
 
 export type EventCountOutputType = {
+  creditLedger: number
+  paymentOrders: number
+  assets: number
+  scanAttempts: number
   tickets: number
   ticketTypes: number
   temporaryScanners: number
@@ -1618,6 +2381,10 @@ export type EventCountOutputType = {
 }
 
 export type EventCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  creditLedger?: boolean | EventCountOutputTypeCountCreditLedgerArgs
+  paymentOrders?: boolean | EventCountOutputTypeCountPaymentOrdersArgs
+  assets?: boolean | EventCountOutputTypeCountAssetsArgs
+  scanAttempts?: boolean | EventCountOutputTypeCountScanAttemptsArgs
   tickets?: boolean | EventCountOutputTypeCountTicketsArgs
   ticketTypes?: boolean | EventCountOutputTypeCountTicketTypesArgs
   temporaryScanners?: boolean | EventCountOutputTypeCountTemporaryScannersArgs
@@ -1634,6 +2401,34 @@ export type EventCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
    * Select specific fields to fetch from the EventCountOutputType
    */
   select?: Prisma.EventCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * EventCountOutputType without action
+ */
+export type EventCountOutputTypeCountCreditLedgerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CreditLedgerWhereInput
+}
+
+/**
+ * EventCountOutputType without action
+ */
+export type EventCountOutputTypeCountPaymentOrdersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PaymentOrderWhereInput
+}
+
+/**
+ * EventCountOutputType without action
+ */
+export type EventCountOutputTypeCountAssetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EventAssetWhereInput
+}
+
+/**
+ * EventCountOutputType without action
+ */
+export type EventCountOutputTypeCountScanAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ScanAttemptWhereInput
 }
 
 /**
@@ -1682,6 +2477,7 @@ export type EventCountOutputTypeCountDebugDataArgs<ExtArgs extends runtime.Types
 export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   tenantId?: boolean
+  paidCredits?: boolean
   name?: boolean
   description?: boolean
   imageUrl?: boolean
@@ -1695,6 +2491,10 @@ export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   deletedAt?: boolean
   version?: boolean
   createdAt?: boolean
+  creditLedger?: boolean | Prisma.Event$creditLedgerArgs<ExtArgs>
+  paymentOrders?: boolean | Prisma.Event$paymentOrdersArgs<ExtArgs>
+  assets?: boolean | Prisma.Event$assetsArgs<ExtArgs>
+  scanAttempts?: boolean | Prisma.Event$scanAttemptsArgs<ExtArgs>
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   tickets?: boolean | Prisma.Event$ticketsArgs<ExtArgs>
   ticketTypes?: boolean | Prisma.Event$ticketTypesArgs<ExtArgs>
@@ -1708,6 +2508,7 @@ export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type EventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   tenantId?: boolean
+  paidCredits?: boolean
   name?: boolean
   description?: boolean
   imageUrl?: boolean
@@ -1727,6 +2528,7 @@ export type EventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type EventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   tenantId?: boolean
+  paidCredits?: boolean
   name?: boolean
   description?: boolean
   imageUrl?: boolean
@@ -1746,6 +2548,7 @@ export type EventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type EventSelectScalar = {
   id?: boolean
   tenantId?: boolean
+  paidCredits?: boolean
   name?: boolean
   description?: boolean
   imageUrl?: boolean
@@ -1761,8 +2564,12 @@ export type EventSelectScalar = {
   createdAt?: boolean
 }
 
-export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "name" | "description" | "imageUrl" | "includeDescriptionInPdf" | "includeImageInPdf" | "maxGuests" | "startsAt" | "endsAt" | "archivedAt" | "isDeleted" | "deletedAt" | "version" | "createdAt", ExtArgs["result"]["event"]>
+export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "paidCredits" | "name" | "description" | "imageUrl" | "includeDescriptionInPdf" | "includeImageInPdf" | "maxGuests" | "startsAt" | "endsAt" | "archivedAt" | "isDeleted" | "deletedAt" | "version" | "createdAt", ExtArgs["result"]["event"]>
 export type EventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  creditLedger?: boolean | Prisma.Event$creditLedgerArgs<ExtArgs>
+  paymentOrders?: boolean | Prisma.Event$paymentOrdersArgs<ExtArgs>
+  assets?: boolean | Prisma.Event$assetsArgs<ExtArgs>
+  scanAttempts?: boolean | Prisma.Event$scanAttemptsArgs<ExtArgs>
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   tickets?: boolean | Prisma.Event$ticketsArgs<ExtArgs>
   ticketTypes?: boolean | Prisma.Event$ticketTypesArgs<ExtArgs>
@@ -1782,6 +2589,10 @@ export type EventIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
 export type $EventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Event"
   objects: {
+    creditLedger: Prisma.$CreditLedgerPayload<ExtArgs>[]
+    paymentOrders: Prisma.$PaymentOrderPayload<ExtArgs>[]
+    assets: Prisma.$EventAssetPayload<ExtArgs>[]
+    scanAttempts: Prisma.$ScanAttemptPayload<ExtArgs>[]
     tenant: Prisma.$TenantPayload<ExtArgs>
     tickets: Prisma.$TicketPayload<ExtArgs>[]
     ticketTypes: Prisma.$TicketTypePayload<ExtArgs>[]
@@ -1793,6 +2604,7 @@ export type $EventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     tenantId: string
+    paidCredits: number
     name: string
     description: string | null
     imageUrl: string | null
@@ -2200,6 +3012,10 @@ readonly fields: EventFieldRefs;
  */
 export interface Prisma__EventClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  creditLedger<T extends Prisma.Event$creditLedgerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$creditLedgerArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CreditLedgerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  paymentOrders<T extends Prisma.Event$paymentOrdersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$paymentOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  assets<T extends Prisma.Event$assetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$assetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventAssetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  scanAttempts<T extends Prisma.Event$scanAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$scanAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ScanAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tenant<T extends Prisma.TenantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TenantDefaultArgs<ExtArgs>>): Prisma.Prisma__TenantClient<runtime.Types.Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   tickets<T extends Prisma.Event$ticketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$ticketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   ticketTypes<T extends Prisma.Event$ticketTypesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$ticketTypesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TicketTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2238,6 +3054,7 @@ export interface Prisma__EventClient<T, Null = never, ExtArgs extends runtime.Ty
 export interface EventFieldRefs {
   readonly id: Prisma.FieldRef<"Event", 'String'>
   readonly tenantId: Prisma.FieldRef<"Event", 'String'>
+  readonly paidCredits: Prisma.FieldRef<"Event", 'Int'>
   readonly name: Prisma.FieldRef<"Event", 'String'>
   readonly description: Prisma.FieldRef<"Event", 'String'>
   readonly imageUrl: Prisma.FieldRef<"Event", 'String'>
@@ -2649,6 +3466,102 @@ export type EventDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Events to delete.
    */
   limit?: number
+}
+
+/**
+ * Event.creditLedger
+ */
+export type Event$creditLedgerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CreditLedger
+   */
+  select?: Prisma.CreditLedgerSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CreditLedger
+   */
+  omit?: Prisma.CreditLedgerOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CreditLedgerInclude<ExtArgs> | null
+  where?: Prisma.CreditLedgerWhereInput
+  orderBy?: Prisma.CreditLedgerOrderByWithRelationInput | Prisma.CreditLedgerOrderByWithRelationInput[]
+  cursor?: Prisma.CreditLedgerWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CreditLedgerScalarFieldEnum | Prisma.CreditLedgerScalarFieldEnum[]
+}
+
+/**
+ * Event.paymentOrders
+ */
+export type Event$paymentOrdersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PaymentOrder
+   */
+  select?: Prisma.PaymentOrderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PaymentOrder
+   */
+  omit?: Prisma.PaymentOrderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PaymentOrderInclude<ExtArgs> | null
+  where?: Prisma.PaymentOrderWhereInput
+  orderBy?: Prisma.PaymentOrderOrderByWithRelationInput | Prisma.PaymentOrderOrderByWithRelationInput[]
+  cursor?: Prisma.PaymentOrderWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PaymentOrderScalarFieldEnum | Prisma.PaymentOrderScalarFieldEnum[]
+}
+
+/**
+ * Event.assets
+ */
+export type Event$assetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EventAsset
+   */
+  select?: Prisma.EventAssetSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the EventAsset
+   */
+  omit?: Prisma.EventAssetOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EventAssetInclude<ExtArgs> | null
+  where?: Prisma.EventAssetWhereInput
+  orderBy?: Prisma.EventAssetOrderByWithRelationInput | Prisma.EventAssetOrderByWithRelationInput[]
+  cursor?: Prisma.EventAssetWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EventAssetScalarFieldEnum | Prisma.EventAssetScalarFieldEnum[]
+}
+
+/**
+ * Event.scanAttempts
+ */
+export type Event$scanAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ScanAttempt
+   */
+  select?: Prisma.ScanAttemptSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ScanAttempt
+   */
+  omit?: Prisma.ScanAttemptOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ScanAttemptInclude<ExtArgs> | null
+  where?: Prisma.ScanAttemptWhereInput
+  orderBy?: Prisma.ScanAttemptOrderByWithRelationInput | Prisma.ScanAttemptOrderByWithRelationInput[]
+  cursor?: Prisma.ScanAttemptWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ScanAttemptScalarFieldEnum | Prisma.ScanAttemptScalarFieldEnum[]
 }
 
 /**

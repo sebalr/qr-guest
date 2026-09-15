@@ -1,0 +1,54 @@
+# Deploy after both GitHub image workflows succeed. No build runs on the server.
+services:
+  migrate:
+    image: ghcr.io/sebalr/tiqra/backend:${IMAGE_TAG:?Set the same sha tag for both images}
+    pull_policy: always
+    restart: 'no'
+    environment:
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?Set the migration database URL}
+    command: ["npx", "prisma", "migrate", "deploy"]
+
+  backend:
+    image: ghcr.io/sebalr/tiqra/backend:${IMAGE_TAG:?Set the same sha tag for both images}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      QR_SECRET: ${QR_SECRET}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MP_MERCHANT_ID: ${MP_MERCHANT_ID:-}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      MP_WEBHOOK_URL: ${MP_WEBHOOK_URL:-}
+      MP_SANDBOX: ${MP_SANDBOX:-true}
+      PAYMENT_RECONCILE_MS: ${PAYMENT_RECONCILE_MS:-60000}
+      PORT: 3000
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:-${FRONTEND_URL}}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+      RECAPTCHA_PROJECT_ID: ${RECAPTCHA_PROJECT_ID:-}
+      RECAPTCHA_API_KEY: ${RECAPTCHA_API_KEY:-}
+      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:-}
+    expose:
+      - '3000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: sh -c "node dist/index.js"
+
+  frontend:
+    image: ghcr.io/sebalr/tiqra/frontend:${IMAGE_TAG:?Set the same sha tag for both images}
+    pull_policy: always
+    restart: unless-stopped
+    expose:
+      - '80'
+    depends_on:
+      backend:
+        condition: service_healthy

@@ -1,768 +1,704 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { BrowserQRCodeReader, IScannerControls } from '@zxing/browser';
-import { db, LocalTicket, LocalScan } from '../db';
-import { postScanApi, syncApi, uploadDeviceEventDebugDataApi } from '../api';
-import { useAuth } from '../auth/AuthContext';
-import DuplicateDialog from '../components/DuplicateDialog';
-import SyncStatus from '../components/SyncStatus';
-import { createSyncPayload, mapSyncResponseToLocal, parseQRPayload, resolveMetaForSync } from '../lib/scannerLogic';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, RefreshCw, AlertTriangle, Camera, MoreVertical, UploadCloud, Trash2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-
-function getDeviceId(): string {
-	let id = localStorage.getItem('device_id');
-	if (!id) {
-		id = crypto.randomUUID();
-		localStorage.setItem('device_id', id);
-	}
-	return id;
-}
-
-/** Safe meta reader — returns sensible defaults on any corruption. */
-async function getMeta() {
-	try {
-		const [ver, ticketIdCursor, cursor, scanIdCursor, lastSync] = await Promise.all([
-			db.meta.get('last_ticket_version'),
-			db.meta.get('last_ticket_id_cursor'),
-			db.meta.get('last_scan_cursor'),
-			db.meta.get('last_scan_id_cursor'),
-			db.meta.get('last_sync_at'),
-		]);
-		return {
-			last_ticket_version: typeof ver?.value === 'number' ? ver.value : 0,
-			last_ticket_id_cursor: typeof ticketIdCursor?.value === 'string' ? ticketIdCursor.value : '',
-			last_scan_cursor: typeof cursor?.value === 'string' ? cursor.value : new Date(0).toISOString(),
-			last_scan_id_cursor: typeof scanIdCursor?.value === 'string' ? scanIdCursor.value : '',
-			last_sync_at: typeof lastSync?.value === 'string' ? lastSync.value : null,
-		};
-	} catch {
-		// If IndexedDB meta is corrupted, return safe defaults
-		return {
-			last_ticket_version: 0,
-			last_ticket_id_cursor: '',
-			last_scan_cursor: new Date(0).toISOString(),
-			last_scan_id_cursor: '',
-			last_sync_at: null,
-		};
-	}
-}
-
-async function updateMeta(data: {
-	newTicketVersion?: number;
-	newTicketIdCursor?: string;
-	newScanCursor?: string;
-	newScanIdCursor?: string;
-}) {
-	try {
-		if (data.newTicketVersion != null) {
-			await db.meta.put({ key: 'last_ticket_version', value: data.newTicketVersion });
-		}
-		if (typeof data.newTicketIdCursor === 'string') {
-			await db.meta.put({ key: 'last_ticket_id_cursor', value: data.newTicketIdCursor });
-		}
-		if (data.newScanCursor) {
-			await db.meta.put({ key: 'last_scan_cursor', value: data.newScanCursor });
-		}
-		if (typeof data.newScanIdCursor === 'string') {
-			await db.meta.put({ key: 'last_scan_id_cursor', value: data.newScanIdCursor });
-		}
-		await db.meta.put({ key: 'last_sync_at', value: new Date().toISOString() });
-	} catch {
-		// Meta write failure is non-critical — data is already saved
-	}
-}
-
-type ScanState = 'idle' | 'success' | 'error';
-
-const SYNC_BATCH_SIZE = 150;
-
-function isLikelyIndexedDbError(error: unknown): boolean {
-	if (!(error instanceof Error)) return false;
-	const details = `${error.name} ${error.message}`.toLowerCase();
-	return details.includes('dexie') || details.includes('indexeddb') || details.includes('idb') || details.includes('database');
-}
-
-function chunkArray<T>(items: T[], chunkSize: number): T[][] {
-	if (chunkSize <= 0) return [items];
-	const chunks: T[][] = [];
-	for (let i = 0; i < items.length; i += chunkSize) {
-		chunks.push(items.slice(i, i + chunkSize));
-	}
-	return chunks;
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { BrowserQRCodeReader } from "@zxing/browser";
+import { useTranslation } from "react-i18next";
+import axios from "axios";
+import { useAuth } from "../auth/AuthContext";
+import { getScannerDb, LocalScan, LocalTicket } from "../db";
+import {
+  OfflinePermit,
+  postScanApi,
+  syncApi,
+  uploadDeviceEventDebugDataApi,
+} from "../api";
+import { parseQRPayload } from "../lib/scannerLogic";
+import {
+  acceptsAdmission,
+  fingerprint,
+  verifyOfflinePermit,
+} from "../lib/offlineAccess";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function ScannerPage() {
-	const { id: eventId } = useParams<{ id: string }>();
-	const navigate = useNavigate();
-	const { t } = useTranslation();
-	const { user } = useAuth();
-
-	const videoRef = useRef<HTMLVideoElement>(null);
-	const controlsRef = useRef<IScannerControls | null>(null);
-	const lastScannedRef = useRef<string>('');
-	const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	// Prevents concurrent syncs — if a sync takes longer than the interval, we skip
-	const syncInProgressRef = useRef(false);
-
-	const [scanState, setScanState] = useState<ScanState>('idle');
-	const [message, setMessage] = useState('');
-	const [cameraError, setCameraError] = useState('');
-	const [online, setOnline] = useState(navigator.onLine);
-	const [lastSync, setLastSync] = useState<string | null>(null);
-	const [syncError, setSyncError] = useState<string | null>(null);
-	const [scannedCount, setScannedCount] = useState(0);
-	const [totalCount, setTotalCount] = useState(0);
-	const [unsyncedCount, setUnsyncedCount] = useState(0);
-	const [uploadingDebugData, setUploadingDebugData] = useState(false);
-	const [uploadDebugConfirmDialogOpen, setUploadDebugConfirmDialogOpen] = useState(false);
-	const [clearingLocalData, setClearingLocalData] = useState(false);
-	const [isFullResyncing, setIsFullResyncing] = useState(false);
-	const [clearLocalDataDialogOpen, setClearLocalDataDialogOpen] = useState(false);
-	const [menuFeedback, setMenuFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
-	const [indexedDbError, setIndexedDbError] = useState(false);
-	const [duplicateInfo, setDuplicateInfo] = useState<{
-		ticket: LocalTicket;
-		lastScan: LocalScan;
-	} | null>(null);
-	const [pendingTicket, setPendingTicket] = useState<{ tid: string; eid: string; qrToken: string } | null>(null);
-
-	// Compatibility-safe unsynced matcher: treats only explicit true as synced.
-	const getUnsyncedScans = useCallback(async () => {
-		return db.scans.filter(scan => scan.synced !== true).toArray();
-	}, []);
-
-	// Load counts
-	const refreshCounts = useCallback(async () => {
-		if (!eventId) return;
-		try {
-			const [scanned, total, unsyncedScans, meta] = await Promise.all([
-				db.scans.where('event_id').equals(eventId).count(),
-				db.tickets
-					.where('event_id')
-					.equals(eventId)
-					.and(ticket => ticket.status !== 'cancelled')
-					.count(),
-				getUnsyncedScans(),
-				getMeta(),
-			]);
-			setScannedCount(scanned);
-			setTotalCount(total);
-			setUnsyncedCount(unsyncedScans.length);
-			setLastSync(meta.last_sync_at);
-			setIndexedDbError(false);
-		} catch {
-			setIndexedDbError(true);
-			// Non-critical — UI will show stale counts
-		}
-	}, [eventId, getUnsyncedScans]);
-
-	// Online/offline tracking
-	useEffect(() => {
-		const up = () => setOnline(true);
-		const down = () => setOnline(false);
-		window.addEventListener('online', up);
-		window.addEventListener('offline', down);
-		return () => {
-			window.removeEventListener('online', up);
-			window.removeEventListener('offline', down);
-		};
-	}, []);
-
-	/**
-	 * Core sync function.
-	 * - fullResync: resets cursors so all data is re-fetched from the server.
-	 * - Scans are only marked as synced AFTER the server confirms receipt.
-	 * - Only the specific scans that were sent are marked synced (not newly added ones).
-	 * - A sync lock prevents concurrent executions.
-	 */
-	const doSync = useCallback(
-		async (fullResync = false) => {
-			if (syncInProgressRef.current) return; // Skip if a sync is already running
-			if (!navigator.onLine) return;
-
-			syncInProgressRef.current = true;
-			setSyncError(null);
-
-			try {
-				const deviceId = getDeviceId();
-				let currentMeta = resolveMetaForSync(await getMeta(), fullResync);
-				const unsynced = await getUnsyncedScans();
-				const unsyncedChunks = chunkArray(unsynced, SYNC_BATCH_SIZE);
-
-				const applySyncPage = async (
-					payload: ReturnType<typeof mapSyncResponseToLocal>,
-					options?: { markSyncedIds?: string[] },
-				): Promise<boolean> => {
-					const {
-						ticketRows,
-						scanRows,
-						newTicketVersion,
-						newTicketIdCursor,
-						newScanCursor,
-						newScanIdCursor,
-						hasMoreTicketUpdates,
-						hasMoreScanUpdates,
-					} = payload;
-
-					if (ticketRows.length) {
-						for (const ticketBatch of chunkArray(ticketRows, SYNC_BATCH_SIZE)) {
-							await db.tickets.bulkPut(ticketBatch);
-						}
-					}
-
-					// Persist remote scans from other devices — this makes the duplicate dialog
-					// work cross-device: device B will see device A's scans after the next sync.
-					if (scanRows.length) {
-						for (const scanBatch of chunkArray(scanRows, SYNC_BATCH_SIZE)) {
-							await db.scans.bulkPut(scanBatch);
-						}
-					}
-
-					const markSyncedIds = options?.markSyncedIds ?? [];
-					if (markSyncedIds.length) {
-						await db.scans.where('id').anyOf(markSyncedIds).modify({ synced: true });
-					}
-
-					await updateMeta({
-						newTicketVersion,
-						newTicketIdCursor,
-						newScanCursor,
-						newScanIdCursor,
-					});
-
-					currentMeta = {
-						...currentMeta,
-						last_ticket_version: newTicketVersion,
-						last_ticket_id_cursor: newTicketIdCursor,
-						last_scan_cursor: newScanCursor,
-						last_scan_id_cursor: newScanIdCursor,
-						last_sync_at: new Date().toISOString(),
-					};
-
-					return hasMoreTicketUpdates || hasMoreScanUpdates;
-				};
-
-				const drainRemoteUpdates = async (): Promise<void> => {
-					let hasMoreRemoteUpdates = true;
-					while (hasMoreRemoteUpdates) {
-						const nextRes = await syncApi(
-							createSyncPayload({
-								eventId: eventId!,
-								meta: currentMeta,
-								unsynced: [],
-								deviceId,
-							}),
-						);
-
-						hasMoreRemoteUpdates = await applySyncPage(mapSyncResponseToLocal(nextRes.data.data));
-					}
-				};
-
-				const syncChunk = async (chunk: LocalScan[], chunkIdsToMark?: string[]): Promise<void> => {
-					const res = await syncApi(
-						createSyncPayload({
-							eventId: eventId!,
-							meta: currentMeta,
-							unsynced: chunk,
-							deviceId,
-						}),
-					);
-
-					const hasMoreRemoteUpdates = await applySyncPage(mapSyncResponseToLocal(res.data.data), {
-						markSyncedIds: chunkIdsToMark,
-					});
-
-					if (hasMoreRemoteUpdates) {
-						await drainRemoteUpdates();
-					}
-				};
-
-				for (const chunk of unsyncedChunks) {
-					await syncChunk(
-						chunk,
-						chunk.map(s => s.id),
-					);
-				}
-
-				if (unsyncedChunks.length === 0) {
-					await syncChunk([]);
-				}
-
-				await refreshCounts();
-			} catch (err) {
-				if (isLikelyIndexedDbError(err)) {
-					setIndexedDbError(true);
-				}
-				const msg = err instanceof Error ? err.message : t('scanner.errors.syncFailed');
-				setSyncError(msg);
-				// Scans remain unsynced — no data loss
-			} finally {
-				syncInProgressRef.current = false;
-			}
-		},
-		[eventId, getUnsyncedScans, refreshCounts, t],
-	);
-
-	/** Full resync: resets all cursors and marks all local scans as unsynced so they are re-sent. */
-	const triggerFullResync = useCallback(async () => {
-		if (isFullResyncing) return;
-		setIsFullResyncing(true);
-		try {
-			// Mark all scans for this event as unsynced so they are re-sent
-			await db.scans.where('event_id').equals(eventId!).modify({ synced: false });
-			// Clear cursor meta
-			await db.meta.delete('last_ticket_version');
-			await db.meta.delete('last_ticket_id_cursor');
-			await db.meta.delete('last_scan_cursor');
-			await db.meta.delete('last_scan_id_cursor');
-			setSyncError(null);
-			await doSync(true);
-		} catch (err) {
-			if (isLikelyIndexedDbError(err)) {
-				setIndexedDbError(true);
-			}
-			const msg = err instanceof Error ? err.message : t('scanner.errors.fullResyncFailed');
-			setSyncError(msg);
-		} finally {
-			setIsFullResyncing(false);
-		}
-	}, [eventId, doSync, isFullResyncing, t]);
-
-	const handleUploadDeviceDebugData = useCallback(async () => {
-		if (!eventId) return;
-		setUploadingDebugData(true);
-		setMenuFeedback(null);
-
-		try {
-			const [eventTickets, eventScans, metaRows] = await Promise.all([
-				db.tickets.where('event_id').equals(eventId).toArray(),
-				db.scans.where('event_id').equals(eventId).toArray(),
-				db.meta.toArray(),
-			]);
-
-			const payload: Record<string, unknown> = {
-				eventId,
-				capturedAt: new Date().toISOString(),
-				device: {
-					deviceId: getDeviceId(),
-					online: navigator.onLine,
-					userAgent: navigator.userAgent,
-					language: navigator.language,
-					platform: navigator.platform,
-				},
-				localState: {
-					tickets: eventTickets,
-					scans: eventScans,
-					meta: metaRows,
-					summary: {
-						ticketCount: eventTickets.length,
-						scanCount: eventScans.length,
-						unsyncedScanCount: eventScans.filter(scan => scan.synced !== true).length,
-					},
-				},
-			};
-
-			await uploadDeviceEventDebugDataApi({
-				eventId,
-				deviceId: getDeviceId(),
-				payload,
-			});
-
-			setMenuFeedback({ kind: 'success', text: t('scanner.feedback.localDataSent') });
-		} catch (err) {
-			if (isLikelyIndexedDbError(err)) {
-				setIndexedDbError(true);
-			}
-			setMenuFeedback({ kind: 'error', text: t('scanner.feedback.localDataSendFailed') });
-		} finally {
-			setUploadingDebugData(false);
-		}
-	}, [eventId, t]);
-
-	const handleClearLocalEventData = useCallback(async () => {
-		if (!eventId) return;
-
-		setClearingLocalData(true);
-		setMenuFeedback(null);
-
-		try {
-			await db.transaction('rw', db.tickets, db.scans, db.meta, async () => {
-				await db.tickets.where('event_id').equals(eventId).delete();
-				await db.scans.where('event_id').equals(eventId).delete();
-				await db.meta.clear();
-			});
-			await refreshCounts();
-			setIndexedDbError(false);
-			setMenuFeedback({ kind: 'success', text: t('scanner.feedback.localDataCleared') });
-		} catch (err) {
-			if (isLikelyIndexedDbError(err)) {
-				setIndexedDbError(true);
-			}
-			setMenuFeedback({ kind: 'error', text: t('scanner.feedback.localDataClearFailed') });
-		} finally {
-			setClearingLocalData(false);
-		}
-	}, [eventId, refreshCounts, t]);
-
-	// Auto-sync every 60s when online; skip if a sync is already running
-	useEffect(() => {
-		if (!eventId) return;
-		doSync();
-		const interval = setInterval(() => doSync(), 60_000);
-		return () => clearInterval(interval);
-	}, [eventId, doSync]);
-
-	useEffect(() => {
-		refreshCounts();
-	}, [refreshCounts]);
-
-	// QR scanner setup
-	useEffect(() => {
-		if (!videoRef.current) return;
-		const reader = new BrowserQRCodeReader();
-		let mounted = true;
-
-		reader
-			.decodeFromVideoDevice(undefined, videoRef.current, (result, _err, controls) => {
-				if (!mounted) return;
-				controlsRef.current = controls;
-				if (result) {
-					const text = result.getText();
-					if (text === lastScannedRef.current) return;
-					lastScannedRef.current = text;
-					handleScan(text).catch(() => {
-						showError(t('scanner.errors.indexedDbIssue'));
-					});
-					// Cooldown to prevent rapid rescans
-					if (cooldownRef.current) clearTimeout(cooldownRef.current);
-					cooldownRef.current = setTimeout(() => {
-						lastScannedRef.current = '';
-					}, 3000);
-				}
-			})
-			.catch(() => {
-				if (mounted) setCameraError(t('scanner.errors.cameraUnavailable'));
-			});
-
-		return () => {
-			mounted = false;
-			controlsRef.current?.stop();
-			if (cooldownRef.current) clearTimeout(cooldownRef.current);
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [t]);
-
-	async function handleScan(qrText: string) {
-		try {
-			const parsed = parseQRPayload(qrText);
-			if (!parsed) {
-				showError(t('scanner.errors.invalidQrFormat'));
-				return;
-			}
-			const { tid, eid, qrToken } = parsed;
-
-			const ticket = await db.tickets.get(tid);
-			if (!ticket) {
-				showError(t('scanner.errors.ticketNotFound'));
-				return;
-			}
-			if (ticket.status === 'cancelled') {
-				showError(t('scanner.errors.cancelledTicket'));
-				return;
-			}
-
-			const prevScans = await db.scans.where('ticket_id').equals(tid).toArray();
-			if (prevScans.length >= 2) {
-				showError(t('scanner.errors.rescanLimitReached'));
-				return;
-			}
-			if (prevScans.length > 0) {
-				const last = prevScans.sort((a, b) => new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime())[0];
-				setDuplicateInfo({ ticket, lastScan: last });
-				setPendingTicket({ tid, eid, qrToken });
-				return;
-			}
-
-			setIndexedDbError(false);
-			await registerScan(tid, eid, qrToken);
-		} catch (err) {
-			if (isLikelyIndexedDbError(err)) {
-				setIndexedDbError(true);
-				showError(t('scanner.errors.indexedDbIssue'));
-				return;
-			}
-			showError(t('scanner.errors.scanFailed'));
-		}
-	}
-
-	async function registerScan(ticketId: string, eid: string, qrToken?: string, confirmed?: boolean) {
-		const scanId = crypto.randomUUID();
-		const scannedAt = new Date().toISOString();
-		// Always write to local DB first — data is never lost until server confirms
-		await db.scans.add({
-			id: scanId,
-			ticket_id: ticketId,
-			event_id: eid,
-			scanned_at: scannedAt,
-			synced: false,
-		});
-		await refreshCounts();
-		showSuccess(t('scanner.success.ticketScanned'));
-
-		// Best-effort immediate online push — mark synced locally if server confirms
-		if (navigator.onLine) {
-			postScanApi(ticketId, eid, getDeviceId(), scannedAt, scanId, qrToken, confirmed)
-				.then(() => {
-					db.scans.update(scanId, { synced: true }).catch(() => {});
-					refreshCounts();
-				})
-				.catch(() => {});
-		}
-	}
-
-	function showSuccess(msg: string) {
-		setScanState('success');
-		setMessage(msg);
-		setTimeout(() => setScanState('idle'), 2500);
-	}
-
-	function showError(msg: string) {
-		setScanState('error');
-		setMessage(msg);
-		setTimeout(() => setScanState('idle'), 3000);
-	}
-
-	return (
-		<div className="min-h-screen bg-gray-950 text-white flex flex-col">
-			<header className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center gap-3">
-				<Button
-					variant="ghost"
-					size="icon"
-					className="text-gray-300 hover:text-white hover:bg-gray-800"
-					onClick={() => navigate(user?.isTemporaryScanner ? `/events/${eventId}/scan` : `/events/${eventId}`)}>
-					<ArrowLeft className="h-4 w-4" />
-				</Button>
-				<h1 className="font-bold text-lg flex-1">{t('scanner.title')}</h1>
-				<SyncStatus
-					online={online}
-					lastSync={lastSync}
-					scannedCount={scannedCount}
-					totalCount={totalCount}
-					unsyncedCount={unsyncedCount}
-					hasIndexedDbError={indexedDbError}
-				/>
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="text-gray-300 hover:text-white hover:bg-gray-800"
-							aria-label={t('scanner.actions.tools')}>
-							<MoreVertical className="h-4 w-4" />
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent
-						align="end"
-						className="w-72 bg-gray-900 border-gray-700 text-gray-100 p-2 space-y-1">
-						<Button
-							variant="ghost"
-							className="w-full justify-start gap-2 text-gray-100 hover:bg-gray-800"
-							disabled={uploadingDebugData || clearingLocalData}
-							onClick={() => setUploadDebugConfirmDialogOpen(true)}>
-							<UploadCloud className="h-4 w-4" />
-							{uploadingDebugData ? t('scanner.actions.sendingLocalData') : t('scanner.actions.sendLocalDataToApi')}
-						</Button>
-						<Button
-							variant="ghost"
-							className="w-full justify-start gap-2 text-red-300 hover:bg-red-900/30 hover:text-red-200"
-							disabled={uploadingDebugData || clearingLocalData}
-							onClick={() => setClearLocalDataDialogOpen(true)}>
-							<Trash2 className="h-4 w-4" />
-							{clearingLocalData ? t('scanner.actions.clearingLocalData') : t('scanner.actions.clearLocalEventData')}
-						</Button>
-					</PopoverContent>
-				</Popover>
-			</header>
-
-			{menuFeedback && (
-				<div
-					className={`px-4 py-2 text-sm border-b ${
-						menuFeedback.kind === 'success'
-							? 'bg-emerald-950/70 border-emerald-800 text-emerald-200'
-							: 'bg-red-950/70 border-red-800 text-red-200'
-					}`}>
-					{menuFeedback.text}
-				</div>
-			)}
-
-			{/* Sync error banner */}
-			{syncError && (
-				<div className="bg-yellow-900/80 border-b border-yellow-700 px-4 py-2 flex items-center gap-3 text-sm">
-					<AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0" />
-					<span className="text-yellow-200 flex-1">{t('scanner.errors.syncErrorBanner', { error: syncError })}</span>
-					<Button
-						size="sm"
-						variant="outline"
-						className="text-xs border-yellow-700 text-yellow-300 hover:bg-yellow-800"
-						onClick={() => doSync()}>
-						{t('common.retry')}
-					</Button>
-					<Button
-						size="sm"
-						variant="destructive"
-						className="text-xs"
-						disabled={isFullResyncing}
-						onClick={triggerFullResync}>
-						<RefreshCw className={`h-3.5 w-3.5 ${isFullResyncing ? 'animate-spin' : ''}`} />
-						{isFullResyncing ? t('scanner.actions.resyncing') : t('scanner.actions.fullResync')}
-					</Button>
-				</div>
-			)}
-
-			<div className="flex-1 flex flex-col items-center justify-center p-4">
-				{cameraError ? (
-					<div className="bg-red-950/50 border border-red-800 rounded-xl p-8 text-center max-w-sm">
-						<Camera className="h-12 w-12 text-red-400 mx-auto mb-3" />
-						<p className="text-red-300 text-lg font-medium mb-2">{t('scanner.camera.unavailableTitle')}</p>
-						<p className="text-gray-400 text-sm">{cameraError}</p>
-						<p className="text-gray-500 text-xs mt-1">{t('scanner.camera.allowAccessHint')}</p>
-						<Button
-							className="mt-5"
-							variant="destructive"
-							onClick={() => window.location.reload()}>
-							{t('common.retry')}
-						</Button>
-					</div>
-				) : (
-					<div className="relative w-full max-w-md">
-						<video
-							ref={videoRef}
-							className="w-full rounded-xl"
-							style={{ aspectRatio: '4/3', objectFit: 'cover', background: '#000' }}
-						/>
-						{/* Corner scan overlay */}
-						<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-							<div className="relative w-56 h-56">
-								{/* Top-left corner */}
-								<div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-400 rounded-tl-lg" />
-								{/* Top-right corner */}
-								<div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-400 rounded-tr-lg" />
-								{/* Bottom-left corner */}
-								<div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-400 rounded-bl-lg" />
-								{/* Bottom-right corner */}
-								<div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-400 rounded-br-lg" />
-							</div>
-						</div>
-
-						{scanState !== 'idle' && (
-							<div
-								className={`absolute inset-0 flex items-center justify-center rounded-xl ${
-									scanState === 'success' ? 'bg-green-900/85' : 'bg-red-900/85'
-								}`}>
-								<p className="text-white text-xl font-bold text-center px-6">{message}</p>
-							</div>
-						)}
-					</div>
-				)}
-
-				<p className="text-gray-500 text-sm mt-4">{t('scanner.camera.pointAtQr')}</p>
-
-				{/* Manual Full Resync button — always accessible */}
-				<Button
-					variant="outline"
-					size="sm"
-					className="mt-6 border-gray-700 text-gray-400 hover:bg-gray-800 gap-2"
-					disabled={isFullResyncing}
-					onClick={triggerFullResync}>
-					<RefreshCw className={`h-3.5 w-3.5 ${isFullResyncing ? 'animate-spin' : ''}`} />
-					{isFullResyncing ? t('scanner.actions.resyncing') : t('scanner.actions.fullResync')}
-				</Button>
-			</div>
-
-			{duplicateInfo && pendingTicket && (
-				<DuplicateDialog
-					ticket={duplicateInfo.ticket}
-					lastScan={duplicateInfo.lastScan}
-					onScanAgain={async () => {
-						const { tid, eid, qrToken } = pendingTicket;
-						setDuplicateInfo(null);
-						setPendingTicket(null);
-						await registerScan(tid, eid, qrToken, true);
-					}}
-					onCancel={() => {
-						setDuplicateInfo(null);
-						setPendingTicket(null);
-					}}
-				/>
-			)}
-
-			<Dialog
-				open={uploadDebugConfirmDialogOpen}
-				onOpenChange={open => {
-					if (!uploadingDebugData) setUploadDebugConfirmDialogOpen(open);
-				}}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>{t('scanner.debugConfirmDialog.title')}</DialogTitle>
-						<DialogDescription>{t('scanner.debugConfirmDialog.description')}</DialogDescription>
-					</DialogHeader>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							disabled={uploadingDebugData}
-							onClick={() => setUploadDebugConfirmDialogOpen(false)}>
-							{t('common.cancel')}
-						</Button>
-						<Button
-							disabled={uploadingDebugData}
-							onClick={async () => {
-								setUploadDebugConfirmDialogOpen(false);
-								await handleUploadDeviceDebugData();
-							}}>
-							{uploadingDebugData ? t('scanner.actions.sendingLocalData') : t('scanner.debugConfirmDialog.confirm')}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog
-				open={clearLocalDataDialogOpen}
-				onOpenChange={open => {
-					if (!clearingLocalData) setClearLocalDataDialogOpen(open);
-				}}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>{t('scanner.clearDataDialog.title')}</DialogTitle>
-						<DialogDescription>{t('scanner.clearDataDialog.description')}</DialogDescription>
-					</DialogHeader>
-					<div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-						<AlertTriangle className="h-4 w-4 shrink-0" />
-						{t('scanner.clearDataDialog.warning')}
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							disabled={clearingLocalData}
-							onClick={() => setClearLocalDataDialogOpen(false)}>
-							{t('common.cancel')}
-						</Button>
-						<Button
-							variant="destructive"
-							disabled={clearingLocalData}
-							onClick={async () => {
-								await handleClearLocalEventData();
-								setClearLocalDataDialogOpen(false);
-							}}>
-							{clearingLocalData ? t('scanner.actions.clearing') : t('scanner.actions.clearLocalData')}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-		</div>
-	);
+  const { id = "" } = useParams();
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const tenantId = user!.isSuperAdmin
+    ? new URLSearchParams(location.search).get("tenantId") || user!.tenantId
+    : user!.tenantId;
+  const navigate = useNavigate();
+  const db = useMemo(
+    () => getScannerDb(tenantId, id, user!.userId),
+    [tenantId, id, user!.userId],
+  );
+  const lockName = `scanner:${tenantId}:${id}:${user!.userId}`;
+  const deviceId = useMemo(() => {
+    const key = "device_id";
+    let value = localStorage.getItem(key);
+    if (!value) {
+      value = crypto.randomUUID();
+      localStorage.setItem(key, value);
+    }
+    return value;
+  }, []);
+  const video = useRef<HTMLVideoElement>(null);
+  const busy = useRef(false),
+    syncing = useRef(false),
+    paused = useRef(false);
+  const [pending, setPending] = useState(0),
+    [total, setTotal] = useState(0),
+    [admitted, setAdmitted] = useState(0);
+  const [lastSync, setLastSync] = useState<string | null>(null),
+    [ready, setReady] = useState(false);
+  const [message, setMessage] = useState(""),
+    [error, setError] = useState(""),
+    [working, setWorking] = useState(false);
+  const [online, setOnline] = useState(navigator.onLine);
+  const [debugOpen, setDebugOpen] = useState(false),
+    [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteCount, setDeleteCount] = useState<number | null>(null),
+    [deleteText, setDeleteText] = useState("");
+  const [recent, setRecent] = useState<LocalScan[]>([]);
+  const [duplicate, setDuplicate] = useState<{
+    ticket: LocalTicket;
+    token: string;
+  } | null>(null);
+  const scanHandler = useRef<(text: string) => Promise<void>>(async () => {});
+  const backoff = useRef(5000),
+    nextSync = useRef(0);
+  const exclusive = useCallback(
+    <T,>(work: () => Promise<T>) => navigator.locks.request(lockName, work),
+    [lockName],
+  );
+  const refresh = useCallback(async () => {
+    const rows = await db.scans.toArray();
+    setRecent(
+      rows
+        .filter((s) => s.outcome && !acceptsAdmission(s.outcome))
+        .sort((a, b) => b.scanned_at.localeCompare(a.scanned_at))
+        .slice(0, 10),
+    );
+    setPending(rows.filter((s) => s.synced !== true).length);
+    setAdmitted(
+      new Set(
+        rows.filter((s) => acceptsAdmission(s.outcome)).map((s) => s.ticket_id),
+      ).size,
+    );
+    setTotal(await db.tickets.count());
+    const meta = await db.meta.get("lastSync");
+    setLastSync(typeof meta?.value === "string" ? meta.value : null);
+    const permitRow = await db.meta.get("permit");
+    const downloaded = await db.meta.get("ready");
+    const permit = permitRow
+      ? (JSON.parse(String(permitRow.value)) as OfflinePermit)
+      : null;
+    setReady(
+      downloaded?.value === 1 &&
+        (await verifyOfflinePermit(permit, tenantId, user!.userId, id)),
+    );
+  }, [db, id, user, tenantId]);
+  const doSync = useCallback(
+    async (force = false) => {
+      if (syncing.current || !navigator.onLine || (paused.current && !force))
+        return;
+      syncing.current = true;
+      try {
+        await navigator.locks.request(`${lockName}:sync`, async () => {
+          let more = true;
+          while (more) {
+            const { metadata, attempts } = await exclusive(async () => ({
+              metadata: Object.fromEntries(
+                (await db.meta.toArray()).map((m) => [m.key, m.value]),
+              ),
+              attempts: await db.scans
+                .filter((s) => s.synced !== true)
+                .limit(150)
+                .toArray(),
+            }));
+            const response = (
+              await syncApi(
+                {
+                  eventId: id,
+                  deviceId,
+                  lastTicketVersion: Number(metadata.ticketVersion || 0),
+                  lastTicketIdCursor: String(metadata.ticketId || ""),
+                  lastScanCursor: String(
+                    metadata.scanCursor || new Date(0).toISOString(),
+                  ),
+                  lastScanIdCursor: String(metadata.scanId || ""),
+                  localScans: attempts.map((s) => ({
+                    id: s.id,
+                    ticketId: s.ticket_id,
+                    scannedAt: s.scanned_at,
+                    deviceId,
+                    qrToken: s.qrToken,
+                    confirmed: s.confirmed,
+                  })),
+                },
+                { tenantId },
+              )
+            ).data.data;
+            let reset = false;
+            await exclusive(() =>
+              db.transaction("rw", db.tickets, db.scans, db.meta, async () => {
+                if ((await db.meta.get("epoch"))?.value !== metadata.epoch) {
+                  reset = true;
+                  return;
+                }
+                await db.tickets.bulkPut(
+                  response.ticketUpdates.map((ticket) => ({
+                    id: ticket.id,
+                    event_id: id,
+                    name: ticket.name,
+                    status: ticket.status,
+                    version: ticket.version,
+                    tokenFingerprint: ticket.tokenFingerprint,
+                  })),
+                );
+                for (const scan of response.scanUpdates) {
+                  const existing = await db.scans.get(scan.id);
+                  await db.scans.put({
+                    ...existing,
+                    id: scan.id,
+                    event_id: id,
+                    ticket_id: scan.ticketId,
+                    scanned_at: scan.scannedAt,
+                    synced: true,
+                    outcome: existing?.confirmed ? "override" : "accepted",
+                  });
+                }
+                for (const ack of response.acknowledgments ?? []) {
+                  await db.scans.update(ack.id, {
+                    synced: true,
+                    outcome: ack.outcome,
+                  });
+                  if (!acceptsAdmission(ack.outcome))
+                    setError(t("scannerV2.conflict"));
+                }
+                await db.meta.bulkPut([
+                  { key: "ticketVersion", value: response.newTicketVersion },
+                  { key: "ticketId", value: response.newTicketIdCursor ?? "" },
+                  { key: "scanCursor", value: response.newScanCursor },
+                  { key: "scanId", value: response.newScanIdCursor ?? "" },
+                  { key: "lastSync", value: new Date().toISOString() },
+                ]);
+                if (response.offlinePermit)
+                  await db.meta.put({
+                    key: "permit",
+                    value: JSON.stringify(response.offlinePermit),
+                  });
+                if (
+                  !response.hasMoreTicketUpdates &&
+                  !response.hasMoreScanUpdates
+                )
+                  await db.meta.put({ key: "ready", value: 1 });
+              }),
+            );
+            if (reset) break;
+            more =
+              !!response.hasMoreTicketUpdates ||
+              !!response.hasMoreScanUpdates ||
+              (await db.scans.filter((s) => s.synced !== true).count()) > 0;
+          }
+        });
+        backoff.current = 5000;
+        await refresh();
+      } catch (e) {
+        backoff.current = Math.min(60000, backoff.current * 2);
+        setError(
+          axios.isAxiosError(e) && e.response?.status === 401
+            ? t("scannerV2.loginRequired")
+            : t("scannerV2.syncFailed"),
+        );
+      } finally {
+        syncing.current = false;
+        nextSync.current = Date.now() + backoff.current;
+      }
+    },
+    [db, deviceId, exclusive, id, refresh, t, tenantId, lockName],
+  );
+  useEffect(() => {
+    void refresh().catch(() => setError(t("scannerV2.storageError")));
+    void doSync();
+    const timer = setInterval(() => {
+      if (
+        document.visibilityState === "visible" &&
+        Date.now() >= nextSync.current
+      )
+        void doSync();
+    }, 1000);
+    const reconnect = () => {
+      setOnline(navigator.onLine);
+      void doSync();
+    };
+    const visibility = () => {
+      if (document.visibilityState === "visible") {
+        void refresh();
+        void doSync();
+      }
+    };
+    window.addEventListener("online", reconnect);
+    window.addEventListener("offline", reconnect);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("online", reconnect);
+      window.removeEventListener("offline", reconnect);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [doSync, refresh, t]);
+  useEffect(() => {
+    let disposed = false;
+    let stop: (() => void) | undefined;
+    const reader = new BrowserQRCodeReader();
+    reader
+      .decodeFromVideoDevice(undefined, video.current!, (result) => {
+        if (result && !disposed) void scanHandler.current(result.getText());
+      })
+      .then((controls) => {
+        if (disposed) controls.stop();
+        else stop = () => controls.stop();
+      })
+      .catch(() => setError(t("scanner.camera.unavailableTitle")));
+    return () => {
+      disposed = true;
+      stop?.();
+    };
+  }, [db, t]);
+  async function register(
+    ticket: LocalTicket,
+    token: string,
+    confirmed = false,
+  ) {
+    await exclusive(async () => {
+      const permitRow = await db.meta.get("permit");
+      if (
+        !(await verifyOfflinePermit(
+          permitRow ? JSON.parse(String(permitRow.value)) : null,
+          tenantId,
+          user!.userId,
+          id,
+        ))
+      )
+        throw new Error(t("scannerV2.notReady"));
+      const currentCount = await db.scans
+        .where("ticket_id")
+        .equals(ticket.id)
+        .filter((s) => acceptsAdmission(s.outcome))
+        .count();
+      if (currentCount >= 2) throw new Error(t("scannerV2.limit"));
+      if (currentCount > 0 && !confirmed) {
+        setDuplicate({ ticket, token });
+        paused.current = true;
+        return;
+      }
+      const attempt: LocalScan = {
+        id: crypto.randomUUID(),
+        event_id: id,
+        ticket_id: ticket.id,
+        scanned_at: new Date().toISOString(),
+        synced: false,
+        qrToken: token,
+        confirmed,
+        outcome: "pending",
+      };
+      await db.scans.add(attempt);
+      if (navigator.onLine) {
+        try {
+          const result = await postScanApi(
+            ticket.id,
+            id,
+            deviceId,
+            attempt.scanned_at,
+            attempt.id,
+            token,
+            confirmed,
+            { tenantId },
+          );
+          await db.scans.update(attempt.id, {
+            synced: true,
+            outcome: result.data.data.outcome,
+          });
+          setMessage(t("scanner.success.ticketScanned"));
+          return;
+        } catch (e) {
+          if (axios.isAxiosError(e) && e.response) {
+            const outcome = e.response.data?.data?.outcome;
+            if (outcome) {
+              await db.scans.update(attempt.id, { synced: true, outcome });
+              if (outcome === "duplicate") {
+                setDuplicate({ ticket, token });
+                paused.current = true;
+              }
+              setError(t(`scannerV2.${outcome}`));
+              return;
+            }
+            // Authentication/server failures keep the durable record; offline rules still apply.
+            if (e.response.status < 500 && e.response.status !== 401) {
+              setError(t("scannerV2.syncFailed"));
+              return;
+            }
+          }
+        }
+      }
+      setMessage(t("scannerV2.offlineAccepted"));
+    });
+    await refresh();
+    void doSync();
+  }
+  scanHandler.current = async (text) => {
+    if (busy.current || paused.current) return;
+    busy.current = true;
+    setError("");
+    setMessage("");
+    try {
+      const permitRow = await db.meta.get("permit");
+      if (
+        !(await db.meta.get("ready"))?.value ||
+        !(await verifyOfflinePermit(
+          permitRow ? JSON.parse(String(permitRow.value)) : null,
+          tenantId,
+          user!.userId,
+          id,
+        ))
+      ) {
+        setReady(false);
+        throw new Error(t("scannerV2.notReady"));
+      }
+      const parsed = parseQRPayload(text);
+      if (!parsed || parsed.eid !== id)
+        throw new Error(t("scanner.errors.invalidQrFormat"));
+      const ticket = await db.tickets.get(parsed.tid);
+      if (
+        !ticket ||
+        !ticket.tokenFingerprint ||
+        (await fingerprint(text)) !== ticket.tokenFingerprint
+      )
+        throw new Error(t("scannerV2.invalid"));
+      if (ticket.status !== "active") throw new Error(t("scannerV2.cancelled"));
+      const previous = await db.scans
+        .where("ticket_id")
+        .equals(ticket.id)
+        .filter((s) => acceptsAdmission(s.outcome))
+        .count();
+      if (previous >= 2) throw new Error(t("scannerV2.limit"));
+      if (previous) {
+        setDuplicate({ ticket, token: text });
+        paused.current = true;
+        return;
+      }
+      await register(ticket, text);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("scannerV2.storageError"));
+    } finally {
+      setTimeout(() => {
+        busy.current = false;
+      }, 2000);
+    }
+  };
+  async function openDelete() {
+    paused.current = true;
+    setDeleteOpen(true);
+    setDeleteText("");
+    setDeleteCount(null);
+    try {
+      await exclusive(async () =>
+        setDeleteCount(await db.scans.filter((s) => s.synced !== true).count()),
+      );
+    } catch {
+      setError(t("scannerV2.storageError"));
+    }
+  }
+  async function clearLocal() {
+    setWorking(true);
+    try {
+      await exclusive(() =>
+        db.transaction("rw", db.tickets, db.scans, db.meta, async () => {
+          const count = await db.scans.filter((s) => s.synced !== true).count();
+          if (count !== deleteCount) {
+            setDeleteCount(count);
+            setDeleteText("");
+            throw new Error(t("scannerV2.countChanged"));
+          }
+          if (count > 0 && deleteText !== "delete")
+            throw new Error(t("scannerV2.typeDelete"));
+          await db.tickets.clear();
+          await db.scans.clear();
+          await db.meta.clear();
+          await db.meta.put({ key: "epoch", value: crypto.randomUUID() });
+        }),
+      );
+      setDeleteOpen(false);
+      paused.current = false;
+      await refresh();
+      setMessage(t("scanner.feedback.localDataCleared"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("scannerV2.storageError"));
+    } finally {
+      setWorking(false);
+    }
+  }
+  return (
+    <main className="mx-auto max-w-3xl space-y-4 p-4">
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={() => navigate(`/events/${id}`)}>
+          ← {t("scannerV2.event")}
+        </Button>
+        <h1 className="text-xl font-bold">{t("scanner.title")}</h1>
+      </div>
+      <div className="rounded border p-3" aria-live="polite">
+        <strong>
+          {online
+            ? t("scanner.syncStatus.online")
+            : t("scanner.syncStatus.offline")}
+        </strong>{" "}
+        · {ready ? t("scannerV2.ready") : t("scannerV2.notReady")}
+        <p>{t("scannerV2.counts", { pending, total, admitted })}</p>
+        <small>
+          {t("scannerV2.lastSync")}:{" "}
+          {lastSync ? new Date(lastSync).toLocaleString() : "—"}
+        </small>
+        <p className="text-sm">{t("scannerV2.offlineWarning")}</p>
+      </div>
+      {message && (
+        <div role="status" className="rounded bg-green-100 p-4 text-green-900">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div role="alert" className="rounded bg-amber-100 p-4 text-amber-900">
+          {error}{" "}
+          <a href="/login" className="underline">
+            {t("scannerV2.signIn")}
+          </a>
+        </div>
+      )}
+      {recent.length > 0 && (
+        <section className="rounded border p-3">
+          <h2 className="font-semibold">{t("scannerV2.recordedConflicts")}</h2>
+          {recent.map((scan) => (
+            <p key={scan.id} className="text-sm">
+              {new Date(scan.scanned_at).toLocaleTimeString()} ·{" "}
+              {scan.ticket_id.slice(0, 8)} · {t(`scannerV2.${scan.outcome}`)}
+            </p>
+          ))}
+        </section>
+      )}
+      <video
+        ref={video}
+        className="w-full rounded bg-black"
+        muted
+        playsInline
+      />
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => void doSync(true)}>
+          {t("scannerV2.syncNow")}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={async () => {
+            await exclusive(async () => {
+              await db.meta.bulkDelete([
+                "ticketVersion",
+                "ticketId",
+                "scanCursor",
+                "scanId",
+                "ready",
+              ]);
+              await db.meta.put({ key: "epoch", value: crypto.randomUUID() });
+            });
+            await doSync(true);
+          }}
+        >
+          {t("scanner.actions.fullResync")}
+        </Button>
+        <Button variant="outline" onClick={() => setDebugOpen(true)}>
+          {t("scanner.debugConfirmDialog.title")}
+        </Button>
+        <Button variant="destructive" onClick={() => void openDelete()}>
+          {t("scanner.actions.clearLocalEventData")}
+        </Button>
+      </div>
+      <Dialog open={debugOpen} onOpenChange={setDebugOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("scanner.debugConfirmDialog.title")}</DialogTitle>
+            <DialogDescription>
+              {t("scanner.debugConfirmDialog.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDebugOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={working}
+              onClick={async () => {
+                setWorking(true);
+                try {
+                  await uploadDeviceEventDebugDataApi(
+                    {
+                      eventId: id,
+                      deviceId,
+                      payload: {
+                        pendingCount: pending,
+                        ticketCount: total,
+                        lastSync,
+                        online,
+                      },
+                    },
+                    { tenantId },
+                  );
+                  setDebugOpen(false);
+                  setMessage(t("scanner.feedback.localDataSent"));
+                } catch {
+                  setError(t("scanner.feedback.localDataSendFailed"));
+                } finally {
+                  setWorking(false);
+                }
+              }}
+            >
+              {t("scanner.debugConfirmDialog.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!working) {
+            setDeleteOpen(open);
+            paused.current = open;
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("scanner.clearDataDialog.title")}</DialogTitle>
+            <DialogDescription>
+              {t("scanner.clearDataDialog.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <p role="alert">
+            {deleteCount === null
+              ? t("scannerV2.checking")
+              : deleteCount > 0
+                ? t("scannerV2.deleteWarning", { count: deleteCount })
+                : t("scanner.clearDataDialog.warning")}
+          </p>
+          {deleteCount !== null && deleteCount > 0 && (
+            <>
+              <label htmlFor="delete-confirm">
+                {t("scannerV2.typeDelete")}
+              </label>
+              <Input
+                id="delete-confirm"
+                value={deleteText}
+                onChange={(e) => setDeleteText(e.target.value)}
+                autoComplete="off"
+              />
+            </>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={working}
+              onClick={() => {
+                setDeleteOpen(false);
+                paused.current = false;
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={working}
+              onClick={async () => {
+                setWorking(true);
+                await doSync(true);
+                try {
+                  await exclusive(async () =>
+                    setDeleteCount(
+                      await db.scans.filter((s) => s.synced !== true).count(),
+                    ),
+                  );
+                  setDeleteText("");
+                } catch {
+                  setDeleteCount(null);
+                  setError(t("scannerV2.storageError"));
+                } finally {
+                  setWorking(false);
+                }
+              }}
+            >
+              {t("scannerV2.syncFirst")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={
+                working ||
+                deleteCount === null ||
+                (deleteCount > 0 && deleteText !== "delete")
+              }
+              onClick={() => void clearLocal()}
+            >
+              {t("scanner.actions.clearLocalData")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!duplicate}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDuplicate(null);
+            paused.current = false;
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("scannerV2.duplicate")}</DialogTitle>
+            <DialogDescription>
+              {t("scannerV2.overridePrompt")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDuplicate(null);
+                paused.current = false;
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={async () => {
+                const current = duplicate!;
+                setDuplicate(null);
+                try {
+                  await register(current.ticket, current.token, true);
+                } catch {
+                  setError(t("scannerV2.storageError"));
+                } finally {
+                  paused.current = false;
+                }
+              }}
+            >
+              {t("scannerV2.override")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </main>
+  );
 }

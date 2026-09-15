@@ -1,3 +1,4 @@
+import ContactRequests from '../components/ContactRequests';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -75,7 +76,7 @@ export default function SuperAdminPage() {
 	const activeEvents = useMemo(() => events.filter(event => !event.archivedAt), [events]);
 
 	const summary = useMemo(() => {
-		const proTenants = tenants.filter(t => t.plan === 'pro').length;
+		const proTenants = tenants.filter(t => t.plan === 'personal').length;
 		return {
 			tenants: tenants.length,
 			users: users.length,
@@ -135,10 +136,10 @@ export default function SuperAdminPage() {
 		setEvents(eventRes.data.data);
 	}
 
-	async function updatePlan(tenantId: string, nextPlan: 'pro' | 'free') {
+	async function updatePlan(tenantId: string, nextPlan: 'personal' | 'free') {
 		setPlanSaving(prev => ({ ...prev, [tenantId]: true }));
 		try {
-			const updated = nextPlan === 'pro' ? (await upgradeTenantApi(tenantId)).data.data : (await downgradeTenantApi(tenantId)).data.data;
+			const updated = nextPlan === 'personal' ? (await upgradeTenantApi(tenantId)).data.data : (await downgradeTenantApi(tenantId)).data.data;
 
 			setTenants(prev => prev.map(t => (t.id === tenantId ? { ...t, plan: updated.plan } : t)));
 			setUsers(prev => prev.map(u => (u.tenantId === tenantId && u.tenant ? { ...u, tenant: { ...u.tenant, plan: updated.plan } } : u)));
@@ -384,6 +385,7 @@ export default function SuperAdminPage() {
 			</header>
 
 			<main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {isSuperAdmin && selectedTenantId && <ContactRequests tenantId={selectedTenantId} />}
 				{error && (
 					<Alert variant="destructive">
 						<AlertCircle className="h-4 w-4" />
@@ -673,17 +675,17 @@ export default function SuperAdminPage() {
 										<TableRow key={tenant.id}>
 											<TableCell className="font-medium">{tenant.name}</TableCell>
 											<TableCell>
-												<Badge variant={tenant.plan === 'pro' ? 'default' : 'secondary'}>{tenant.plan}</Badge>
+												<Badge variant={tenant.plan === 'personal' ? 'default' : 'secondary'}>{tenant.plan}</Badge>
 											</TableCell>
 											<TableCell>{tenant._count.users}</TableCell>
 											<TableCell>{tenant._count.events}</TableCell>
 											<TableCell>
 												<Button
 													size="sm"
-													variant={tenant.plan === 'pro' ? 'outline' : 'default'}
+													variant={tenant.plan === 'personal' ? 'outline' : 'default'}
 													disabled={planSaving[tenant.id]}
-													onClick={() => updatePlan(tenant.id, tenant.plan === 'pro' ? 'free' : 'pro')}>
-													{planSaving[tenant.id] ? 'Saving…' : tenant.plan === 'pro' ? 'Downgrade' : 'Upgrade to Pro'}
+													onClick={() => updatePlan(tenant.id, tenant.plan === 'personal' ? 'free' : 'personal')}>
+													{planSaving[tenant.id] ? 'Saving…' : tenant.plan === 'personal' ? 'Downgrade' : 'Upgrade to Personal'}
 												</Button>
 											</TableCell>
 										</TableRow>
@@ -717,7 +719,7 @@ export default function SuperAdminPage() {
 										<TableCell>{entry.email}</TableCell>
 										<TableCell>{entry.tenant?.name ?? 'Multiple tenants'}</TableCell>
 										<TableCell>
-											<Badge variant={entry.tenant?.plan === 'pro' ? 'default' : 'secondary'}>{entry.tenant?.plan ?? 'n/a'}</Badge>
+											<Badge variant={entry.tenant?.plan === 'personal' ? 'default' : 'secondary'}>{entry.tenant?.plan ?? 'n/a'}</Badge>
 										</TableCell>
 										<TableCell>
 											{entry.role === 'owner' ? (
@@ -788,7 +790,7 @@ export default function SuperAdminPage() {
 											<p className="text-xs text-muted-foreground mt-0.5">
 												{event.tenant.name} ·{' '}
 												<Badge
-													variant={event.tenant.plan === 'pro' ? 'default' : 'secondary'}
+													variant={event.tenant.plan === 'personal' ? 'default' : 'secondary'}
 													className="text-[10px] py-0">
 													{event.tenant.plan}
 												</Badge>{' '}

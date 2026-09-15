@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
+  timeout: 15000,
 	baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 });
 
@@ -85,6 +86,8 @@ export interface TicketScanDetail {
 	scannedBy: string;
 }
 
+export interface OfflinePermit { token: string; publicKey: JsonWebKey; expiresAt: string }
+export interface ScanAcknowledgment { id: string; outcome: string }
 export interface SyncPayload {
 	eventId: string;
 	deviceId: string;
@@ -93,6 +96,8 @@ export interface SyncPayload {
 	lastScanCursor: string;
 	lastScanIdCursor?: string;
 	localScans: {
+        qrToken?: string;
+        confirmed?: boolean;
 		id: string;
 		ticketId: string;
 		scannedAt: string;
@@ -109,7 +114,10 @@ export interface RemoteScan {
 }
 
 export interface SyncResponse {
+  acknowledgments?: ScanAcknowledgment[];
+  offlinePermit?: OfflinePermit;
 	ticketUpdates: {
+    tokenFingerprint?: string;
 		id: string;
 		eventId: string;
 		name: string;
@@ -320,14 +328,14 @@ export const addTicketsApi = (
 	options?: TenantScopedRequestOptions,
 ) => {
 	const normalized = tickets.map(t => (typeof t === 'string' ? { name: t } : t));
-	return api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: normalized }, { params: tenantScopedParams(options) });
+	return api.post<{ data: Ticket[] }>(`/events/${eventId}/tickets/bulk`, { tickets: normalized }, { params: tenantScopedParams(options), headers: { "Idempotency-Key": issuanceKey(eventId, normalized) } }).then(response => { clearIssuanceKey(eventId, normalized); return response; });
 };
 
 export const createTicketApi = (
 	eventId: string,
 	data: { name?: string; guestId?: string; ticketTypeId?: string },
 	options?: TenantScopedRequestOptions,
-) => api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data, { params: tenantScopedParams(options) });
+) => api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data, { params: tenantScopedParams(options), headers: { "Idempotency-Key": issuanceKey(eventId, data) } }).then(response => { clearIssuanceKey(eventId, data); return response; });
 
 export const updateTicketApi = (ticketId: string, data: { ticketTypeId: string | null }, options?: TenantScopedRequestOptions) =>
 	api.patch<{ data: Ticket }>(`/tickets/${ticketId}`, data, { params: tenantScopedParams(options) });
@@ -358,6 +366,7 @@ export const postScanApi = (
 	scanId: string,
 	qrToken?: string,
 	confirmed?: boolean,
+  options?: TenantScopedRequestOptions,
 ) =>
 	api.post('/scan', {
 		id: scanId,
@@ -367,10 +376,10 @@ export const postScanApi = (
 		scannedAt,
 		...(qrToken !== undefined && { qrToken }),
 		...(confirmed !== undefined && { confirmed }),
-	});
+	}, { timeout: 2000, params: tenantScopedParams(options) });
 
-export const uploadDeviceEventDebugDataApi = (payload: DeviceEventDebugUploadPayload) =>
-	api.post<{ data: DeviceEventDebugUploadResponse }>('/scan/device-event-debug', payload);
+export const uploadDeviceEventDebugDataApi = (payload: DeviceEventDebugUploadPayload, options?: TenantScopedRequestOptions) =>
+	api.post<{ data: DeviceEventDebugUploadResponse }>('/scan/device-event-debug', payload, { params: tenantScopedParams(options) });
 
 export const getEventDeviceDebugDataApi = (eventId: string) =>
 	api.get<{ data: EventDeviceDebugDataItem[] }>(`/events/${eventId}/device-debug-data`);
@@ -379,7 +388,7 @@ export const getEventDeviceDebugDataItemApi = (eventId: string, dumpId: string) 
 	api.get<{ data: EventDeviceDebugDataDetail }>(`/events/${eventId}/device-debug-data/${dumpId}`);
 
 // Sync
-export const syncApi = (payload: SyncPayload) => api.post<{ data: SyncResponse }>('/sync', payload);
+export const syncApi = (payload: SyncPayload, options?: TenantScopedRequestOptions) => api.post<{ data: SyncResponse }>('/sync', payload, { params: tenantScopedParams(options) });
 
 // Super admin
 export const getAdminTenantsApi = () => api.get<{ data: AdminTenant[] }>('/admin/tenants');
@@ -407,10 +416,23 @@ export const createAdminEventApi = (
 ) => api.post<{ data: Event }>('/events', { ...data, tenantId });
 
 export const createAdminGuestApi = (tenantId: string, eventId: string, data: { name?: string; guestId?: string; ticketTypeId?: string }) =>
-	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data, { params: { tenantId } });
+	api.post<{ data: Ticket }>(`/events/${eventId}/tickets`, data, { params: { tenantId }, headers: { "Idempotency-Key": issuanceKey(eventId, data) } }).then(response => { clearIssuanceKey(eventId, data); return response; });
 
 export const archiveAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/archive`);
 export const unarchiveAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/unarchive`);
 export const deleteAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/delete`);
 
 export default api;
+
+// Retain issuance keys across network failures/reloads; discard after an acknowledged success.
+function issuanceStorageKey(eventId: string, data: unknown) { return `issue:${eventId}:${JSON.stringify(data)}`; }
+function issuanceKey(eventId: string, data: unknown) {
+ const key = issuanceStorageKey(eventId,data);
+ const existing = sessionStorage.getItem(key);
+ if (existing) return existing;
+ const id = crypto.randomUUID(); sessionStorage.setItem(key,id); return id;
+}
+function clearIssuanceKey(eventId: string, data: unknown) { sessionStorage.removeItem(issuanceStorageKey(eventId,data)); }
+export interface EventAsset { id: string; bytes: string; mime: string; x: number; y: number; width: number; height: number }
+export const getAsset = (eventId:string,kind:string,options?:TenantScopedRequestOptions) => api.get<{data:EventAsset|null}>(`/assets/${eventId}/${kind}`,{params:tenantScopedParams(options)}).then(r=>r.data.data);
+export const putAsset = (eventId:string,kind:string,data:{bytes:string;x?:number;y?:number},options?:TenantScopedRequestOptions) => api.put<{data:EventAsset}>(`/assets/${eventId}/${kind}`,data,{params:tenantScopedParams(options)}).then(r=>r.data.data);

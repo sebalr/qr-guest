@@ -1,3 +1,4 @@
+import InvitationEditor from '../components/InvitationEditor';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -401,6 +402,7 @@ export default function EventSettingsPage() {
 			</header>
 
 			<main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+
 				{feedbackToast.visible && (
 					<div
 						className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-md px-3 py-2 text-sm font-medium text-white shadow-lg ${
@@ -635,6 +637,7 @@ export default function EventSettingsPage() {
 							<CardDescription>{t('eventSettingsPage.pdf.description')}</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
+              {id && <InvitationEditor eventId={id} tenantId={tenantId} />}
 							<form
 								onSubmit={handleSavePdfSettings}
 								className="space-y-4">
@@ -658,7 +661,7 @@ export default function EventSettingsPage() {
 										onChange={e => setEventImageUrl(e.target.value)}
 									/>
 								</div>
-								<div className="space-y-3 rounded-lg border p-3">
+								<div className="flex flex-col gap-3 rounded-lg border p-3">
 									<Checkbox
 										id="include-description-in-pdf"
 										checked={includeDescriptionInPdf}

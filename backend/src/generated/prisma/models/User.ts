@@ -190,6 +190,7 @@ export type UserWhereInput = {
   emailVerifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   isSuperAdmin?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  scanAttempts?: Prisma.ScanAttemptListRelationFilter
   userTenants?: Prisma.UserTenantListRelationFilter
   scans?: Prisma.ScanListRelationFilter
   temporaryScannerProfiles?: Prisma.TemporaryScannerListRelationFilter
@@ -204,6 +205,7 @@ export type UserOrderByWithRelationInput = {
   emailVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   isSuperAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  scanAttempts?: Prisma.ScanAttemptOrderByRelationAggregateInput
   userTenants?: Prisma.UserTenantOrderByRelationAggregateInput
   scans?: Prisma.ScanOrderByRelationAggregateInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerOrderByRelationAggregateInput
@@ -221,6 +223,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   emailVerifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   isSuperAdmin?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  scanAttempts?: Prisma.ScanAttemptListRelationFilter
   userTenants?: Prisma.UserTenantListRelationFilter
   scans?: Prisma.ScanListRelationFilter
   temporaryScannerProfiles?: Prisma.TemporaryScannerListRelationFilter
@@ -259,6 +262,7 @@ export type UserCreateInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
@@ -273,6 +277,7 @@ export type UserUncheckedCreateInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
@@ -287,6 +292,7 @@ export type UserUpdateInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
@@ -301,6 +307,7 @@ export type UserUncheckedUpdateInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
@@ -449,6 +456,20 @@ export type UserUpdateOneRequiredWithoutScansNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutScansInput, Prisma.UserUpdateWithoutScansInput>, Prisma.UserUncheckedUpdateWithoutScansInput>
 }
 
+export type UserCreateNestedOneWithoutScanAttemptsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutScanAttemptsInput, Prisma.UserUncheckedCreateWithoutScanAttemptsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutScanAttemptsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutScanAttemptsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutScanAttemptsInput, Prisma.UserUncheckedCreateWithoutScanAttemptsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutScanAttemptsInput
+  upsert?: Prisma.UserUpsertWithoutScanAttemptsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutScanAttemptsInput, Prisma.UserUpdateWithoutScanAttemptsInput>, Prisma.UserUncheckedUpdateWithoutScanAttemptsInput>
+}
+
 export type UserCreateWithoutAuthTokensInput = {
   id?: string
   email: string
@@ -456,6 +477,7 @@ export type UserCreateWithoutAuthTokensInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
@@ -469,6 +491,7 @@ export type UserUncheckedCreateWithoutAuthTokensInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
@@ -498,6 +521,7 @@ export type UserUpdateWithoutAuthTokensInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
@@ -511,6 +535,7 @@ export type UserUncheckedUpdateWithoutAuthTokensInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
@@ -524,6 +549,7 @@ export type UserCreateWithoutUserTenantsInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
   createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
@@ -537,6 +563,7 @@ export type UserUncheckedCreateWithoutUserTenantsInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
@@ -566,6 +593,7 @@ export type UserUpdateWithoutUserTenantsInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
@@ -579,6 +607,7 @@ export type UserUncheckedUpdateWithoutUserTenantsInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
@@ -592,6 +621,7 @@ export type UserCreateWithoutTemporaryScannerProfilesInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
   createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
@@ -605,6 +635,7 @@ export type UserUncheckedCreateWithoutTemporaryScannerProfilesInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
@@ -623,6 +654,7 @@ export type UserCreateWithoutCreatedTemporaryScannersInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
@@ -636,6 +668,7 @@ export type UserUncheckedCreateWithoutCreatedTemporaryScannersInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
@@ -665,6 +698,7 @@ export type UserUpdateWithoutTemporaryScannerProfilesInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
@@ -678,6 +712,7 @@ export type UserUncheckedUpdateWithoutTemporaryScannerProfilesInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
@@ -702,6 +737,7 @@ export type UserUpdateWithoutCreatedTemporaryScannersInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
@@ -715,6 +751,7 @@ export type UserUncheckedUpdateWithoutCreatedTemporaryScannersInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
@@ -728,6 +765,7 @@ export type UserCreateWithoutScansInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
   createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
@@ -741,6 +779,7 @@ export type UserUncheckedCreateWithoutScansInput = {
   emailVerifiedAt?: Date | string | null
   isSuperAdmin?: boolean
   createdAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutUserInput
   userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
@@ -770,6 +809,7 @@ export type UserUpdateWithoutScansInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
@@ -783,7 +823,80 @@ export type UserUncheckedUpdateWithoutScansInput = {
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutUserNestedInput
   userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
+  authTokens?: Prisma.UserAuthTokenUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutScanAttemptsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  isSuperAdmin?: boolean
+  createdAt?: Date | string
+  userTenants?: Prisma.UserTenantCreateNestedManyWithoutUserInput
+  scans?: Prisma.ScanCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerCreateNestedManyWithoutCreatorInput
+  authTokens?: Prisma.UserAuthTokenCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutScanAttemptsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  isSuperAdmin?: boolean
+  createdAt?: Date | string
+  userTenants?: Prisma.UserTenantUncheckedCreateNestedManyWithoutUserInput
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutUserInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutUserInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedCreateNestedManyWithoutCreatorInput
+  authTokens?: Prisma.UserAuthTokenUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutScanAttemptsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutScanAttemptsInput, Prisma.UserUncheckedCreateWithoutScanAttemptsInput>
+}
+
+export type UserUpsertWithoutScanAttemptsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutScanAttemptsInput, Prisma.UserUncheckedUpdateWithoutScanAttemptsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutScanAttemptsInput, Prisma.UserUncheckedCreateWithoutScanAttemptsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutScanAttemptsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutScanAttemptsInput, Prisma.UserUncheckedUpdateWithoutScanAttemptsInput>
+}
+
+export type UserUpdateWithoutScanAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userTenants?: Prisma.UserTenantUpdateManyWithoutUserNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutUserNestedInput
+  temporaryScannerProfiles?: Prisma.TemporaryScannerUpdateManyWithoutUserNestedInput
+  createdTemporaryScanners?: Prisma.TemporaryScannerUpdateManyWithoutCreatorNestedInput
+  authTokens?: Prisma.UserAuthTokenUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutScanAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isSuperAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userTenants?: Prisma.UserTenantUncheckedUpdateManyWithoutUserNestedInput
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutUserNestedInput
   temporaryScannerProfiles?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutUserNestedInput
   createdTemporaryScanners?: Prisma.TemporaryScannerUncheckedUpdateManyWithoutCreatorNestedInput
   authTokens?: Prisma.UserAuthTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -795,6 +908,7 @@ export type UserUncheckedUpdateWithoutScansInput = {
  */
 
 export type UserCountOutputType = {
+  scanAttempts: number
   userTenants: number
   scans: number
   temporaryScannerProfiles: number
@@ -803,6 +917,7 @@ export type UserCountOutputType = {
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  scanAttempts?: boolean | UserCountOutputTypeCountScanAttemptsArgs
   userTenants?: boolean | UserCountOutputTypeCountUserTenantsArgs
   scans?: boolean | UserCountOutputTypeCountScansArgs
   temporaryScannerProfiles?: boolean | UserCountOutputTypeCountTemporaryScannerProfilesArgs
@@ -818,6 +933,13 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
    * Select specific fields to fetch from the UserCountOutputType
    */
   select?: Prisma.UserCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountScanAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ScanAttemptWhereInput
 }
 
 /**
@@ -863,6 +985,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   emailVerifiedAt?: boolean
   isSuperAdmin?: boolean
   createdAt?: boolean
+  scanAttempts?: boolean | Prisma.User$scanAttemptsArgs<ExtArgs>
   userTenants?: boolean | Prisma.User$userTenantsArgs<ExtArgs>
   scans?: boolean | Prisma.User$scansArgs<ExtArgs>
   temporaryScannerProfiles?: boolean | Prisma.User$temporaryScannerProfilesArgs<ExtArgs>
@@ -900,6 +1023,7 @@ export type UserSelectScalar = {
 
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "emailVerifiedAt" | "isSuperAdmin" | "createdAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  scanAttempts?: boolean | Prisma.User$scanAttemptsArgs<ExtArgs>
   userTenants?: boolean | Prisma.User$userTenantsArgs<ExtArgs>
   scans?: boolean | Prisma.User$scansArgs<ExtArgs>
   temporaryScannerProfiles?: boolean | Prisma.User$temporaryScannerProfilesArgs<ExtArgs>
@@ -913,6 +1037,7 @@ export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
+    scanAttempts: Prisma.$ScanAttemptPayload<ExtArgs>[]
     userTenants: Prisma.$UserTenantPayload<ExtArgs>[]
     scans: Prisma.$ScanPayload<ExtArgs>[]
     temporaryScannerProfiles: Prisma.$TemporaryScannerPayload<ExtArgs>[]
@@ -1320,6 +1445,7 @@ readonly fields: UserFieldRefs;
  */
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  scanAttempts<T extends Prisma.User$scanAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$scanAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ScanAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   userTenants<T extends Prisma.User$userTenantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userTenantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserTenantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   scans<T extends Prisma.User$scansArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$scansArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ScanPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   temporaryScannerProfiles<T extends Prisma.User$temporaryScannerProfilesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$temporaryScannerProfilesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemporaryScannerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1750,6 +1876,30 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Users to delete.
    */
   limit?: number
+}
+
+/**
+ * User.scanAttempts
+ */
+export type User$scanAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ScanAttempt
+   */
+  select?: Prisma.ScanAttemptSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ScanAttempt
+   */
+  omit?: Prisma.ScanAttemptOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ScanAttemptInclude<ExtArgs> | null
+  where?: Prisma.ScanAttemptWhereInput
+  orderBy?: Prisma.ScanAttemptOrderByWithRelationInput | Prisma.ScanAttemptOrderByWithRelationInput[]
+  cursor?: Prisma.ScanAttemptWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ScanAttemptScalarFieldEnum | Prisma.ScanAttemptScalarFieldEnum[]
 }
 
 /**

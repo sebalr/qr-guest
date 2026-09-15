@@ -14,10 +14,11 @@ export function generateCompactQRToken(tid: string, eid: string, secret: string)
 export function verifyCompactQRToken(token: string, tid: string, eid: string, secret: string): boolean {
 	try {
 		const buf = Buffer.from(token, 'base64url');
-		if (buf.length !== TOKEN_BYTE_LENGTH) return false;
+		if (buf.length !== TOKEN_BYTE_LENGTH || buf.toString('base64url') !== token) return false;
 
 		const tidBytes = uuidToBytes(tid);
 		const eidBytes = uuidToBytes(eid);
+		if (!timingSafeEqual(buf.subarray(0, 16), tidBytes) || !timingSafeEqual(buf.subarray(16, 32), eidBytes)) return false;
 		const expectedMac = createQrMac(tidBytes, eidBytes, secret);
 		const actualMac = buf.subarray(UUID_BYTE_LENGTH * 2, UUID_BYTE_LENGTH * 2 + MAC_BYTE_LENGTH);
 

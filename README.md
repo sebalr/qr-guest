@@ -15,9 +15,9 @@ backend/    — Node.js/Express API (TypeScript + Prisma + PostgreSQL)
 - **Append-only scan logs** — no overwrites, no deletions
 - **Delta sync** — efficient sync with versioned tickets and timestamp cursors
 - **Duplicate handling** — prompts user when ticket already scanned
-- **QR codes** — signed JWT tokens, verified offline
+- **QR codes** — compact HMAC-authenticated tokens, checked offline against server-provided SHA-256 fingerprints
 - **Role-based access** — owner, admin, scanner
-- **Plan restrictions** — free (max 10 tickets) vs pro (unlimited)
+- **Plans** — Free: one lifetime event and 50 complimentary QRs per workspace. Personal: unlimited events after the first QR purchase, USD 0.10 per extra QR, no subscription.
 - **Super admin back-office** — manage tenants and plans
 
 ## Quick Start
@@ -115,7 +115,7 @@ npm run dev
 | POST   | /sync                        | Delta sync                     |
 | GET    | /events/:id/stats            | Event statistics               |
 | GET    | /admin/tenants               | List all tenants (super admin) |
-| POST   | /admin/tenants/:id/upgrade   | Upgrade tenant to pro          |
+| POST   | /admin/tenants/:id/upgrade   | Upgrade tenant to Personal          |
 | POST   | /admin/tenants/:id/downgrade | Downgrade tenant to free       |
 
 ## CI/CD
@@ -307,3 +307,86 @@ In Docker Compose, a `db-bootstrap` service ensures the app role exists and has 
 - GitHub Actions: only set it there if your workflow builds the frontend image or static bundle in CI.
 
 Do not place it in backend env files.
+
+
+## Pricing, payments, and invitation templates
+
+See [SPEC.md](SPEC.md) for numbered requirements, evidence, and verification limits.
+
+- The first 50 tickets are complimentary **once per tenant/workspace**, shared across its events. Personal unlocks after the first approved purchase. Paid credits belong to the selected event, do not expire, and do not transfer. Cancellation/deletion never restores credits. Re-exporting an existing ticket costs nothing.
+- Ticket creation requires an `Idempotency-Key` header. Reuse the same key and payload after a network failure; a different payload with that key returns 409. Both single and bulk creation atomically debit credits. Event capacity remains a separate limit.
+- The event page shows complimentary, paid, available, and issued counts. It includes a quantity-based purchase flow and a Custom-plan contact form. Super admins see contact requests for the selected tenant.
+- PDF settings support PNG/JPEG uploads and one Personal-only, single-page PDF template per event (maximum 10 MB). The QR occupies a fixed 50 × 50 mm white square, including a four-module quiet zone. Drag it or use arrow keys; Shift moves ten PDF points. Saved coordinates use points from the **displayed crop box's top-left**, accounting for page rotation. Uploaded assets are stored in PostgreSQL; include them in backups.
+
+### Mercado Pago configuration
+
+Set these **backend-only** values in local environment or Compose/Coolify:
+
+| Variable | Purpose |
+| --- | --- |
+| `MP_ACCESS_TOKEN` | Merchant access token for Checkout Pro and payment lookup |
+| `MP_MERCHANT_ID` | Expected collector/merchant ID; payments must match it |
+| `MP_WEBHOOK_SECRET` | Secret used to validate Mercado Pago `x-signature` notifications |
+| `MP_WEBHOOK_URL` | Public HTTPS URL ending in `/billing/webhooks/mercadopago` |
+| `MP_SANDBOX` | `true` for test checkout URLs, `false` for production |
+| `PAYMENT_RECONCILE_MS` | Reconciliation interval in milliseconds; default 60000 |
+| `FRONTEND_URL` | Public frontend origin for checkout return URLs |
+
+Configure payment webhooks in the Mercado Pago application and use test seller/buyer credentials for sandbox validation. Redirects show order status but never grant credits. The server verifies the notification, fetches the payment, and matches reference, amount, currency, and merchant. Duplicate approvals cannot grant twice. Refunds/chargebacks reverse credits; a resulting deficit blocks new issuance until replenished. Already issued tickets remain usable.
+
+DolarAPI's `/v1/dolares/oficial` **selling** rate is used; this is not a BNA-specific quote. The cache refreshes after 15 minutes and can fall back to the last successful fetch for up to 24 hours during an outage. Each quote records its rate/source timestamp and expires after 15 minutes. Accepted checkouts retain their agreed ARS amount even if payment settles later. Missing credentials or an unusable exchange rate stop checkout; no payment is simulated in production code.
+
+Provider integration is isolated in `backend/src/billing/providers.ts`. Implement the provider contract (checkout, signed notifications, payment lookup/search and merchant identity), register it for the desired country, and add its webhook route. Credits and order reconciliation remain provider-independent. Argentina/Mercado Pago is the initial supported combination.
+
+### Offline scanner behavior
+
+Download an event while online before using it offline. Its signed permit lasts through event end plus 24 hours, capped at seven days; an undated event gets 24 hours. Expired login sessions can open only the scanner, which checks that permit before admission. Sign in as the original user to upload pending attempts after authentication expires. Local databases are isolated by tenant, event **and user**, so changing accounts never uploads someone else's attempts.
+
+Online admission waits up to two seconds for an authoritative response. Connection failures use the downloaded roster and record an offline admission. Automatic sync runs every five seconds in the foreground, on reconnect and when returning to the app, with failure backoff up to 60 seconds. Sync network requests do not hold the local scanning lock. A local-clear generation marker discards responses that arrive after deletion.
+
+Two disconnected devices can admit the same QR. Synchronization records conflicts; it cannot undo physical entry. Known duplicates require an explicit second-entry override, and the server serializes admissions to enforce at most two accepted entries. Recent conflicts appear in the scanner.
+
+Use a modern browser with camera access, Web Locks, IndexedDB, and Ed25519 Web Crypto support over HTTPS (localhost is allowed for development). The PWA caches the app and PDF worker; authenticated API responses are never stored in a shared service-worker cache. New worker versions wait for a subsequent app session rather than forcing a scanner reload.
+
+### Migration and verification
+
+Run `npm run prisma:migrate` with the migration role, then regenerate/build. The migration preserves existing tickets, counts them against the complimentary allowance, maps Pro to Personal, and removes legacy 10/500 capacity defaults. It introduces RLS policies and append-only ledger/scan triggers. No existing database is reset automatically. Older unscoped development IndexedDB data is left untouched; download events into the new scoped store.
+
+New tables need the same runtime grants as existing tenant tables. When using a separate migration role, configure its default table/sequence privileges for the runtime role, or grant them after migration.
+
+```bash
+npm test --prefix backend
+npm test --prefix frontend
+npm run build --prefix backend
+npm run build --prefix frontend
+npm run test:e2e --prefix frontend
+```
+
+Browser tests require Chrome (`CHROME_PATH` overrides `/usr/bin/google-chrome`), and print-rendering tests require `pdftoppm`. They run against the production preview with controlled API fixtures; they do not make real payments.
+
+For the PostgreSQL suite, migrate a disposable database named `tiqra_test`, grant a non-superuser/non-BYPASSRLS runtime role table access, and set **both** `DATABASE_URL` and `TEST_DATABASE_URL` to it before running backend tests. The suite rejects other database names and verifies the runtime role cannot bypass RLS. It creates isolated test tenants; discard the test database afterward.
+
+### Public pricing simulator
+
+The bilingual landing page includes Free, Personal and Custom plans and an event-cost calculator. Visitors can simulate 1–100,000 guests, adjust their remaining lifetime complimentary allowance (0–50), and see USD and estimated ARS costs. `GET /billing/pricing` publicly exposes the shared DolarAPI official selling rate and timestamp. When unavailable, USD estimates remain usable. The simulator estimates new ticket needs without subtracting existing paid event credits; it does not create an order or grant credits. Checkout still requires an authenticated owner/admin and a server-issued quote.
+
+### Release using GitHub-built images in Coolify
+
+1. Set GitHub Actions repository variable `VITE_API_URL` to the public HTTPS API origin and, when enabled, `VITE_RECAPTCHA_SITE_KEY`. These are frontend **build-time** values.
+2. Push the release to `main`. Wait for both `Deploy Backend` and `Deploy Frontend` workflows to publish their images.
+3. Use `docker-compose.coolify.images.yml` for a registry-based stack and set `IMAGE_TAG` to the matching `sha-…` tag published by both workflows. The source-building alternative is `docker-compose.coolify.yml`; it requires the Vite variables as build arguments in Coolify.
+4. Configure backend environment variables and both database connections. The migration role must own existing application tables to alter them. Back up the database before releasing. Do not reset it.
+5. Connect the stack to the database's internal network. Assign HTTPS domains to frontend port 80 and backend port 3000 in Coolify. These Compose files expose container ports without binding host ports used by Coolify's proxy.
+6. Deploy only after the images exist. The one-shot migration service must succeed before the backend starts; the frontend waits for backend health. On later releases, verify migration logs for the selected image tag before considering deployment complete.
+7. Verify `/health`, `/billing/pricing`, login, invitation export, scanner sync, and a Mercado Pago test payment before switching to live payment credentials.
+
+For tables created by `tiqra_migrator`, set future runtime grants as that role (or as a database administrator):
+
+```sql
+ALTER DEFAULT PRIVILEGES FOR ROLE tiqra_migrator IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tiqra_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE tiqra_migrator IN SCHEMA public
+  GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO tiqra_app;
+```
+
+These creator-specific privileges supplement the grants for existing tables above. Changing frontend runtime variables does not rewrite an already-built Vite bundle; rebuild and release a new image when its API origin changes.

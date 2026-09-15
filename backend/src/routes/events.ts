@@ -1,3 +1,5 @@
+import { lockTenant } from '../billing/credits';
+import { HttpError } from '../lib/errors';
 import { Router, Request, Response } from 'express';
 import { randomBytes, randomUUID } from 'crypto';
 import { sendTemporaryScannerAccessEmail } from '../lib/authEmails';
@@ -141,38 +143,17 @@ router.post('/', requireRole(['owner', 'admin']), async (req: Request, res: Resp
 			return;
 		}
 
-		const tenant = await withRls(context, async tenantPrisma => {
-			return tenantPrisma.tenant.findUnique({
-				where: { id: context.tenantId },
-				select: { plan: true },
-			});
-		});
-
-		if (!tenant) {
-			res.status(404).json({ error: 'Tenant not found' });
-			return;
-		}
-
-		const defaultMaxGuests = tenant.plan === 'pro' ? 500 : 10;
-
-		const event = await withRls(context, async tenantPrisma => {
-			return tenantPrisma.event.create({
-				data: {
-					tenantId: context.tenantId,
-					name,
-					description: description ?? null,
-					imageUrl: imageUrl ?? null,
-					maxGuests: defaultMaxGuests,
-					startsAt: startDate ?? null,
-					endsAt: endDate ?? null,
-				},
-			});
-		});
+        const event = await withRls(context, async tx => {
+          const tenant = await lockTenant(tx, context.tenantId);
+          if (tenant.plan === 'free' && tenant.eventsCreated >= 1) throw new HttpError(403, 'Free includes one lifetime event. Buy QR credits to unlock Personal.');
+          await tx.tenant.update({ where: { id: tenant.id }, data: { eventsCreated: { increment: 1 } } });
+          return tx.event.create({ data: { tenantId: context.tenantId, name, description: description ?? null, imageUrl: imageUrl ?? null, maxGuests: null, startsAt: startDate, endsAt: endDate } });
+        });
 
 		res.status(201).json({ data: event });
 	} catch (error) {
 		console.error('Error creating event:', error);
-		res.status(500).json({ error: 'Failed to create event' });
+		res.status(error instanceof HttpError ? error.status : 500).json({ error: error instanceof HttpError ? error.message : 'Failed to create event' });
 	}
 });
 

@@ -5,9 +5,8 @@ services:
       dockerfile: Dockerfile
     restart: 'no'
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:-}
-    command: sh -c "DATABASE_URL=${MIGRATION_DATABASE_URL:-$DATABASE_URL} npx prisma migrate deploy"
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?Set the migration database URL}
+    command: ["npx", "prisma", "migrate", "deploy"]
 
   backend:
     build:
@@ -18,6 +17,12 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       QR_SECRET: ${QR_SECRET}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MP_MERCHANT_ID: ${MP_MERCHANT_ID:-}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      MP_WEBHOOK_URL: ${MP_WEBHOOK_URL:-}
+      MP_SANDBOX: ${MP_SANDBOX:-true}
+      PAYMENT_RECONCILE_MS: ${PAYMENT_RECONCILE_MS:-60000}
       PORT: 3000
       FRONTEND_URL: ${FRONTEND_URL}
       CORS_ORIGINS: ${CORS_ORIGINS:-${FRONTEND_URL}}
@@ -26,16 +31,29 @@ services:
       RECAPTCHA_PROJECT_ID: ${RECAPTCHA_PROJECT_ID:-}
       RECAPTCHA_API_KEY: ${RECAPTCHA_API_KEY:-}
       RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:-}
-    ports:
-      - '3000:3000'
+    expose:
+      - '3000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     command: sh -c "node dist/index.js"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:?Set the public HTTPS API URL}
+        VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
     restart: unless-stopped
-    ports:
-      - '80:80'
+    expose:
+      - '80'
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy

@@ -99,3 +99,38 @@ export type SyncState = Prisma.SyncStateModel
  * 
  */
 export type Guest = Prisma.GuestModel
+/**
+ * Model CreditLedger
+ * 
+ */
+export type CreditLedger = Prisma.CreditLedgerModel
+/**
+ * Model IssuanceRequest
+ * 
+ */
+export type IssuanceRequest = Prisma.IssuanceRequestModel
+/**
+ * Model PaymentOrder
+ * 
+ */
+export type PaymentOrder = Prisma.PaymentOrderModel
+/**
+ * Model ExchangeRate
+ * 
+ */
+export type ExchangeRate = Prisma.ExchangeRateModel
+/**
+ * Model ContactRequest
+ * 
+ */
+export type ContactRequest = Prisma.ContactRequestModel
+/**
+ * Model EventAsset
+ * 
+ */
+export type EventAsset = Prisma.EventAssetModel
+/**
+ * Model ScanAttempt
+ * 
+ */
+export type ScanAttempt = Prisma.ScanAttemptModel

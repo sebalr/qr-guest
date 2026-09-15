@@ -1,6 +1,7 @@
 name: Deploy Frontend
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -22,6 +23,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate public frontend configuration
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api-tiqra.nardario.com' }}
+        run: |
+          node -e 'const url = new URL(process.env.VITE_API_URL); if (url.protocol !== "https:" || ["localhost", "127.0.0.1"].includes(url.hostname)) throw new Error("Set VITE_API_URL to the public HTTPS API URL in repository Actions variables");'
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -47,5 +54,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_API_URL=${{ vars.VITE_API_URL || 'http://localhost:3000' }}
+            VITE_API_URL=${{ vars.VITE_API_URL || 'https://api-tiqra.nardario.com' }}
             VITE_RECAPTCHA_SITE_KEY=${{ vars.VITE_RECAPTCHA_SITE_KEY || '' }}

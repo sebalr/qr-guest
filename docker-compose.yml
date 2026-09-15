@@ -45,6 +45,12 @@ services:
       DATABASE_URL: postgresql://${APP_DB_USER:-tiqra_app}:${APP_DB_PASSWORD:-tiqra_app}@db:5432/${APP_DB_NAME:-tiqra}
       JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret}
       QR_SECRET: ${QR_SECRET:-change_me_qr_secret}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MP_MERCHANT_ID: ${MP_MERCHANT_ID:-}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      MP_WEBHOOK_URL: ${MP_WEBHOOK_URL:-}
+      MP_SANDBOX: ${MP_SANDBOX:-true}
+      PAYMENT_RECONCILE_MS: ${PAYMENT_RECONCILE_MS:-60000}
       PORT: 3000
     ports:
       - '3000:3000'

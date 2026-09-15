@@ -6,6 +6,7 @@ export interface LocalTicket {
   name: string;
   status: string; // active | cancelled
   version: number;
+  tokenFingerprint?: string;
 }
 
 export interface LocalScan {
@@ -14,6 +15,9 @@ export interface LocalScan {
   event_id: string;
   scanned_at: string;
   synced: boolean;
+  qrToken?: string;
+  confirmed?: boolean;
+  outcome?: string;
 }
 
 export interface LocalMeta {
@@ -26,8 +30,8 @@ export class QRGuestDB extends Dexie {
   scans!: Table<LocalScan>;
   meta!: Table<LocalMeta>;
 
-  constructor() {
-    super('qrguest');
+  constructor(name = "qrguest") {
+    super(name);
     this.version(1).stores({
       tickets: 'id, event_id, status, version',
       scans: 'id, ticket_id, event_id, synced',
@@ -37,3 +41,11 @@ export class QRGuestDB extends Dexie {
 }
 
 export const db = new QRGuestDB();
+
+const scopedDatabases = new Map<string,QRGuestDB>();
+export function getScannerDb(tenantId: string, eventId: string, userId = "") {
+ const key = `tiqra:${tenantId}:${eventId}${userId ? `:${userId}` : ""}`;
+ let scoped = scopedDatabases.get(key);
+ if (!scoped) { scoped = new QRGuestDB(key); scopedDatabases.set(key,scoped); }
+ return scoped;
+}

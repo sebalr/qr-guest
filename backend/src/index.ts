@@ -1,3 +1,7 @@
+import assetsRouter from './routes/assets';
+import billingRouter from './routes/billing';
+import { startPaymentReconciliation } from './billing/payments';
+import { HttpError } from './lib/errors';
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -50,12 +54,14 @@ const corsOptions: cors.CorsOptions = {
 		callback(new Error(`CORS blocked origin: ${origin}`));
 	},
 	methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-	allowedHeaders: ['Content-Type', 'Authorization'],
+	allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
 };
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
+app.use('/billing', billingRouter);
+app.use('/assets', assetsRouter);
 
 app.use('/auth', authRouter);
 app.use('/events', eventsRouter);
@@ -73,13 +79,14 @@ app.get('/health', (_req: Request, res: Response) => {
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 	console.error(err);
-	res.status(500).json({ error: 'Internal server error' });
+	res.status(err instanceof HttpError ? err.status : 500).json({ error: err instanceof HttpError ? err.message : 'Internal server error' });
 });
 
 const PORT = process.env.PORT ?? 3000;
 
 async function startServer(): Promise<void> {
 	await assertRlsSafeDatabaseRole();
+  startPaymentReconciliation();
 
 	app.listen(PORT, () => {
 		console.log(`Server listening on port ${PORT}`);

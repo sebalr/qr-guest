@@ -256,6 +256,7 @@ export type TicketWhereInput = {
   version?: Prisma.IntFilter<"Ticket"> | number
   createdAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
+  scanAttempts?: Prisma.ScanAttemptListRelationFilter
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
   guest?: Prisma.XOR<Prisma.GuestNullableScalarRelationFilter, Prisma.GuestWhereInput> | null
@@ -274,6 +275,7 @@ export type TicketOrderByWithRelationInput = {
   version?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  scanAttempts?: Prisma.ScanAttemptOrderByRelationAggregateInput
   tenant?: Prisma.TenantOrderByWithRelationInput
   event?: Prisma.EventOrderByWithRelationInput
   guest?: Prisma.GuestOrderByWithRelationInput
@@ -296,6 +298,7 @@ export type TicketWhereUniqueInput = Prisma.AtLeast<{
   version?: Prisma.IntFilter<"Ticket"> | number
   createdAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
+  scanAttempts?: Prisma.ScanAttemptListRelationFilter
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
   event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
   guest?: Prisma.XOR<Prisma.GuestNullableScalarRelationFilter, Prisma.GuestWhereInput> | null
@@ -344,6 +347,7 @@ export type TicketCreateInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutTicketInput
   tenant: Prisma.TenantCreateNestedOneWithoutTicketsInput
   event: Prisma.EventCreateNestedOneWithoutTicketsInput
   guest?: Prisma.GuestCreateNestedOneWithoutTicketsInput
@@ -362,6 +366,7 @@ export type TicketUncheckedCreateInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutTicketInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutTicketInput
 }
 
@@ -372,6 +377,7 @@ export type TicketUpdateInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutTicketNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutTicketsNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutTicketsNestedInput
   guest?: Prisma.GuestUpdateOneWithoutTicketsNestedInput
@@ -390,6 +396,7 @@ export type TicketUncheckedUpdateInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutTicketNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutTicketNestedInput
 }
 
@@ -677,6 +684,20 @@ export type TicketUncheckedUpdateManyWithoutGuestNestedInput = {
   deleteMany?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
 }
 
+export type TicketCreateNestedOneWithoutScanAttemptsInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutScanAttemptsInput, Prisma.TicketUncheckedCreateWithoutScanAttemptsInput>
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutScanAttemptsInput
+  connect?: Prisma.TicketWhereUniqueInput
+}
+
+export type TicketUpdateOneRequiredWithoutScanAttemptsNestedInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutScanAttemptsInput, Prisma.TicketUncheckedCreateWithoutScanAttemptsInput>
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutScanAttemptsInput
+  upsert?: Prisma.TicketUpsertWithoutScanAttemptsInput
+  connect?: Prisma.TicketWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TicketUpdateToOneWithWhereWithoutScanAttemptsInput, Prisma.TicketUpdateWithoutScanAttemptsInput>, Prisma.TicketUncheckedUpdateWithoutScanAttemptsInput>
+}
+
 export type TicketCreateWithoutTenantInput = {
   id?: string
   name: string
@@ -684,6 +705,7 @@ export type TicketCreateWithoutTenantInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutTicketInput
   event: Prisma.EventCreateNestedOneWithoutTicketsInput
   guest?: Prisma.GuestCreateNestedOneWithoutTicketsInput
   ticketType?: Prisma.TicketTypeCreateNestedOneWithoutTicketsInput
@@ -700,6 +722,7 @@ export type TicketUncheckedCreateWithoutTenantInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutTicketInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutTicketInput
 }
 
@@ -752,6 +775,7 @@ export type TicketCreateWithoutEventInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutTicketInput
   tenant: Prisma.TenantCreateNestedOneWithoutTicketsInput
   guest?: Prisma.GuestCreateNestedOneWithoutTicketsInput
   ticketType?: Prisma.TicketTypeCreateNestedOneWithoutTicketsInput
@@ -767,6 +791,7 @@ export type TicketUncheckedCreateWithoutEventInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutTicketInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutTicketInput
 }
 
@@ -803,6 +828,7 @@ export type TicketCreateWithoutTicketTypeInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutTicketInput
   tenant: Prisma.TenantCreateNestedOneWithoutTicketsInput
   event: Prisma.EventCreateNestedOneWithoutTicketsInput
   guest?: Prisma.GuestCreateNestedOneWithoutTicketsInput
@@ -818,6 +844,7 @@ export type TicketUncheckedCreateWithoutTicketTypeInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutTicketInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutTicketInput
 }
 
@@ -854,6 +881,7 @@ export type TicketCreateWithoutScansInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutTicketInput
   tenant: Prisma.TenantCreateNestedOneWithoutTicketsInput
   event: Prisma.EventCreateNestedOneWithoutTicketsInput
   guest?: Prisma.GuestCreateNestedOneWithoutTicketsInput
@@ -871,6 +899,7 @@ export type TicketUncheckedCreateWithoutScansInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutTicketInput
 }
 
 export type TicketCreateOrConnectWithoutScansInput = {
@@ -896,6 +925,7 @@ export type TicketUpdateWithoutScansInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutTicketNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutTicketsNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutTicketsNestedInput
   guest?: Prisma.GuestUpdateOneWithoutTicketsNestedInput
@@ -913,6 +943,7 @@ export type TicketUncheckedUpdateWithoutScansInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutTicketNestedInput
 }
 
 export type TicketCreateWithoutGuestInput = {
@@ -922,6 +953,7 @@ export type TicketCreateWithoutGuestInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptCreateNestedManyWithoutTicketInput
   tenant: Prisma.TenantCreateNestedOneWithoutTicketsInput
   event: Prisma.EventCreateNestedOneWithoutTicketsInput
   ticketType?: Prisma.TicketTypeCreateNestedOneWithoutTicketsInput
@@ -937,6 +969,7 @@ export type TicketUncheckedCreateWithoutGuestInput = {
   version?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedCreateNestedManyWithoutTicketInput
   scans?: Prisma.ScanUncheckedCreateNestedManyWithoutTicketInput
 }
 
@@ -966,6 +999,78 @@ export type TicketUpdateManyWithWhereWithoutGuestInput = {
   data: Prisma.XOR<Prisma.TicketUpdateManyMutationInput, Prisma.TicketUncheckedUpdateManyWithoutGuestInput>
 }
 
+export type TicketCreateWithoutScanAttemptsInput = {
+  id?: string
+  name: string
+  status?: string
+  version?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  tenant: Prisma.TenantCreateNestedOneWithoutTicketsInput
+  event: Prisma.EventCreateNestedOneWithoutTicketsInput
+  guest?: Prisma.GuestCreateNestedOneWithoutTicketsInput
+  ticketType?: Prisma.TicketTypeCreateNestedOneWithoutTicketsInput
+  scans?: Prisma.ScanCreateNestedManyWithoutTicketInput
+}
+
+export type TicketUncheckedCreateWithoutScanAttemptsInput = {
+  id?: string
+  tenantId: string
+  eventId: string
+  guestId?: string | null
+  ticketTypeId?: string | null
+  name: string
+  status?: string
+  version?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  scans?: Prisma.ScanUncheckedCreateNestedManyWithoutTicketInput
+}
+
+export type TicketCreateOrConnectWithoutScanAttemptsInput = {
+  where: Prisma.TicketWhereUniqueInput
+  create: Prisma.XOR<Prisma.TicketCreateWithoutScanAttemptsInput, Prisma.TicketUncheckedCreateWithoutScanAttemptsInput>
+}
+
+export type TicketUpsertWithoutScanAttemptsInput = {
+  update: Prisma.XOR<Prisma.TicketUpdateWithoutScanAttemptsInput, Prisma.TicketUncheckedUpdateWithoutScanAttemptsInput>
+  create: Prisma.XOR<Prisma.TicketCreateWithoutScanAttemptsInput, Prisma.TicketUncheckedCreateWithoutScanAttemptsInput>
+  where?: Prisma.TicketWhereInput
+}
+
+export type TicketUpdateToOneWithWhereWithoutScanAttemptsInput = {
+  where?: Prisma.TicketWhereInput
+  data: Prisma.XOR<Prisma.TicketUpdateWithoutScanAttemptsInput, Prisma.TicketUncheckedUpdateWithoutScanAttemptsInput>
+}
+
+export type TicketUpdateWithoutScanAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.TenantUpdateOneRequiredWithoutTicketsNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutTicketsNestedInput
+  guest?: Prisma.GuestUpdateOneWithoutTicketsNestedInput
+  ticketType?: Prisma.TicketTypeUpdateOneWithoutTicketsNestedInput
+  scans?: Prisma.ScanUpdateManyWithoutTicketNestedInput
+}
+
+export type TicketUncheckedUpdateWithoutScanAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenantId?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  guestId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ticketTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scans?: Prisma.ScanUncheckedUpdateManyWithoutTicketNestedInput
+}
+
 export type TicketCreateManyTenantInput = {
   id?: string
   eventId: string
@@ -985,6 +1090,7 @@ export type TicketUpdateWithoutTenantInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutTicketNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutTicketsNestedInput
   guest?: Prisma.GuestUpdateOneWithoutTicketsNestedInput
   ticketType?: Prisma.TicketTypeUpdateOneWithoutTicketsNestedInput
@@ -1001,6 +1107,7 @@ export type TicketUncheckedUpdateWithoutTenantInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutTicketNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutTicketNestedInput
 }
 
@@ -1034,6 +1141,7 @@ export type TicketUpdateWithoutEventInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutTicketNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutTicketsNestedInput
   guest?: Prisma.GuestUpdateOneWithoutTicketsNestedInput
   ticketType?: Prisma.TicketTypeUpdateOneWithoutTicketsNestedInput
@@ -1049,6 +1157,7 @@ export type TicketUncheckedUpdateWithoutEventInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutTicketNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutTicketNestedInput
 }
 
@@ -1081,6 +1190,7 @@ export type TicketUpdateWithoutTicketTypeInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutTicketNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutTicketsNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutTicketsNestedInput
   guest?: Prisma.GuestUpdateOneWithoutTicketsNestedInput
@@ -1096,6 +1206,7 @@ export type TicketUncheckedUpdateWithoutTicketTypeInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutTicketNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutTicketNestedInput
 }
 
@@ -1128,6 +1239,7 @@ export type TicketUpdateWithoutGuestInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUpdateManyWithoutTicketNestedInput
   tenant?: Prisma.TenantUpdateOneRequiredWithoutTicketsNestedInput
   event?: Prisma.EventUpdateOneRequiredWithoutTicketsNestedInput
   ticketType?: Prisma.TicketTypeUpdateOneWithoutTicketsNestedInput
@@ -1143,6 +1255,7 @@ export type TicketUncheckedUpdateWithoutGuestInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scanAttempts?: Prisma.ScanAttemptUncheckedUpdateManyWithoutTicketNestedInput
   scans?: Prisma.ScanUncheckedUpdateManyWithoutTicketNestedInput
 }
 
@@ -1163,10 +1276,12 @@ export type TicketUncheckedUpdateManyWithoutGuestInput = {
  */
 
 export type TicketCountOutputType = {
+  scanAttempts: number
   scans: number
 }
 
 export type TicketCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  scanAttempts?: boolean | TicketCountOutputTypeCountScanAttemptsArgs
   scans?: boolean | TicketCountOutputTypeCountScansArgs
 }
 
@@ -1178,6 +1293,13 @@ export type TicketCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exten
    * Select specific fields to fetch from the TicketCountOutputType
    */
   select?: Prisma.TicketCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * TicketCountOutputType without action
+ */
+export type TicketCountOutputTypeCountScanAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ScanAttemptWhereInput
 }
 
 /**
@@ -1199,6 +1321,7 @@ export type TicketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   version?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  scanAttempts?: boolean | Prisma.Ticket$scanAttemptsArgs<ExtArgs>
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   guest?: boolean | Prisma.Ticket$guestArgs<ExtArgs>
@@ -1256,6 +1379,7 @@ export type TicketSelectScalar = {
 
 export type TicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "eventId" | "guestId" | "ticketTypeId" | "name" | "status" | "version" | "createdAt" | "updatedAt", ExtArgs["result"]["ticket"]>
 export type TicketInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  scanAttempts?: boolean | Prisma.Ticket$scanAttemptsArgs<ExtArgs>
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   guest?: boolean | Prisma.Ticket$guestArgs<ExtArgs>
@@ -1279,6 +1403,7 @@ export type TicketIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type $TicketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Ticket"
   objects: {
+    scanAttempts: Prisma.$ScanAttemptPayload<ExtArgs>[]
     tenant: Prisma.$TenantPayload<ExtArgs>
     event: Prisma.$EventPayload<ExtArgs>
     guest: Prisma.$GuestPayload<ExtArgs> | null
@@ -1690,6 +1815,7 @@ readonly fields: TicketFieldRefs;
  */
 export interface Prisma__TicketClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  scanAttempts<T extends Prisma.Ticket$scanAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Ticket$scanAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ScanAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tenant<T extends Prisma.TenantDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TenantDefaultArgs<ExtArgs>>): Prisma.Prisma__TenantClient<runtime.Types.Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   event<T extends Prisma.EventDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EventDefaultArgs<ExtArgs>>): Prisma.Prisma__EventClient<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   guest<T extends Prisma.Ticket$guestArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Ticket$guestArgs<ExtArgs>>): Prisma.Prisma__GuestClient<runtime.Types.Result.GetResult<Prisma.$GuestPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -2132,6 +2258,30 @@ export type TicketDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Tickets to delete.
    */
   limit?: number
+}
+
+/**
+ * Ticket.scanAttempts
+ */
+export type Ticket$scanAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ScanAttempt
+   */
+  select?: Prisma.ScanAttemptSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ScanAttempt
+   */
+  omit?: Prisma.ScanAttemptOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ScanAttemptInclude<ExtArgs> | null
+  where?: Prisma.ScanAttemptWhereInput
+  orderBy?: Prisma.ScanAttemptOrderByWithRelationInput | Prisma.ScanAttemptOrderByWithRelationInput[]
+  cursor?: Prisma.ScanAttemptWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ScanAttemptScalarFieldEnum | Prisma.ScanAttemptScalarFieldEnum[]
 }
 
 /**

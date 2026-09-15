@@ -614,7 +614,7 @@ router.post('/tenants/:id/upgrade', requireSuperAdmin, async (req: Request, res:
 	}
 	const updated = await prisma.tenant.update({
 		where: { id: tenantId },
-		data: { plan: 'pro' },
+		data: { plan: 'personal' },
 	});
 	res.json({ data: updated });
 });

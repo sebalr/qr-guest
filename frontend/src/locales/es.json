@@ -8,7 +8,7 @@
     "actions": {
       "tools": "Herramientas del escaner",
       "sendingLocalData": "Enviando datos locales...",
-      "sendLocalDataToApi": "Enviar informacion para debug",
+      "sendLocalDataToApi": "Enviar información de diagnóstico",
       "clearingLocalData": "Borrando datos locales...",
       "clearLocalEventData": "Borrar datos locales del evento",
       "resyncing": "Resincronizando...",
@@ -18,7 +18,7 @@
     },
     "debugConfirmDialog": {
       "title": "Enviar informacion para debug",
-      "description": "Esta accion no es necesaria para sincronizar la informacion.",
+      "description": "Esto no es necesario para el uso normal ni para sincronizar. Enviá la información solo si soporte te lo pidió.",
       "confirm": "Enviar"
     },
     "feedback": {
@@ -89,7 +89,7 @@
         "tenants": "Tenants",
         "users": "Usuarios",
         "events": "Eventos",
-        "proTenants": "Tenants Pro"
+        "proTenants": "Espacios Personal"
       },
       "cards": {
         "createTenantInviteAdmin": "Crear tenant e invitar admin",
@@ -479,6 +479,247 @@
       "generatePdfFailed": "No se pudo generar el PDF.",
       "serverHistoryUnavailable": "Historial del servidor no disponible. Se muestran solo registros locales.",
       "loadScanHistoryFailed": "No se pudo cargar el historial de escaneos."
+    }
+  },
+  "scannerV2": {
+    "event": "Evento",
+    "ready": "Listo para escanear sin conexión",
+    "notReady": "Descargá este evento con conexión antes de escanear o renová el acceso sin conexión.",
+    "counts": "{{admitted}} ingresados / {{total}} entradas · {{pending}} pendientes de sincronizar",
+    "lastSync": "Última sincronización",
+    "offlineWarning": "Los dispositivos desconectados no pueden detectar los nuevos escaneos de otros hasta reconectarse.",
+    "loginRequired": "Iniciá sesión de nuevo para sincronizar. Los escaneos pendientes se conservan.",
+    "syncFailed": "No se pudo sincronizar. Los escaneos pendientes se conservan; reintentá con conexión.",
+    "storageError": "No se pudo leer el almacenamiento local. Reintentá antes de continuar.",
+    "conflict": "Un escaneo sincronizado tiene un conflicto con otro ingreso o el estado de la entrada. El resultado quedó registrado.",
+    "offlineAccepted": "Ingreso aceptado sin conexión; pendiente de sincronización.",
+    "invalid": "Código QR inválido.",
+    "cancelled": "La entrada está cancelada o el evento no está disponible.",
+    "limit": "Esta entrada alcanzó el límite de dos ingresos.",
+    "duplicate": "Este QR ya fue utilizado.",
+    "signIn": "Iniciar sesión",
+    "syncNow": "Sincronizar ahora",
+    "syncFirst": "Sincronizar / volver a verificar",
+    "checking": "Verificando datos locales pendientes…",
+    "deleteWarning": "Se perderán definitivamente {{count}} escaneos sin sincronizar. No se podrán recuperar del servidor.",
+    "typeDelete": "Escribí delete para confirmar la pérdida de datos sin sincronizar.",
+    "countChanged": "Cambió la cantidad pendiente. Revisala y confirmá de nuevo.",
+    "overridePrompt": "¿Permitir un segundo ingreso? La autorización quedará registrada. No se permiten más ingresos.",
+    "override": "Permitir segundo ingreso",
+    "recordedConflicts": "Conflictos registrados"
+  },
+  "billing": {
+    "title": "Créditos QR y plan",
+    "free": "Gratis",
+    "personal": "Personal",
+    "custom": "Personalizado",
+    "freeDescription": "Un evento por cuenta. Los primeros 50 QR gratis por espacio de trabajo. Invitaciones con imagen y texto.",
+    "personalDescription": "Eventos ilimitados y PDF personalizados. Se activa con tu primera compra de QR. USD 0,10 por QR adicional; sin suscripción.",
+    "customDescription": "¿Necesitás una solución a medida? Contactanos con tus requisitos.",
+    "freeBalance": "Bonificados restantes",
+    "paidBalance": "Pagados para este evento",
+    "available": "Disponibles para este evento",
+    "issued": "Entradas emitidas",
+    "rules": "Los primeros 50 QR se bonifican una sola vez por espacio de trabajo. Los créditos pagos pertenecen a este evento y no vencen. Cancelar entradas no devuelve créditos.",
+    "quantity": "Cantidad de QR",
+    "method": "Medio de pago",
+    "quote": "Calcular precio",
+    "conversion": "{{quantity}} × USD 0,10 · Cotización oficial venta: ARS {{rate}} / USD · DolarAPI, {{date}}",
+    "expires": "Cotización válida hasta {{date}}",
+    "pay": "Pagar con Mercado Pago",
+    "paymentStatus": "Estado del pago",
+    "contact": "Contactanos por un plan personalizado",
+    "contactHint": "Contanos qué necesitan tus eventos. Te responderemos al correo de tu cuenta.",
+    "contactSent": "Solicitud guardada. Nuestro equipo puede darle seguimiento desde el panel de administración.",
+    "send": "Enviar solicitud",
+    "failed": "No se pudo completar la acción. Verificá tu conexión y reintentá.",
+    "loading": "Cargando…",
+    "status": {
+      "quoted": "Cotización creada",
+      "pending": "Esperando confirmación del pago",
+      "approved": "Aprobado — créditos disponibles",
+      "reversed": "Pago revertido",
+      "rejected": "Rechazado",
+      "refunded": "Reembolsado",
+      "charged_back": "Contracargo",
+      "in_process": "En proceso",
+      "partially_refunded": "Reembolso parcial"
+    },
+    "contactRequests": "Solicitudes de plan personalizado",
+    "requestStatus": "Estado de solicitud",
+    "new": "Nueva",
+    "contacted": "Contactado",
+    "closed": "Cerrada",
+    "plans": "Planes y precios"
+  },
+  "invitations": {
+    "title": "Diseño de invitación guardado",
+    "image": "Imagen de invitación básica (PNG/JPEG, hasta 10 MB); activá «Incluir imagen en PDF» debajo.",
+    "custom": "PDF personalizado · Personal",
+    "locked": "La ubicación de QR en PDF está disponible en Personal. Comprá créditos QR para habilitarla.",
+    "space": "Reservá un espacio libre de 5 × 5 cm. El QR de tamaño fijo cubrirá lo que haya debajo. Se guarda un PDF de una página por evento.",
+    "file": "Plantilla PDF (una página, sin contraseña, hasta 10 MB)",
+    "drag": "Arrastrá el QR o usá las flechas (Shift para pasos mayores). Es una muestra; la exportación usa el código de cada invitado.",
+    "save": "Guardar posición",
+    "remove": "Usar invitación básica",
+    "saved": "Diseño de invitación guardado para este evento.",
+    "invalid": "Archivo inválido. Usá PNG/JPEG o un PDF de una página sin contraseña, hasta 10 MB. Debe caber un QR de 5 × 5 cm.",
+    "failed": "No se pudo cargar o guardar la invitación. Reintentá."
+  },
+  "landing": {
+    "navigation": "Navegación principal",
+    "how": "Cómo funciona",
+    "pricing": "Precios",
+    "language": "Switch to English",
+    "login": "Ingresar",
+    "start": "Empezar gratis",
+    "footer": "Invitaciones con identidad. Ingresos más simples.",
+    "hero": {
+      "eyebrow": "Para tu próximo encuentro",
+      "title": "Un gran evento empieza",
+      "accent": "en la puerta.",
+      "description": "Creá invitaciones QR con el estilo de tu evento. Recibí a tus invitados aunque falle la conexión. Pagá solo por las entradas extra que necesitás.",
+      "calculate": "Calcular mi evento",
+      "bonus": "50 QR de regalo por espacio de trabajo. Sin suscripción."
+    },
+    "preview": {
+      "label": "Ejemplo ilustrativo de invitación e ingreso sin conexión",
+      "demo": "DEMO",
+      "invited": "ESTÁS INVITADO",
+      "accepted": "Aceptado sin conexión",
+      "pending": "Guardado en este dispositivo · pendiente de sincronizar",
+      "caption": "Descargá tu evento antes de quedarte sin conexión"
+    },
+    "workflow": {
+      "eyebrow": "De la invitación al ingreso",
+      "title": "Menos tareas en la puerta. Más evento.",
+      "items": [
+        {
+          "title": "Dale tu estilo",
+          "description": "Sumá una imagen y tu mensaje a cada invitación. Con Personal, subí tu propio PDF y arrastrá el QR al lugar que quieras."
+        },
+        {
+          "title": "Preparate para una señal inestable",
+          "description": "Descargá el evento en cada escáner antes de empezar. Las entradas se verifican contra la lista descargada y los escaneos quedan guardados localmente."
+        },
+        {
+          "title": "Mantené todo sincronizado",
+          "description": "Los escáneres sincronizan automáticamente cuando hay conexión. La validación online detecta duplicados y cancelaciones; los conflictos offline quedan visibles al sincronizar."
+        }
+      ],
+      "limitation": "El modo offline tiene un límite: dos dispositivos desconectados pueden admitir el mismo QR antes de sincronizar. Mantené los escáneres conectados siempre que puedas."
+    },
+    "plans": {
+      "eyebrow": "Un encuentro íntimo o a sala llena",
+      "title": "Tu evento. Tu cantidad de invitados.",
+      "description": "Empezá con 50 QR gratis. Sumá más por USD 0,10 cada uno, pagando en pesos argentinos.",
+      "flexible": "Pagás lo que usás",
+      "note": "Los 50 QR de regalo se otorgan una sola vez por espacio de trabajo y se comparten entre eventos. Los QR comprados pertenecen al evento seleccionado.",
+      "free": {
+        "name": "Gratis",
+        "price": "USD 0",
+        "unit": "para poner en marcha tu primer evento",
+        "description": "Todo lo necesario para una lista pequeña.",
+        "features": [
+          "Un evento por espacio de trabajo, por única vez",
+          "50 entradas QR de regalo",
+          "Invitaciones PDF con imagen y texto",
+          "Escaneo offline y sincronización automática"
+        ],
+        "cta": "Crear mi evento gratis",
+        "note": "Las plantillas PDF propias requieren Personal."
+      },
+      "personal": {
+        "name": "Personal",
+        "price": "USD 0,10",
+        "unit": "por QR extra · sin cuota mensual",
+        "description": "Tus propias invitaciones. Lugar para cada evento.",
+        "features": [
+          "Eventos ilimitados desde tu primera compra",
+          "Usá primero los QR de regalo que te queden",
+          "Una plantilla PDF guardada por evento",
+          "Ubicá un QR fijo de 5 × 5 cm",
+          "Comprá más créditos para tu evento cuando quieras"
+        ],
+        "cta": "Empezá gratis, crecé a tu ritmo",
+        "note": "Se activa con tu primera compra de QR aprobada."
+      },
+      "custom": {
+        "name": "A medida",
+        "price": "Conversemos",
+        "unit": "para necesidades especiales",
+        "description": "Contanos qué estás organizando y qué necesita tu equipo.",
+        "features": [
+          "Compartí los requisitos de tu evento",
+          "Enviá una solicitud al equipo de Tiqra",
+          "Conversá sobre una propuesta personalizada"
+        ],
+        "cta": "Solicitar un plan a medida",
+        "note": "Creá una cuenta para enviar tus requisitos."
+      }
+    },
+    "calculator": {
+      "eyebrow": "Sin sorpresas",
+      "title": "¿Cuánto cuesta tu evento?",
+      "description": "Elegí la cantidad de invitados. Hacemos la cuenta por vos. Cada invitado usa una entrada QR.",
+      "guests": "¿Cuántos invitados?",
+      "fewer": "Quitar 10 invitados",
+      "more": "Agregar 10 invitados",
+      "slider": "Ajustar cantidad de invitados",
+      "guestsShort": "invitados",
+      "allowance": "QR de regalo disponibles",
+      "allowanceHint": "¿Espacio nuevo? Empezá con 50. Si ya usaste algunos, ingresá cuántos te quedan de tu regalo inicial.",
+      "invalid": "Ingresá entre 1 y 100.000 invitados y entre 0 y 50 QR de regalo, en números enteros.",
+      "result": "Costo estimado de tus entradas",
+      "noMonthly": "Sin cuota mensual",
+      "covered": "Cubierto por tus QR de regalo",
+      "oneEvent": "Un evento · solo los QR extra",
+      "included": "Entradas de regalo",
+      "extra": "Entradas extra",
+      "inPesos": "Estimado en pesos argentinos",
+      "rate": "Dólar oficial venta de DolarAPI: ARS {{rate}} / USD · {{date}}",
+      "disclaimer": "Es una estimación. El tipo de cambio y el importe se confirman en una cotización de pago válida por 15 minutos. No es específicamente una cotización del BNA.",
+      "loading": "Cargando el tipo de cambio oficial… El cálculo en USD ya está listo.",
+      "unavailable": "La estimación en pesos no está disponible por el momento. El cálculo en USD sigue funcionando.",
+      "retry": "Reintentar",
+      "cta": "Crear mi evento",
+      "noPayment": "Es una simulación. No se realiza ninguna compra. Esta simulación no descuenta créditos pagos que ya tenga tu evento."
+    },
+    "faq": {
+      "eyebrow": "Algunas buenas preguntas",
+      "title": "Antes de mandar las invitaciones.",
+      "description": "Reglas claras, del primer invitado al último escaneo.",
+      "items": [
+        {
+          "q": "¿Recibo 50 QR gratis para cada evento?",
+          "a": "No. Cada espacio de trabajo recibe 50 QR de regalo una sola vez. El plan Gratis permite un único evento en total. Borrar un evento no reinicia ninguno de estos beneficios."
+        },
+        {
+          "q": "¿Cómo activo Personal?",
+          "a": "Tu primera compra de QR aprobada activa Personal, con eventos ilimitados e invitaciones PDF propias. No hay suscripción ni cuota mensual."
+        },
+        {
+          "q": "¿Puedo guardar los QR comprados para más adelante?",
+          "a": "Sí. Los créditos comprados no vencen, pero pertenecen al evento elegido al pagar y no se pueden transferir. Crear una entrada consume un crédito. Descargarla, editarla o restaurarla no consume otro. Cancelar una entrada no devuelve el crédito."
+        },
+        {
+          "q": "¿Qué pasa si no hay conexión?",
+          "a": "Primero descargá el evento en cada escáner. Necesitás un permiso offline vigente. Los escaneos se guardan localmente y sincronizan al recuperar la conexión. Dos dispositivos desconectados pueden aceptar la misma entrada; Tiqra registra el conflicto cuando vuelven a conectarse. Las nuevas cancelaciones llegan al sincronizar."
+        },
+        {
+          "q": "¿Cómo se calcula el pago en pesos argentinos?",
+          "a": "Cada entrada extra cuesta USD 0,10, convertidos con el dólar oficial venta de DolarAPI. Al pagar se fija un importe en ARS mediante una cotización válida por 15 minutos. Los créditos se habilitan solo cuando Mercado Pago aprueba el pago."
+        },
+        {
+          "q": "¿Puedo usar mi propio diseño de invitación?",
+          "a": "Gratis incluye invitaciones con imagen y texto. Personal suma una plantilla PDF de una página guardada por evento, de hasta 10 MB. Arrastrá o usá el teclado para ubicar el QR fijo de 5 × 5 cm. Reservá ese espacio libre: el QR tiene un fondo blanco opaco."
+        }
+      ]
+    },
+    "final": {
+      "eyebrow": "Tu próximo evento empieza acá",
+      "title": "Creá la invitación. Recibí a tu gente.",
+      "description": "Creá tu espacio de trabajo y aprovechá tus primeros 50 QR de regalo."
     }
   }
 }

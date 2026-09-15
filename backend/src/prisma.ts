@@ -52,7 +52,7 @@ export async function withRls<T>(context: RlsContext, work: (tx: PrismaClient) =
 		}
 
 		return work(tx as unknown as PrismaClient);
-	});
+	}, { timeout: 30000 });
 }
 
 export async function assertRlsSafeDatabaseRole(): Promise<void> {

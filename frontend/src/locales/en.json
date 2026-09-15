@@ -8,7 +8,7 @@
     "actions": {
       "tools": "Scanner tools",
       "sendingLocalData": "Sending local data...",
-      "sendLocalDataToApi": "Enviar informacion para debug",
+      "sendLocalDataToApi": "Send debug information",
       "clearingLocalData": "Clearing local data...",
       "clearLocalEventData": "Clear local event data",
       "resyncing": "Resyncing...",
@@ -18,7 +18,7 @@
     },
     "debugConfirmDialog": {
       "title": "Send debug information",
-      "description": "Esta accion no es necesaria para sincronizar la informacion.",
+      "description": "This is not necessary for normal use or synchronization. Send it only if support requested it.",
       "confirm": "Send"
     },
     "feedback": {
@@ -89,7 +89,7 @@
         "tenants": "Tenants",
         "users": "Users",
         "events": "Events",
-        "proTenants": "Pro Tenants"
+        "proTenants": "Personal workspaces"
       },
       "cards": {
         "createTenantInviteAdmin": "Create Tenant & Invite Admin",
@@ -479,6 +479,247 @@
       "generatePdfFailed": "Failed to generate PDF.",
       "serverHistoryUnavailable": "Server history unavailable. Showing local records only.",
       "loadScanHistoryFailed": "Failed to load scan history."
+    }
+  },
+  "scannerV2": {
+    "event": "Event",
+    "ready": "Ready for offline scanning",
+    "notReady": "Download this event online before scanning, or renew its offline access.",
+    "counts": "{{admitted}} admitted / {{total}} tickets · {{pending}} pending sync",
+    "lastSync": "Last sync",
+    "offlineWarning": "Disconnected devices cannot detect each other’s new scans until they reconnect.",
+    "loginRequired": "Sign in again to synchronize. Pending scans are preserved.",
+    "syncFailed": "Sync failed. Pending scans are preserved; retry when connected.",
+    "storageError": "Local storage could not be read. Retry before continuing.",
+    "conflict": "A synchronized scan conflicts with another entry or ticket status. Its outcome was recorded.",
+    "offlineAccepted": "Accepted offline; awaiting sync.",
+    "invalid": "Invalid QR code.",
+    "cancelled": "This ticket is canceled or the event is unavailable.",
+    "limit": "This ticket has reached the two-entry limit.",
+    "duplicate": "This QR has already been used.",
+    "signIn": "Sign in",
+    "syncNow": "Sync now",
+    "syncFirst": "Sync first / retry check",
+    "checking": "Checking pending local data…",
+    "deleteWarning": "{{count}} unsynced scan(s) will be permanently lost. They cannot be recovered from the server.",
+    "typeDelete": "Type delete to confirm loss of unsynced data.",
+    "countChanged": "The pending count changed. Review it and confirm again.",
+    "overridePrompt": "Allow a second entry? This override is recorded. No further entries are allowed.",
+    "override": "Allow second entry",
+    "recordedConflicts": "Recorded conflicts"
+  },
+  "billing": {
+    "title": "QR credits & plan",
+    "free": "Free",
+    "personal": "Personal",
+    "custom": "Custom",
+    "freeDescription": "One lifetime event. First 50 QRs free per workspace. Basic image/text invitations.",
+    "personalDescription": "Unlimited events and custom PDFs. Unlocked by your first QR purchase. USD 0.10 per extra QR; no subscription.",
+    "customDescription": "Need a tailored solution? Contact us with your requirements.",
+    "freeBalance": "Complimentary remaining",
+    "paidBalance": "Paid for this event",
+    "available": "Available for this event",
+    "issued": "Tickets issued",
+    "rules": "The first 50 QRs are free once per workspace. Paid credits belong to this event and do not expire. Canceled tickets do not restore credits.",
+    "quantity": "QR quantity",
+    "method": "Payment method",
+    "quote": "Calculate price",
+    "conversion": "{{quantity}} × USD 0.10 · Official selling rate: ARS {{rate}} / USD · DolarAPI, {{date}}",
+    "expires": "Quote valid until {{date}}",
+    "pay": "Pay with Mercado Pago",
+    "paymentStatus": "Payment status",
+    "contact": "Contact us for a custom plan",
+    "contactHint": "Tell us what your events need. We will reply to your account email.",
+    "contactSent": "Request saved. Our team can follow up from the admin panel.",
+    "send": "Send request",
+    "failed": "Unable to complete this action. Check your connection and retry.",
+    "loading": "Loading…",
+    "status": {
+      "quoted": "Quote created",
+      "pending": "Waiting for payment confirmation",
+      "approved": "Approved — credits available",
+      "reversed": "Payment reversed",
+      "rejected": "Rejected",
+      "refunded": "Refunded",
+      "charged_back": "Charged back",
+      "in_process": "Processing",
+      "partially_refunded": "Partially refunded"
+    },
+    "contactRequests": "Custom plan requests",
+    "requestStatus": "Request status",
+    "new": "New",
+    "contacted": "Contacted",
+    "closed": "Closed",
+    "plans": "Plans and pricing"
+  },
+  "invitations": {
+    "title": "Saved invitation design",
+    "image": "Basic invitation image (PNG/JPEG, up to 10 MB); enable “Include image in PDF” below.",
+    "custom": "Custom PDF · Personal",
+    "locked": "Custom PDF positioning is available on Personal. Purchase QR credits to unlock it.",
+    "space": "Reserve a clear 5 × 5 cm area. The fixed-size QR will cover anything beneath it. One single-page PDF is saved per event.",
+    "file": "PDF template (one page, unencrypted, up to 10 MB)",
+    "drag": "Drag the QR or use arrow keys (Shift for larger steps). Sample only; exports use each guest’s code.",
+    "save": "Save position",
+    "remove": "Use basic invitation",
+    "saved": "Invitation design saved for this event.",
+    "invalid": "Invalid upload. Use PNG/JPEG or an unencrypted single-page PDF, up to 10 MB. PDF must fit a 5 × 5 cm QR.",
+    "failed": "Could not load or save the invitation. Please retry."
+  },
+  "landing": {
+    "navigation": "Main navigation",
+    "how": "How it works",
+    "pricing": "Pricing",
+    "language": "Cambiar a español",
+    "login": "Log in",
+    "start": "Start free",
+    "footer": "Thoughtful invitations. Smoother arrivals.",
+    "hero": {
+      "eyebrow": "Made for your next gathering",
+      "title": "Great events start",
+      "accent": "at the door.",
+      "description": "Create QR invitations that feel like your event. Welcome guests even when the connection doesn’t show up. Pay only for the extra tickets you need.",
+      "calculate": "Calculate my event",
+      "bonus": "50 complimentary QRs per workspace. No subscription."
+    },
+    "preview": {
+      "label": "Illustrative invitation and offline check-in preview",
+      "demo": "DEMO",
+      "invited": "YOU’RE INVITED",
+      "accepted": "Accepted offline",
+      "pending": "Saved on this device · awaiting sync",
+      "caption": "Download your event before going offline"
+    },
+    "workflow": {
+      "eyebrow": "From invitation to entrance",
+      "title": "Less door admin. More event.",
+      "items": [
+        {
+          "title": "Make it yours",
+          "description": "Add an image and your message to every invitation. With Personal, upload your own PDF and drag the QR into place."
+        },
+        {
+          "title": "Be ready for patchy Wi-Fi",
+          "description": "Download the event on each scanner beforehand. Valid tickets can be checked against the downloaded list, and scans stay saved locally."
+        },
+        {
+          "title": "Stay in sync",
+          "description": "Scanners sync automatically when connected. Online checks catch duplicate and canceled tickets; offline conflicts stay visible after sync."
+        }
+      ],
+      "limitation": "Offline has a limit: disconnected devices can admit the same QR before reconnecting. Keep scanners connected whenever possible."
+    },
+    "plans": {
+      "eyebrow": "Small gathering or full house",
+      "title": "Your event. Your guest count.",
+      "description": "Start with 50 free QRs. Grow at USD 0.10 per extra QR, paid in Argentine pesos.",
+      "flexible": "Pay as you go",
+      "note": "The 50 complimentary QRs are a one-time workspace allowance, shared across events. Purchased QRs stay with the selected event.",
+      "free": {
+        "name": "Free",
+        "price": "USD 0",
+        "unit": "to get your first event going",
+        "description": "Everything you need for a small guest list.",
+        "features": [
+          "One event, once per workspace",
+          "50 complimentary QR tickets",
+          "Image and text PDF invitations",
+          "Offline scanning and automatic sync"
+        ],
+        "cta": "Create my free event",
+        "note": "Custom PDF templates require Personal."
+      },
+      "personal": {
+        "name": "Personal",
+        "price": "USD 0.10",
+        "unit": "per extra QR · no monthly fee",
+        "description": "Your own invitations. Room for every event.",
+        "features": [
+          "Unlimited events after your first purchase",
+          "Use any remaining complimentary QRs first",
+          "One saved custom PDF template per event",
+          "Position a fixed 5 × 5 cm QR",
+          "Buy more event credits whenever needed"
+        ],
+        "cta": "Start free, grow when ready",
+        "note": "Unlocked by your first approved QR purchase."
+      },
+      "custom": {
+        "name": "Custom",
+        "price": "Let’s talk",
+        "unit": "for requirements beyond the everyday",
+        "description": "Tell us what you’re planning and what your team needs.",
+        "features": [
+          "Share your event requirements",
+          "Send a request to the Tiqra team",
+          "Discuss a personalized proposal"
+        ],
+        "cta": "Request a custom plan",
+        "note": "Create an account to send your requirements."
+      }
+    },
+    "calculator": {
+      "eyebrow": "No surprises",
+      "title": "What will your event cost?",
+      "description": "Choose your guest count. We’ll do the math. One guest uses one QR ticket.",
+      "guests": "How many guests?",
+      "fewer": "Remove 10 guests",
+      "more": "Add 10 guests",
+      "slider": "Adjust guest count",
+      "guestsShort": "guests",
+      "allowance": "Complimentary QRs remaining",
+      "allowanceHint": "New workspace? Start with 50. Already used some? Enter your remaining lifetime allowance.",
+      "invalid": "Enter 1–100,000 whole-number guests and 0–50 complimentary QRs.",
+      "result": "Your estimated ticket cost",
+      "noMonthly": "No monthly fee",
+      "covered": "Covered by your complimentary allowance",
+      "oneEvent": "One event · only the extra QRs",
+      "included": "Complimentary tickets",
+      "extra": "Extra tickets",
+      "inPesos": "Estimated in Argentine pesos",
+      "rate": "DolarAPI official selling rate: ARS {{rate}} / USD · {{date}}",
+      "disclaimer": "Estimate only. The exchange rate and amount are confirmed in a 15-minute checkout quote. This is not specifically a BNA quote.",
+      "loading": "Loading the official exchange rate… USD estimate is ready.",
+      "unavailable": "The peso estimate is temporarily unavailable. Your USD estimate still works.",
+      "retry": "Retry",
+      "cta": "Create my event",
+      "noPayment": "This is a simulation. No purchase is made. Existing paid event credits are not deducted in this simulation."
+    },
+    "faq": {
+      "eyebrow": "A few good questions",
+      "title": "Before you send the invites.",
+      "description": "Clear rules, from the first guest to the last scan.",
+      "items": [
+        {
+          "q": "Do I get 50 free QRs for every event?",
+          "a": "No. Each workspace receives 50 complimentary QRs once, for its lifetime. Free allows one event in total. Deleting an event does not reset either allowance."
+        },
+        {
+          "q": "How do I unlock Personal?",
+          "a": "Your first approved QR purchase unlocks Personal, including unlimited events and custom PDF invitations. There is no subscription or monthly fee."
+        },
+        {
+          "q": "Can I save purchased QRs for later?",
+          "a": "Yes. Purchased credits never expire, but belong to the event selected at checkout and cannot transfer. Creating a ticket uses one credit. Downloading, editing or restoring that same ticket does not use another. Canceling a ticket does not refund credit."
+        },
+        {
+          "q": "What happens without an internet connection?",
+          "a": "Download the event on each scanner first. A valid offline access permit is required. Scans are saved locally and sync when connectivity returns. Two disconnected devices can accept the same ticket; Tiqra records the conflict when they reconnect. New cancellations reach devices on sync."
+        },
+        {
+          "q": "How are Argentine peso payments calculated?",
+          "a": "Extra tickets cost USD 0.10 each, converted using DolarAPI’s official selling rate. Checkout locks an ARS amount in a quote valid for 15 minutes. Credits become available only after payment approval through Mercado Pago."
+        },
+        {
+          "q": "Can I use my own invitation design?",
+          "a": "Image and text invitations are included on Free. Personal adds one saved single-page PDF template per event, up to 10 MB. Drag or use the keyboard to position a fixed 5 × 5 cm QR footprint. Reserve that much clear space: the QR has an opaque white background."
+        }
+      ]
+    },
+    "final": {
+      "eyebrow": "Your next event starts here",
+      "title": "Make the invitation. Welcome the crowd.",
+      "description": "Create your workspace and put your first 50 complimentary QRs to work."
     }
   }
 }

@@ -4,6 +4,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
+  build: { rollupOptions: { output: { manualChunks(id) {
+    if (id.includes('pdfjs-dist')) return 'pdf-preview';
+    if (id.includes('pdf-lib') || id.includes('@pdf-lib')) return 'pdf-edit';
+    if (id.includes('jspdf')) return 'pdf-basic';
+  } } } },
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, './src'),
@@ -12,7 +17,7 @@ export default defineConfig({
 	plugins: [
 		react(),
 		VitePWA({
-			registerType: 'autoUpdate',
+			registerType: 'prompt',
 			manifest: {
 				name: 'Tiqra',
 				short_name: 'Tiqra',
@@ -32,17 +37,9 @@ export default defineConfig({
 				],
 			},
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,svg}'],
-				runtimeCaching: [
-					{
-						urlPattern: /^https?:\/\/.*\/api\/.*/i,
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'api-cache',
-							expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
-						},
-					},
-				],
+        clientsClaim: true,
+				globPatterns: ['**/*.{js,mjs,css,html,svg}'],
+				runtimeCaching: [], // Authenticated data is stored only in tenant/event-scoped IndexedDB.
 			},
 		}),
 	],

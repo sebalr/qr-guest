@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function ProtectedRoute({ children, roles }: Props) {
-	const { user } = useAuth();
+	const { user, token } = useAuth();
 	const location = useLocation();
 
 	if (!user) {
@@ -20,6 +20,10 @@ export function ProtectedRoute({ children, roles }: Props) {
 			/>
 		);
 	}
+
+  let expired = true;
+  try { const payload = JSON.parse(atob((token ?? '').split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); expired = !payload.exp || payload.exp*1000 < Date.now(); } catch { /* Require login outside the offline scanner. */ }
+  if (expired && !/^\/events\/[^/]+\/scan$/.test(location.pathname)) return <Navigate to="/login" state={{from:location}} replace />;
 
 	if (user.isTemporaryScanner) {
 		if (!user.eventId) {

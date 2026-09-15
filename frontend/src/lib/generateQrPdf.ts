@@ -1,3 +1,5 @@
+import { getAsset } from '../api';
+import { generateCustomPdf } from './customPdf';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 
@@ -9,13 +11,22 @@ export async function generateQrPdf(
 	guests: { id: string; name: string; qrToken: string }[],
 	eventName: string,
 	options?: {
-		description?: string | null;
+		eventId?: string;
+    tenantId?: string;
+    description?: string | null;
 		imageUrl?: string | null;
 		includeDescriptionInPdf?: boolean;
 		includeImageInPdf?: boolean;
 		tiqraUrl?: string;
 	},
 ): Promise<Blob> {
+  if(options?.eventId) {
+    const scope={tenantId:options.tenantId};
+    const template=await getAsset(options.eventId,'pdf',scope);
+    if(template) return generateCustomPdf(guests,template);
+    const image=await getAsset(options.eventId,'image',scope);
+    if(image) options={...options,imageUrl:`data:${image.mime};base64,${image.bytes}`};
+  }
 	const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 	const pageWidth = doc.internal.pageSize.getWidth();
 	const pageHeight = doc.internal.pageSize.getHeight();
@@ -50,7 +61,7 @@ export async function generateQrPdf(
 		// Generate QR code as data URL
 		const dataUrl = await QRCode.toDataURL(guest.qrToken, {
 			width: 400,
-			margin: 2,
+			margin: 4,
 			color: { dark: '#000000', light: '#ffffff' },
 		});
 

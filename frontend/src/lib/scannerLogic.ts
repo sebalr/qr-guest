@@ -76,6 +76,8 @@ export function createSyncPayload(args: {
 			ticketId: s.ticket_id,
 			scannedAt: s.scanned_at,
 			deviceId,
+      qrToken: s.qrToken,
+      confirmed: s.confirmed,
 		})),
 	};
 }
@@ -88,6 +90,7 @@ export function mapSyncResponseToLocal(response: SyncResponse) {
 			name: t.name,
 			status: t.status,
 			version: t.version,
+      tokenFingerprint: t.tokenFingerprint,
 		})),
 		scanRows: response.scanUpdates.map(s => ({
 			id: s.id,

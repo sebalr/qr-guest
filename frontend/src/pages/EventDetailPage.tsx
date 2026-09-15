@@ -1,3 +1,4 @@
+import BillingPanel from '../components/BillingPanel';
 import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -562,7 +563,9 @@ export default function EventDetailPage() {
 		try {
 			const guests = await buildGuestPdfData(activeTicketIds);
 			const blob = await generateQrPdf(guests, event.name, {
-				description: event.description,
+				eventId: event.id,
+        tenantId,
+        description: event.description,
 				imageUrl: event.imageUrl,
 				includeDescriptionInPdf: event.includeDescriptionInPdf,
 				includeImageInPdf: event.includeImageInPdf,
@@ -752,6 +755,7 @@ export default function EventDetailPage() {
 			</header>
 
 			<main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        {canManageTickets && id && <BillingPanel eventId={id} tenantId={tenantId} issued={tickets.length} />}
 				{event && (
 					<Card>
 						<CardContent className="pt-6">

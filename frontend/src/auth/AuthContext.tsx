@@ -60,7 +60,7 @@ function decodeJWT(token: string): JWTPayload | null {
 function tokenToUser(token: string): AuthUser | null {
 	const payload = decodeJWT(token);
 	if (!payload) return null;
-	if (payload.exp && payload.exp * 1000 < Date.now()) return null;
+	// Expired sessions may open the scanner only with its separately verified offline permit.
 	const userId = payload.userId ?? payload.sub;
 	if (!userId || !payload.tenantId || !payload.role) return null;
 
