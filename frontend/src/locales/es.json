@@ -514,7 +514,7 @@
     "personal": "Personal",
     "custom": "Personalizado",
     "freeDescription": "Un evento por cuenta. Los primeros 50 QR gratis por espacio de trabajo. Invitaciones con imagen y texto.",
-    "personalDescription": "Eventos ilimitados y PDF personalizados. Se activa con tu primera compra de QR. USD 1,30 por QR adicional; sin suscripción.",
+    "personalDescription": "Eventos ilimitados y PDF personalizados. Se activa con tu primera compra de QR. USD 0,65 por QR adicional; sin suscripción.",
     "customDescription": "¿Necesitás una solución a medida? Contactanos con tus requisitos.",
     "freeBalance": "Bonificados restantes",
     "paidBalance": "Pagados para este evento",
@@ -612,7 +612,7 @@
     "plans": {
       "eyebrow": "Un encuentro íntimo o a sala llena",
       "title": "Tu evento. Tu cantidad de invitados.",
-      "description": "Empezá con 50 QR gratis. Sumá más por USD 1,30 cada uno, pagando en pesos argentinos.",
+      "description": "Empezá con 50 QR gratis. Sumá más por USD 0,65 cada uno, pagando en pesos argentinos.",
       "flexible": "Pagás lo que usás",
       "note": "Los 50 QR de regalo se otorgan una sola vez por espacio de trabajo y se comparten entre eventos. Los QR comprados pertenecen al evento seleccionado.",
       "free": {
@@ -631,7 +631,7 @@
       },
       "personal": {
         "name": "Personal",
-        "price": "USD 1,30",
+        "price": "USD 0,65",
         "unit": "por QR extra · sin cuota mensual",
         "description": "Tus propias invitaciones. Lugar para cada evento.",
         "features": [
@@ -708,7 +708,7 @@
         },
         {
           "q": "¿Cómo se calcula el pago en pesos argentinos?",
-          "a": "Cada entrada extra cuesta USD 1,30, convertidos con el dólar oficial venta de DolarAPI. Al pagar se fija un importe en ARS mediante una cotización válida por 15 minutos. Los créditos se habilitan solo cuando Mercado Pago aprueba el pago."
+          "a": "Cada entrada extra cuesta USD 0,65, convertidos con el dólar oficial venta de DolarAPI. Al pagar se fija un importe en ARS mediante una cotización válida por 15 minutos. Los créditos se habilitan solo cuando Mercado Pago aprueba el pago."
         },
         {
           "q": "¿Puedo usar mi propio diseño de invitación?",

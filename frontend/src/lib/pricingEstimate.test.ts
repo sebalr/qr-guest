@@ -11,31 +11,31 @@ describe("event pricing estimates", () => {
     expect(estimateEventCost(200, 50, "1000")).toEqual({
       complimentary: 50,
       paid: 150,
-      usdCents: 19500,
-      arsCents: 19500000,
+      usdCents: 9750,
+      arsCents: 9750000,
     });
-    expect(estimateEventCost(51, 10)?.usdCents).toBe(5330);
-    expect(estimateEventCost(50, 0)?.usdCents).toBe(6500);
+    expect(estimateEventCost(51, 10)?.usdCents).toBe(2665);
+    expect(estimateEventCost(50, 0)?.usdCents).toBe(3250);
   });
-  it("prices a new 100-guest event near ARS 100,000 at the reference rate", () => {
+  it("prices 100 paid tickets near ARS 100,000, separately from complimentary tickets", () => {
     expect(estimateEventCost(100, 50, "1530")).toEqual({
       complimentary: 50,
       paid: 50,
-      usdCents: 6500,
-      arsCents: 9945000,
+      usdCents: 3250,
+      arsCents: 4972500,
     });
-    expect(estimateEventCost(100, 0, "1530")?.arsCents).toBe(19890000);
+    expect(estimateEventCost(100, 0, "1530")?.arsCents).toBe(9945000);
   });
   it("rounds the total peso amount to cents", () => {
-    expect(estimateEventCost(3, 0, "1234.56789")?.arsCents).toBe(481481);
-    expect(estimateEventCost(1, 0, "1000.05")?.arsCents).toBe(130007);
+    expect(estimateEventCost(3, 0, "1234.56789")?.arsCents).toBe(240741);
+    expect(estimateEventCost(1, 0, "1000.05")?.arsCents).toBe(65003);
   });
   it("retains USD estimates without a usable exchange rate", () => {
     for (const rate of [undefined, "broken", "0", "-100"])
       expect(estimateEventCost(100, 50, rate)).toEqual({
         complimentary: 50,
         paid: 50,
-        usdCents: 6500,
+        usdCents: 3250,
         arsCents: null,
       });
   });

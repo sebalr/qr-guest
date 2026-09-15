@@ -15,7 +15,7 @@ export function estimateEventCost(
     return null;
   const complimentary = Math.min(guests, freeRemaining);
   const paid = guests - complimentary;
-  const usdCents = paid * 130;
+  const usdCents = paid * 65;
   let arsCents: number | null = null;
   if (rate && /^\d+(\.\d{1,6})?$/.test(rate)) {
     const [whole, fraction = ""] = rate.split(".");

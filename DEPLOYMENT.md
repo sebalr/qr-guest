@@ -14,7 +14,7 @@
 | Payments | Code deployed, Mercado Pago credentials and end-to-end sandbox validation still required |
 | Email / reCAPTCHA | Variable names are present in Coolify; actual delivery and production registration have not been verified in this deployment session |
 | Backups | Pre-release backup created and archive readable; no scheduled backup was configured when inspected |
-| Revised pricing | USD 1.30 per additional QR; rollout verification pending |
+| Revised pricing | USD 0.65 per additional QR; rollout verification pending |
 
 Existing resources:
 
@@ -28,16 +28,16 @@ These private Coolify URLs require access to your network and a Coolify login.
 
 Free still includes one lifetime event and 50 lifetime complimentary QRs per workspace. Personal unlocks after the first approved purchase; there is no subscription.
 
-Additional QRs now cost **USD 1.30 each**, converted to ARS using DolarAPI's official selling rate. At the verified reference rate of ARS 1,530/USD:
+Additional QRs now cost **USD 0.65 each**, converted to ARS using DolarAPI's official selling rate. At the verified reference rate of ARS 1,530/USD:
 
-| Guests | Complimentary QRs left | Paid QRs needed | USD | Estimated ARS |
+| Purchase / event | Complimentary QRs applied | Paid QRs needed | USD | Estimated ARS |
 | --- | --- | --- | --- | --- |
-| 50 | 50 | 0 | 0.00 | 0 |
-| 100 | 50 | 50 | 65.00 | 99,450 |
-| 100 | 0 | 100 | 130.00 | 198,900 |
-| 150 | 50 | 100 | 130.00 | 198,900 |
+| Buy 100 paid QRs | Not deducted from a purchase | 100 | 65.00 | 99,450 |
+| 100 guests with the full free allowance | 50 | 50 | 32.50 | 49,725 |
+| 100 guests after the free allowance is used | 0 | 100 | 65.00 | 99,450 |
+| 150 guests with the full free allowance | 50 | 100 | 65.00 | 99,450 |
 
-Thus the approximately ARS 100,000 target applies to 100 guests **with all 50 complimentary QRs still available**. The peso price changes with the exchange rate. Existing orders retain their agreed ARS amount; repricing does not rewrite purchases or existing quotes.
+The approximately ARS 100,000 target is for **100 paid tickets**, independently of the 50 complimentary QRs. The free allowance remains a separate lifetime bonus. The landing calculator subtracts whatever complimentary balance you enter from the guest count; the billing purchase quantity always means paid credits. The peso price changes with the exchange rate. Existing orders retain their agreed ARS amount; repricing does not rewrite purchases or existing quotes.
 
 ## 2. Configure Mercado Pago — required before accepting purchases
 

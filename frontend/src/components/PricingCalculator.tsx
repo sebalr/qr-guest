@@ -168,7 +168,7 @@ export default function PricingCalculator() {
               <div>
                 <dt>{t("landing.calculator.extra")}</dt>
                 <dd>
-                  {estimate.paid} <span>× USD 1.30</span>
+                  {estimate.paid} <span>× USD 0.65</span>
                 </dd>
               </div>
             </dl>

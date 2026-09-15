@@ -11,7 +11,7 @@ Status: implementation complete; local automated verification passed on 2026-09-
 - [x] S05 Support-only debug confirmation; pending-count deletion warning, sync-first action and exact `delete` confirmation.
 - [x] B01 Free: one lifetime event and 50 lifetime complimentary tickets per tenant. Personal: first approved purchase, unlimited events, no subscription.
 - [x] B02 Event-specific non-expiring paid credits; complimentary credits consumed first; atomic/idempotent issuance. Cancellation never restores credits.
-- [x] B03 USD 1.30 per QR converted using DolarAPI official selling rate; 15-minute quotes/cache, 24-hour outage fallback.
+- [x] B03 USD 0.65 per QR converted using DolarAPI official selling rate; 15-minute quotes/cache, 24-hour outage fallback.
 - [x] B04 Provider interface, Mercado Pago checkout and authenticated payment lookup/webhooks; exactly-once credits, reconciliation and reversals.
 - [x] B05 Visible balances, purchase/status flows, Custom contact requests and super-admin follow-up.
 - [x] P01 Basic image upload/text invitations on all plans.
@@ -80,7 +80,7 @@ Physical venue/device testing, including iOS camera behavior, has not been perfo
 ## 6. Public landing and event-cost simulator
 
 - **L01 — Implemented:** responsive English/Spanish landing presents Free, Personal and Custom, image/text invitations, saved custom PDFs, and offline scanning. It states the lifetime 50-QR allowance and first-approved-purchase Personal activation; obsolete monthly pricing and offline duplicate-prevention promises are removed.
-- **L02 — Implemented:** calculator accepts 1–100,000 guests and 0–50 remaining complimentary QRs. It itemizes free and extra tickets at USD 1.30, rounds the total ARS estimate to cents, and labels the DolarAPI official selling rate with its source timestamp. This simulator estimates new ticket needs before any existing paid event balance; it never creates a quote, order or payment.
+- **L02 — Implemented:** calculator accepts 1–100,000 guests and 0–50 remaining complimentary QRs. It itemizes free and extra tickets at USD 0.65, rounds the total ARS estimate to cents, and labels the DolarAPI official selling rate with its source timestamp. This simulator estimates new ticket needs before any existing paid event balance; it never creates a quote, order or payment.
 - **L03 — Implemented:** public `GET /billing/pricing` exposes only rate/pricing information through the shared rate cache. An unavailable rate preserves the USD simulation and offers retry. Billing balances remain authenticated. Actual purchases continue to use server-created, expiring quotes.
 - **Evidence:** `LandingPage.tsx`, `LandingPage.css`, `PricingCalculator.tsx`, `pricingEstimate.ts`, and `backend/src/routes/billing.ts`. Four calculator unit tests cover allowances, decimal rounding, invalid inputs and unavailable rates. Two Chromium tests cover desktop/mobile, Spanish, live input changes and rate outages. Desktop and mobile screenshots were visually reviewed. Three API tests cover public data, rate errors and authenticated billing boundaries.
 - **Acceptance:** no subscription claims; editable lifetime allowance; no fabricated peso rate; no purchase from simulation; no horizontal overflow at 390 px; readable pricing cards and explicit offline limitations.
@@ -94,4 +94,4 @@ Physical venue/device testing, including iOS camera behavior, has not been perfo
 
 ## 8. Revised pricing
 
-USD 1.30 per additional QR replaces the initial USD 0.10 price. With 50 complimentary QRs remaining, 100 guests cost USD 65, or ARS 99,450 at the reference official selling rate of ARS 1,530/USD. Without complimentary QRs, 100 guests require 100 paid credits. Existing order amounts remain unchanged. The landing calculator defaults to 100 guests. See `DEPLOYMENT.md` for installation status and remaining provider/device configuration.
+USD 0.65 per additional QR replaces the initial USD 0.10 price. The target is approximately ARS 100,000 for **100 paid tickets**, independently of the 50 complimentary QRs: 100 paid QRs cost USD 65, or ARS 99,450 at the reference selling rate of ARS 1,530/USD. A 100-guest event with all 50 free QRs remaining needs only 50 paid QRs (USD 32.50 / ARS 49,725 at that rate). Existing order amounts remain unchanged. The landing calculator defaults to 100 guests. See `DEPLOYMENT.md` for installation status and remaining provider/device configuration.

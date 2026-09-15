@@ -6,7 +6,7 @@ test("pricing simulator, translation and responsive landing", async ({
     route.fulfill({
       json: {
         data: {
-          unitUsd: "1.30",
+          unitUsd: "0.65",
           freeAllowance: 50,
           rate: "1530",
           sourceAt: "2026-09-15T12:00:00Z",
@@ -16,12 +16,16 @@ test("pricing simulator, translation and responsive landing", async ({
     }),
   );
   await page.goto("/");
+  await expect(page.getByTestId("estimate-usd")).toHaveText("USD 32.50");
+  await expect(page.getByTestId("estimate-ars")).toHaveText("ARS 49,725.00");
+  await page.getByLabel("Complimentary QRs remaining").fill("0");
   await expect(page.getByTestId("estimate-usd")).toHaveText("USD 65.00");
   await expect(page.getByTestId("estimate-ars")).toHaveText("ARS 99,450.00");
+  await page.getByLabel("Complimentary QRs remaining").fill("50");
   await page.getByRole("button", { name: "50 guests", exact: true }).click();
   await expect(page.getByTestId("estimate-usd")).toHaveText("USD 0.00");
   await page.getByLabel("Complimentary QRs remaining").fill("0");
-  await expect(page.getByTestId("estimate-usd")).toHaveText("USD 65.00");
+  await expect(page.getByTestId("estimate-usd")).toHaveText("USD 32.50");
   await page.getByLabel("How many guests?", { exact: true }).fill("0");
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(page.getByTestId("estimate-usd")).toHaveText("—");
@@ -53,7 +57,7 @@ test("rate outage does not block the USD simulator", async ({ page }) => {
     route.fulfill({ status: 503, json: { error: "Unavailable" } }),
   );
   await page.goto("/");
-  await expect(page.getByTestId("estimate-usd")).toHaveText("USD 65.00");
+  await expect(page.getByTestId("estimate-usd")).toHaveText("USD 32.50");
   await expect(page.getByTestId("estimate-ars")).toHaveText("—");
   await expect(
     page.getByRole("button", { name: "Retry", exact: true }),
