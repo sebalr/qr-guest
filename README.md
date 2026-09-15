@@ -17,7 +17,7 @@ backend/    — Node.js/Express API (TypeScript + Prisma + PostgreSQL)
 - **Duplicate handling** — prompts user when ticket already scanned
 - **QR codes** — compact HMAC-authenticated tokens, checked offline against server-provided SHA-256 fingerprints
 - **Role-based access** — owner, admin, scanner
-- **Plans** — Free: one lifetime event and 50 complimentary QRs per workspace. Personal: unlimited events after the first QR purchase, USD 0.10 per extra QR, no subscription.
+- **Plans** — Free: one lifetime event and 50 complimentary QRs per workspace. Personal: unlimited events after the first QR purchase, USD 1.30 per extra QR, no subscription.
 - **Super admin back-office** — manage tenants and plans
 
 ## Quick Start
@@ -143,6 +143,8 @@ GitHub Actions automatically build and push Docker images to GHCR on pushes to `
 | `APP_DB_NAME`         | Local Docker database name (default: `tiqra`)                                     |
 | `APP_DB_USER`         | Runtime DB role used by backend in Docker                                         |
 | `APP_DB_PASSWORD`     | Runtime DB role password in Docker                                                |
+
+For the existing live installation and remaining setup, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Coolify Production Setup
 

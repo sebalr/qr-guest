@@ -1,3 +1,4 @@
+import { QR_UNIT_USD } from "./pricing";
 import prisma from "../prisma";
 import { Prisma } from "../generated/prisma/client";
 import { HttpError } from "../lib/errors";
@@ -11,7 +12,7 @@ export function quoteAmount(
   if (!value.isFinite() || value.lte(0))
     throw new HttpError(503, "Exchange rate unavailable");
   const amount = value
-    .mul("0.10")
+    .mul(QR_UNIT_USD)
     .mul(quantity)
     .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
   if (amount.gt("9999999999999999.99"))

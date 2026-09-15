@@ -6,8 +6,11 @@ import { createOfflinePermit } from "../src/lib/offlinePermit";
 import { createPublicKey, verify } from "crypto";
 describe("billing calculations and signatures", () => {
   it("rounds total in decimal ARS cents", () => {
-    expect(quoteAmount(3, "1234.567890").toFixed(2)).toBe("370.37");
-    expect(quoteAmount(1, "1000.05").toFixed(2)).toBe("100.01");
+    expect(quoteAmount(3, "1234.567890").toFixed(2)).toBe("4814.81");
+    expect(quoteAmount(1, "1000.05").toFixed(2)).toBe("1300.07");
+  });
+  it("charges roughly ARS 100,000 for 50 paid QRs at the reference rate", () => {
+    expect(quoteAmount(50, "1530").toFixed(2)).toBe("99450.00");
   });
   it.each([0, -1, 1.5, NaN, Infinity])("rejects invalid quantity %s", (q) =>
     expect(() => quoteAmount(q, 1000)).toThrow(),

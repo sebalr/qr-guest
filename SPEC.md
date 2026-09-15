@@ -11,7 +11,7 @@ Status: implementation complete; local automated verification passed on 2026-09-
 - [x] S05 Support-only debug confirmation; pending-count deletion warning, sync-first action and exact `delete` confirmation.
 - [x] B01 Free: one lifetime event and 50 lifetime complimentary tickets per tenant. Personal: first approved purchase, unlimited events, no subscription.
 - [x] B02 Event-specific non-expiring paid credits; complimentary credits consumed first; atomic/idempotent issuance. Cancellation never restores credits.
-- [x] B03 USD 0.10 per QR converted using DolarAPI official selling rate; 15-minute quotes/cache, 24-hour outage fallback.
+- [x] B03 USD 1.30 per QR converted using DolarAPI official selling rate; 15-minute quotes/cache, 24-hour outage fallback.
 - [x] B04 Provider interface, Mercado Pago checkout and authenticated payment lookup/webhooks; exactly-once credits, reconciliation and reversals.
 - [x] B05 Visible balances, purchase/status flows, Custom contact requests and super-admin follow-up.
 - [x] P01 Basic image upload/text invitations on all plans.
@@ -66,7 +66,7 @@ Two disconnected scanners can admit the same QR before reconnecting. Offline ope
 ### Remaining external verification / setup
 
 - [ ] **V02 Mercado Pago provider sandbox checkout:** blocked by absent `MP_ACCESS_TOKEN`, `MP_MERCHANT_ID`, `MP_WEBHOOK_SECRET`, and `MP_WEBHOOK_URL`. Configure test seller/buyer credentials and a reachable HTTPS webhook, then validate an actual sandbox transaction. No real payment was made.
-- [ ] Apply the migration and runtime grants to the intended application database before running the new backend. Only the disposable test database was migrated during implementation; existing application data was not reset.
+- [x] Applied the migration to the existing production database after creating and checking a backup. Existing migration ownership and creator-specific runtime grants were verified; no database reset was performed.
 
 Physical venue/device testing, including iOS camera behavior, has not been performed. Browser tests use Chromium and controlled API fixtures; PostgreSQL tests separately exercise the real backend and RLS. The new offline store intentionally leaves legacy unscoped development IndexedDB data untouched; events must be downloaded again. Offline browser support requirements and configuration are documented in README.
 
@@ -80,7 +80,7 @@ Physical venue/device testing, including iOS camera behavior, has not been perfo
 ## 6. Public landing and event-cost simulator
 
 - **L01 — Implemented:** responsive English/Spanish landing presents Free, Personal and Custom, image/text invitations, saved custom PDFs, and offline scanning. It states the lifetime 50-QR allowance and first-approved-purchase Personal activation; obsolete monthly pricing and offline duplicate-prevention promises are removed.
-- **L02 — Implemented:** calculator accepts 1–100,000 guests and 0–50 remaining complimentary QRs. It itemizes free and extra tickets at USD 0.10, rounds the total ARS estimate to cents, and labels the DolarAPI official selling rate with its source timestamp. This simulator estimates new ticket needs before any existing paid event balance; it never creates a quote, order or payment.
+- **L02 — Implemented:** calculator accepts 1–100,000 guests and 0–50 remaining complimentary QRs. It itemizes free and extra tickets at USD 1.30, rounds the total ARS estimate to cents, and labels the DolarAPI official selling rate with its source timestamp. This simulator estimates new ticket needs before any existing paid event balance; it never creates a quote, order or payment.
 - **L03 — Implemented:** public `GET /billing/pricing` exposes only rate/pricing information through the shared rate cache. An unavailable rate preserves the USD simulation and offers retry. Billing balances remain authenticated. Actual purchases continue to use server-created, expiring quotes.
 - **Evidence:** `LandingPage.tsx`, `LandingPage.css`, `PricingCalculator.tsx`, `pricingEstimate.ts`, and `backend/src/routes/billing.ts`. Four calculator unit tests cover allowances, decimal rounding, invalid inputs and unavailable rates. Two Chromium tests cover desktop/mobile, Spanish, live input changes and rate outages. Desktop and mobile screenshots were visually reviewed. Three API tests cover public data, rate errors and authenticated billing boundaries.
 - **Acceptance:** no subscription claims; editable lifetime allowance; no fabricated peso rate; no purchase from simulation; no horizontal overflow at 390 px; readable pricing cards and explicit offline limitations.
@@ -91,3 +91,7 @@ Physical venue/device testing, including iOS camera behavior, has not been perfo
 - Both source-build and GHCR-image Compose definitions validate. They wait for successful migrations and backend health and do not bind the proxy's host ports.
 - The release migration was verified against populated disposable PostgreSQL using a non-superuser owner: existing credits/events/versions backfill correctly under forced RLS, and runtime grants work.
 - Existing Coolify resources use separate GHCR images at `api-tiqra.nardario.com` and `tiqra.nardario.com`. Production rollout and payment credentials must be verified separately; local Docker success is not production deployment evidence.
+
+## 8. Revised pricing
+
+USD 1.30 per additional QR replaces the initial USD 0.10 price. With 50 complimentary QRs remaining, 100 guests cost USD 65, or ARS 99,450 at the reference official selling rate of ARS 1,530/USD. Without complimentary QRs, 100 guests require 100 paid credits. Existing order amounts remain unchanged. The landing calculator defaults to 100 guests. See `DEPLOYMENT.md` for installation status and remaining provider/device configuration.

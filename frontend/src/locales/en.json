@@ -514,7 +514,7 @@
     "personal": "Personal",
     "custom": "Custom",
     "freeDescription": "One lifetime event. First 50 QRs free per workspace. Basic image/text invitations.",
-    "personalDescription": "Unlimited events and custom PDFs. Unlocked by your first QR purchase. USD 0.10 per extra QR; no subscription.",
+    "personalDescription": "Unlimited events and custom PDFs. Unlocked by your first QR purchase. USD 1.30 per extra QR; no subscription.",
     "customDescription": "Need a tailored solution? Contact us with your requirements.",
     "freeBalance": "Complimentary remaining",
     "paidBalance": "Paid for this event",
@@ -524,7 +524,7 @@
     "quantity": "QR quantity",
     "method": "Payment method",
     "quote": "Calculate price",
-    "conversion": "{{quantity}} × USD 0.10 · Official selling rate: ARS {{rate}} / USD · DolarAPI, {{date}}",
+    "conversion": "{{quantity}} QR · Official selling rate: ARS {{rate}} / USD · DolarAPI, {{date}}",
     "expires": "Quote valid until {{date}}",
     "pay": "Pay with Mercado Pago",
     "paymentStatus": "Payment status",
@@ -612,7 +612,7 @@
     "plans": {
       "eyebrow": "Small gathering or full house",
       "title": "Your event. Your guest count.",
-      "description": "Start with 50 free QRs. Grow at USD 0.10 per extra QR, paid in Argentine pesos.",
+      "description": "Start with 50 free QRs. Grow at USD 1.30 per extra QR, paid in Argentine pesos.",
       "flexible": "Pay as you go",
       "note": "The 50 complimentary QRs are a one-time workspace allowance, shared across events. Purchased QRs stay with the selected event.",
       "free": {
@@ -631,7 +631,7 @@
       },
       "personal": {
         "name": "Personal",
-        "price": "USD 0.10",
+        "price": "USD 1.30",
         "unit": "per extra QR · no monthly fee",
         "description": "Your own invitations. Room for every event.",
         "features": [
@@ -708,7 +708,7 @@
         },
         {
           "q": "How are Argentine peso payments calculated?",
-          "a": "Extra tickets cost USD 0.10 each, converted using DolarAPI’s official selling rate. Checkout locks an ARS amount in a quote valid for 15 minutes. Credits become available only after payment approval through Mercado Pago."
+          "a": "Extra tickets cost USD 1.30 each, converted using DolarAPI’s official selling rate. Checkout locks an ARS amount in a quote valid for 15 minutes. Credits become available only after payment approval through Mercado Pago."
         },
         {
           "q": "Can I use my own invitation design?",

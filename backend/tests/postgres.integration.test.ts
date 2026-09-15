@@ -403,7 +403,7 @@ describe.skipIf(!enabled)(
             external_reference: reference,
             collector_id: "merchant-test",
             status: "approved",
-            transaction_amount: 300,
+            transaction_amount: 3900,
             transaction_amount_refunded: 0,
             currency_id: "ARS",
           }),

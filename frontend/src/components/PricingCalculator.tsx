@@ -15,7 +15,7 @@ interface PublicPricing {
 }
 export default function PricingCalculator() {
   const { t, i18n } = useTranslation();
-  const [guests, setGuests] = useState("200");
+  const [guests, setGuests] = useState("100");
   const [allowance, setAllowance] = useState("50");
   const rate = useQuery({
     queryKey: ["public-pricing"],
@@ -107,7 +107,7 @@ export default function PricingCalculator() {
           aria-label={t("landing.calculator.slider")}
         />
         <div className="lp-presets">
-          {[50, 150, 300, 1000].map((n) => (
+          {[50, 100, 300, 1000].map((n) => (
             <button
               key={n}
               type="button"
@@ -168,7 +168,7 @@ export default function PricingCalculator() {
               <div>
                 <dt>{t("landing.calculator.extra")}</dt>
                 <dd>
-                  {estimate.paid} <span>× USD 0.10</span>
+                  {estimate.paid} <span>× USD 1.30</span>
                 </dd>
               </div>
             </dl>

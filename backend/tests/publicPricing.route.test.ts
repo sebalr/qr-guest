@@ -15,7 +15,7 @@ describe('public pricing estimate data',()=>{
  mocks.getRate.mockResolvedValue({rate:'1234.50',sourceAt:date,fetchedAt:date});
  const response=await request(app).get('/billing/pricing');
  expect(response.status).toBe(200);
- expect(response.body).toEqual({data:{unitUsd:'0.10',freeAllowance:50,rate:'1234.50',sourceAt:date.toISOString(),fetchedAt:date.toISOString()}});
+ expect(response.body).toEqual({data:{unitUsd:'1.30',freeAllowance:50,rate:'1234.50',sourceAt:date.toISOString(),fetchedAt:date.toISOString()}});
  expect(response.headers['cache-control']).toBe('public, max-age=60');
  });
  it('returns a retryable error when no usable rate exists',async()=>{

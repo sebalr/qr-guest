@@ -1,3 +1,4 @@
+import { QR_UNIT_USD } from "../billing/pricing";
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { requireRole, requireSuperAdmin } from "../middleware/roles";
@@ -30,7 +31,7 @@ router.post("/webhooks/mercadopago", async (req, res) => {
 router.get("/pricing", async (_req, res) => {
   const rate = await getRate();
   res.set("Cache-Control", "public, max-age=60");
-  res.json({ data: { unitUsd: "0.10", freeAllowance: 50, rate: rate.rate.toString(), sourceAt: rate.sourceAt, fetchedAt: rate.fetchedAt } });
+  res.json({ data: { unitUsd: QR_UNIT_USD, freeAllowance: 50, rate: rate.rate.toString(), sourceAt: rate.sourceAt, fetchedAt: rate.fetchedAt } });
 });
 router.use(authMiddleware, requireRole(["owner", "admin"]));
 router.get("/methods", (req, res) =>
