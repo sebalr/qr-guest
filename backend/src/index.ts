@@ -60,6 +60,11 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: '15mb' }));
+// Health probes must be reachable before authenticated application routers.
+app.get('/health', (_req: Request, res: Response) => {
+	res.json({ status: 'ok' });
+});
+
 app.use('/billing', billingRouter);
 app.use('/assets', assetsRouter);
 
@@ -72,9 +77,6 @@ app.use('/admin', adminRouter);
 app.use('/events', statsRouter);
 app.use('/guests', guestsRouter);
 
-app.get('/health', (_req: Request, res: Response) => {
-	res.json({ status: 'ok' });
-});
 
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
