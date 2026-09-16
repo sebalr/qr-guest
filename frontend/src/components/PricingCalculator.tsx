@@ -149,8 +149,10 @@ export default function PricingCalculator() {
           <span className="lp-chip">{t("landing.calculator.noMonthly")}</span>
         </div>
         <div className="lp-estimate" aria-live="polite" aria-atomic="true">
-          <div className="lp-price" data-testid="estimate-usd">
-            {estimate ? currency(estimate.usdCents, "USD") : "—"}
+          <div className="lp-price" data-testid="estimate-ars">
+            {estimate?.arsCents !== null && estimate?.arsCents !== undefined
+              ? currency(estimate.arsCents, "ARS")
+              : "—"}
           </div>
           <p>
             {estimate && estimate.paid === 0
@@ -162,33 +164,23 @@ export default function PricingCalculator() {
               <div>
                 <dt>{t("landing.calculator.included")}</dt>
                 <dd>
-                  {estimate.complimentary} <span>× USD 0</span>
+                  {estimate.complimentary} <span>× {t("landing.calculator.free")}</span>
                 </dd>
               </div>
               <div>
                 <dt>{t("landing.calculator.extra")}</dt>
                 <dd>
-                  {estimate.paid} <span>× USD 0.65</span>
+                  {estimate.paid} <span>{t("landing.calculator.atCurrentPesoPrice")}</span>
                 </dd>
               </div>
             </dl>
           )}
-          <div className="lp-ars">
-            <span>{t("landing.calculator.inPesos")}</span>
-            <strong data-testid="estimate-ars">
-              {estimate?.arsCents !== null && estimate?.arsCents !== undefined
-                ? currency(estimate.arsCents, "ARS")
-                : "—"}
-            </strong>
-          </div>
+          <div className="lp-ars"><span>{t("landing.calculator.inPesos")}</span></div>
         </div>
         <div className="lp-rate-note">
           {rate.data ? (
             <>
               {t("landing.calculator.rate", {
-                rate: Number(rate.data.rate).toLocaleString(i18n.language, {
-                  maximumFractionDigits: 6,
-                }),
                 date: new Date(rate.data.sourceAt).toLocaleString(
                   i18n.language,
                 ),

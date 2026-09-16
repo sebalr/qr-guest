@@ -514,7 +514,7 @@
     "personal": "Personal",
     "custom": "Custom",
     "freeDescription": "One lifetime event. First 50 QRs free per workspace. Basic image/text invitations.",
-    "personalDescription": "Unlimited events and custom PDFs. Unlocked by your first QR purchase. USD 0.65 per extra QR; no subscription.",
+    "personalDescription": "Unlimited events and custom PDFs. Unlocked by your first QR purchase. Extra QRs are charged in pesos; no subscription.",
     "customDescription": "Need a tailored solution? Contact us with your requirements.",
     "freeBalance": "Complimentary remaining",
     "paidBalance": "Paid for this event",
@@ -524,7 +524,7 @@
     "quantity": "QR quantity",
     "method": "Payment method",
     "quote": "Calculate price",
-    "conversion": "{{quantity}} QR · Official selling rate: ARS {{rate}} / USD · DolarAPI, {{date}}",
+    "conversion": "{{quantity}} QR · Final peso price calculated with DolarAPI's official rate, {{date}}",
     "expires": "Quote valid until {{date}}",
     "pay": "Pay with Mercado Pago",
     "paymentStatus": "Payment status",
@@ -612,12 +612,12 @@
     "plans": {
       "eyebrow": "Small gathering or full house",
       "title": "Your event. Your guest count.",
-      "description": "Start with 50 free QRs. Grow at USD 0.65 per extra QR, paid in Argentine pesos.",
+      "description": "Start with 50 free QRs. Add what you need and always pay in Argentine pesos.",
       "flexible": "Pay as you go",
       "note": "The 50 complimentary QRs are a one-time workspace allowance, shared across events. Purchased QRs stay with the selected event.",
       "free": {
         "name": "Free",
-        "price": "USD 0",
+        "price": "$ 0",
         "unit": "to get your first event going",
         "description": "Everything you need for a small guest list.",
         "features": [
@@ -631,7 +631,7 @@
       },
       "personal": {
         "name": "Personal",
-        "price": "USD 0.65",
+        "price": "In pesos",
         "unit": "per extra QR · no monthly fee",
         "description": "Your own invitations. Room for every event.",
         "features": [
@@ -676,11 +676,13 @@
       "oneEvent": "One event · only the extra QRs",
       "included": "Complimentary tickets",
       "extra": "Extra tickets",
+      "free": "free",
+      "atCurrentPesoPrice": "at the current peso price",
       "inPesos": "Estimated in Argentine pesos",
-      "rate": "DolarAPI official selling rate: ARS {{rate}} / USD · {{date}}",
-      "disclaimer": "Estimate only. The exchange rate and amount are confirmed in a 15-minute checkout quote. This is not specifically a BNA quote.",
-      "loading": "Loading the official exchange rate… USD estimate is ready.",
-      "unavailable": "The peso estimate is temporarily unavailable. Your USD estimate still works.",
+      "rate": "Peso price updated with DolarAPI's official rate · {{date}}",
+      "disclaimer": "Estimate only. The final peso amount is confirmed in a 15-minute checkout quote.",
+      "loading": "Calculating the current peso price…",
+      "unavailable": "The peso price is temporarily unavailable.",
       "retry": "Retry",
       "cta": "Create my event",
       "noPayment": "This is a simulation. No purchase is made. Existing paid event credits are not deducted in this simulation."
@@ -708,7 +710,7 @@
         },
         {
           "q": "How are Argentine peso payments calculated?",
-          "a": "Extra tickets cost USD 0.65 each, converted using DolarAPI’s official selling rate. Checkout locks an ARS amount in a quote valid for 15 minutes. Credits become available only after payment approval through Mercado Pago."
+          "a": "Each extra ticket is priced in pesos using DolarAPI’s official rate. Checkout locks the final peso amount in a quote valid for 15 minutes. Credits become available only after payment approval through Mercado Pago."
         },
         {
           "q": "Can I use my own invitation design?",
