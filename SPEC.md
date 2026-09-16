@@ -95,3 +95,7 @@ Physical venue/device testing, including iOS camera behavior, has not been perfo
 ## 8. Revised pricing
 
 USD 0.65 per additional QR replaces the initial USD 0.10 price. The target is approximately ARS 100,000 for **100 paid tickets**, independently of the 50 complimentary QRs: 100 paid QRs cost USD 65, or ARS 99,450 at the reference selling rate of ARS 1,530/USD. A 100-guest event with all 50 free QRs remaining needs only 50 paid QRs (USD 32.50 / ARS 49,725 at that rate). Existing order amounts remain unchanged. The landing calculator defaults to 100 guests. See `DEPLOYMENT.md` for installation status and remaining provider/device configuration.
+
+### Production release verification (2026-09-15)
+
+Both existing Coolify applications completed deployment of `sha-5d8098b`. The database migration was applied after a private backup. Public API health and USD 0.65 pricing were verified; the live calculator returned USD 65 / ARS 99,450 for 100 paid tickets. Targeted corrected-price validation passed: 21 backend tests including nine PostgreSQL integration tests, 16 frontend unit tests, two landing browser tests, frontend build, CI and both image builds. Mercado Pago credentials/sandbox checkout, delivery providers, physical devices and restore drill remain external checks described in `DEPLOYMENT.md`. Existing PWA clients need all Tiqra windows closed/reopened online to activate a waiting update; an in-app update prompt remains missing.

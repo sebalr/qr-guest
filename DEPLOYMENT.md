@@ -7,14 +7,14 @@
 | Website | https://tiqra.nardario.com |
 | API | https://api-tiqra.nardario.com |
 | Coolify project | Existing `tiqra` project, `production` environment |
-| Frontend / backend | Separate GHCR image applications; keep the existing resources |
+| Frontend / backend | Separate GHCR image applications; both deployed at `sha-5d8098b` |
 | PostgreSQL | Existing `tiqra` database; billing/scanner/assets migration applied successfully |
 | Database roles | Existing `tiqra_app` runtime and `tiqra_migrator` owner; creator-specific default grants verified |
 | DolarAPI | Live rate retrieval verified; no API key required |
 | Payments | Code deployed, Mercado Pago credentials and end-to-end sandbox validation still required |
 | Email / reCAPTCHA | Variable names are present in Coolify; actual delivery and production registration have not been verified in this deployment session |
 | Backups | Pre-release backup created and archive readable; no scheduled backup was configured when inspected |
-| Revised pricing | USD 0.65 per additional QR; rollout verification pending |
+| Revised pricing | USD 0.65 per additional QR; live API and calculator verified on 2026-09-15 |
 
 Existing resources:
 
@@ -23,6 +23,8 @@ Existing resources:
 - [Database backups](http://100.97.25.119:8000/project/zosg4ckswso8808808c0ko8k/environment/rowso0ckwcg48sk44swsc0gk/database/wcs4wks4wccosw8os4s80cow/backups)
 
 These private Coolify URLs require access to your network and a Coolify login.
+
+Both Coolify deployments finished successfully. The public API health endpoint responds successfully, and the live calculator shows USD 65 / ARS 99,450 for 100 paid tickets at ARS 1,530/USD. Existing browser/PWA sessions may retain the previous offline app until all Tiqra tabs/windows are closed and reopened while online; do not delete local scanner data to update. An in-app update prompt remains a usability improvement.
 
 ## 1. Understand the new price
 
@@ -90,6 +92,7 @@ This is a one-time backup, not a scheduled or off-site backup. Its archive listi
 - **Access:** test owner/admin access and a scanner account with an actual event. Confirm the event downloads before going offline. Keep the existing `JWT_SECRET` and `QR_SECRET`; changing them can invalidate sessions, offline permits or issued QR tokens.
 - **Invitations:** test image upload, basic PDF download, and a Personal event's custom single-page PDF on the devices you use.
 - **Venue test:** use two phones, including iOS if applicable. Test offline/reconnect, a duplicate QR, a canceled ticket, and unsynced-data deletion warnings. Two disconnected scanners can accept the same QR before reconnecting; that physical limitation remains.
+- **Health checks:** the public backend `/health` endpoint now works. Coolify health checks remain disabled; enable the backend check with path `/health`, port `80`, and verify a healthy deployment.
 - **Monitoring:** Coolify reported no notification channel configured. Add an email/other channel you control and verify delivery for deployment/backup failures.
 
 ## 5. Future releases
