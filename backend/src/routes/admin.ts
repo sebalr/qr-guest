@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import prisma from '../prisma';
+import { lockTenant } from '../billing/credits';
 import { resolveRlsContext } from '../lib/tenantContext';
 import { authMiddleware } from '../middleware/auth';
 import { requireRole, requireSuperAdmin } from '../middleware/roles';
@@ -449,6 +451,76 @@ router.get('/events', requireSuperAdmin, async (_req: Request, res: Response): P
 			tenant,
 		})),
 	});
+});
+
+router.post('/events/:id/credits', requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+	const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+	const tenantId = typeof req.body?.tenantId === 'string' ? req.body.tenantId.trim() : '';
+	const quantity = req.body?.quantity;
+	const action = req.body?.action;
+
+	if (!eventId || !tenantId) {
+		res.status(400).json({ error: 'event id and tenantId are required' });
+		return;
+	}
+
+	if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1_000_000) {
+		res.status(400).json({ error: 'quantity must be an integer between 1 and 1000000' });
+		return;
+	}
+
+	if (action !== 'add' && action !== 'remove') {
+		res.status(400).json({ error: 'action must be add or remove' });
+		return;
+	}
+
+	const paidDelta = action === 'add' ? quantity : -quantity;
+	const updated = await withRls({ tenantId }, async tenantPrisma => {
+		await lockTenant(tenantPrisma, tenantId);
+		const event = await tenantPrisma.event.findFirst({
+			where: { id: eventId, tenantId, isDeleted: false, archivedAt: null },
+		});
+
+		if (!event) return null;
+		if (paidDelta < 0 && event.paidCredits < quantity) {
+			return { insufficientCredits: true as const, paidCredits: event.paidCredits };
+		}
+
+		const adjustedEvent = await tenantPrisma.event.update({
+			where: { id: event.id },
+			data: { paidCredits: { increment: paidDelta } },
+		});
+		await tenantPrisma.creditLedger.create({
+			data: {
+				tenantId,
+				eventId: event.id,
+				kind: action === 'add' ? 'admin_grant' : 'admin_removal',
+				paidDelta,
+				reference: `admin:${req.user!.userId}:${randomUUID()}`,
+			},
+		});
+		if (action === 'add') {
+			await tenantPrisma.tenant.update({
+				where: { id: tenantId },
+				data: { plan: 'personal' },
+			});
+		}
+
+		return { insufficientCredits: false as const, event: adjustedEvent };
+	});
+
+	if (!updated) {
+		res.status(404).json({ error: 'Event not found' });
+		return;
+	}
+	if (updated.insufficientCredits) {
+		res.status(409).json({
+			error: `Cannot remove ${quantity} credits; this event has ${updated.paidCredits} unused paid credits`,
+		});
+		return;
+	}
+
+	res.json({ data: updated.event });
 });
 
 router.post('/events/:id/archive', requireRole(['owner', 'admin']), async (req: Request, res: Response): Promise<void> => {

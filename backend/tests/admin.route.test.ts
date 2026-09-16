@@ -25,6 +25,8 @@ const prismaMocks = vi.hoisted(() => ({
 	tenantUpdate: vi.fn(),
 	eventFindUnique: vi.fn(),
 	eventUpdate: vi.fn(),
+	queryRaw: vi.fn(),
+	creditLedgerCreate: vi.fn(),
 }));
 
 const tenantPrismaMocks = vi.hoisted(() => ({
@@ -32,6 +34,8 @@ const tenantPrismaMocks = vi.hoisted(() => ({
 	eventFindMany: vi.fn(),
 	eventFindFirst: vi.fn(),
 	eventGroupBy: vi.fn(),
+	tenantFindUnique: vi.fn(),
+	tenantUpdate: vi.fn(),
 }));
 
 vi.mock('../src/prisma', () => ({
@@ -58,15 +62,23 @@ vi.mock('../src/prisma', () => ({
 		},
 	},
 	withRls: vi.fn(async (_context: any, work: any) =>
-		work({
-			event: {
+	work({
+		$queryRaw: prismaMocks.queryRaw,
+		event: {
 				count: tenantPrismaMocks.eventCount,
 				findMany: tenantPrismaMocks.eventFindMany,
 				findFirst: tenantPrismaMocks.eventFindFirst,
 				groupBy: tenantPrismaMocks.eventGroupBy,
-				update: prismaMocks.eventUpdate,
-			},
-		}),
+			update: prismaMocks.eventUpdate,
+		},
+		tenant: {
+			findUnique: tenantPrismaMocks.tenantFindUnique,
+			update: tenantPrismaMocks.tenantUpdate,
+		},
+		creditLedger: {
+			create: prismaMocks.creditLedgerCreate,
+		},
+	}),
 	),
 }));
 
@@ -115,6 +127,8 @@ describe('admin route tenant scoping', () => {
 		prismaMocks.eventFindUnique.mockResolvedValue(null);
 		prismaMocks.eventUpdate.mockResolvedValue(null);
 		prismaMocks.userFindUnique.mockResolvedValue(null);
+		prismaMocks.queryRaw.mockResolvedValue([]);
+		tenantPrismaMocks.tenantFindUnique.mockResolvedValue({ id: 'tenant-1' });
 	});
 
 	it('requires tenantId for super admin GET /admin/users', async () => {
@@ -262,6 +276,91 @@ describe('admin route tenant scoping', () => {
 
 		const lastCallArg = tenantPrismaMocks.eventFindMany.mock.calls.at(-1)?.[0] as { where: { archivedAt?: null } };
 		expect(lastCallArg.where.archivedAt).toBeUndefined();
+	});
+
+	it('adds paid QR credits to an event as super admin and records the adjustment', async () => {
+		authState.currentUser = {
+			userId: 'su-1',
+			tenantId: 'tenant-1',
+			role: 'owner',
+			isSuperAdmin: true,
+			email: 'larrieu.sebastian@gmail.com',
+		};
+		tenantPrismaMocks.eventFindFirst.mockResolvedValue({
+			id: 'event-1',
+			tenantId: 'tenant-2',
+			paidCredits: 5,
+			isDeleted: false,
+		});
+		prismaMocks.eventUpdate.mockResolvedValue({ id: 'event-1', paidCredits: 15 });
+		prismaMocks.creditLedgerCreate.mockResolvedValue({ id: 'ledger-1' });
+		tenantPrismaMocks.tenantFindUnique.mockResolvedValue({ id: 'tenant-2' });
+		tenantPrismaMocks.tenantUpdate.mockResolvedValue({ id: 'tenant-2', plan: 'personal' });
+
+		const app = createApp();
+		const res = await request(app).post('/admin/events/event-1/credits').send({
+			tenantId: 'tenant-2',
+			action: 'add',
+			quantity: 10,
+		});
+
+		expect(res.status).toBe(200);
+		expect(prismaMocks.eventUpdate).toHaveBeenCalledWith({
+			where: { id: 'event-1' },
+			data: { paidCredits: { increment: 10 } },
+		});
+		expect(prismaMocks.creditLedgerCreate).toHaveBeenCalledWith({
+			data: expect.objectContaining({
+				tenantId: 'tenant-2',
+				eventId: 'event-1',
+				kind: 'admin_grant',
+				paidDelta: 10,
+			}),
+		});
+		expect(tenantPrismaMocks.tenantUpdate).toHaveBeenCalledWith({
+			where: { id: 'tenant-2' },
+			data: { plan: 'personal' },
+		});
+	});
+
+	it('removes only unused paid QR credits and forbids non-super-admin access', async () => {
+		authState.currentUser = {
+			userId: 'owner-1',
+			tenantId: 'tenant-1',
+			role: 'owner',
+			isSuperAdmin: false,
+			email: 'owner@example.com',
+		};
+		const app = createApp();
+		const forbidden = await request(app).post('/admin/events/event-1/credits').send({
+			tenantId: 'tenant-1',
+			action: 'remove',
+			quantity: 1,
+		});
+		expect(forbidden.status).toBe(403);
+
+		authState.currentUser = {
+			userId: 'su-1',
+			tenantId: 'tenant-1',
+			role: 'owner',
+			isSuperAdmin: true,
+			email: 'larrieu.sebastian@gmail.com',
+		};
+		tenantPrismaMocks.eventFindFirst.mockResolvedValue({
+			id: 'event-1',
+			tenantId: 'tenant-1',
+			paidCredits: 3,
+			isDeleted: false,
+		});
+
+		const tooMany = await request(app).post('/admin/events/event-1/credits').send({
+			tenantId: 'tenant-1',
+			action: 'remove',
+			quantity: 4,
+		});
+		expect(tooMany.status).toBe(409);
+		expect(prismaMocks.eventUpdate).not.toHaveBeenCalled();
+		expect(prismaMocks.creditLedgerCreate).not.toHaveBeenCalled();
 	});
 
 	it('archives, unarchives and logically deletes events', async () => {

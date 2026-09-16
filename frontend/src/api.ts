@@ -160,6 +160,7 @@ export interface AdminTenant {
 export interface AdminEvent {
 	id: string;
 	name: string;
+	paidCredits: number;
 	startsAt: string;
 	endsAt: string;
 	maxGuests?: number | null;
@@ -421,6 +422,8 @@ export const createAdminGuestApi = (tenantId: string, eventId: string, data: { n
 export const archiveAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/archive`);
 export const unarchiveAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/unarchive`);
 export const deleteAdminEventApi = (eventId: string) => api.post<{ data: Event }>(`/admin/events/${eventId}/delete`);
+export const adjustAdminEventCreditsApi = (tenantId: string, eventId: string, action: 'add' | 'remove', quantity: number) =>
+	api.post<{ data: { id: string; paidCredits: number } }>(`/admin/events/${eventId}/credits`, { tenantId, action, quantity });
 
 export default api;
 

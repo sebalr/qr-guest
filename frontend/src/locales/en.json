@@ -95,7 +95,8 @@
         "createTenantInviteAdmin": "Create Tenant & Invite Admin",
         "selectedTenant": "Selected Tenant",
         "createUser": "Create User",
-        "createUserForTenant": "Create User for {{tenantName}}"
+        "createUserForTenant": "Create User for {{tenantName}}",
+        "adjustEventCredits": "Add or remove event QR credits"
       },
       "form": {
         "tenantName": "Tenant Name",
@@ -106,15 +107,25 @@
         "selectTenant": "Select tenant",
         "email": "Email",
         "userEmailPlaceholder": "user@company.com",
-        "role": "Role"
+        "role": "Role",
+        "event": "Event",
+        "selectEvent": "Select an event",
+        "qrQuantity": "QR quantity"
       },
       "actions": {
         "creating": "Creating...",
         "createTenantSendInvitation": "Create Tenant and Send Invitation",
-        "sendInvitation": "Send Invitation"
+        "sendInvitation": "Send Invitation",
+        "addCredits": "Add QR credits",
+        "removeCredits": "Remove QR credits",
+        "adjustingCredits": "Saving..."
       },
       "hints": {
-        "invitationLinkHint": "The invitation email includes a link where the admin sets their password on first access."
+        "invitationLinkHint": "The invitation email includes a link where the admin sets their password on first access.",
+        "creditAdjustment": "Added credits work like purchased event credits. You can remove only unused paid credits."
+      },
+      "labels": {
+        "creditsAvailable": "paid credits available"
       },
       "errors": {
         "loadSuperAdminDataFailed": "Failed to load super admin data.",
@@ -132,7 +143,10 @@
         "selectTenantBeforeCreateGuest": "Select a tenant before creating a guest.",
         "selectEventBeforeCreateGuest": "Select an event before creating a guest.",
         "guestNameRequired": "Guest name is required.",
-        "createGuestFailed": "Failed to create guest."
+        "createGuestFailed": "Failed to create guest.",
+        "selectEventBeforeAdjustCredits": "Select an event before adjusting credits.",
+        "creditQuantityInvalid": "QR quantity must be a whole number between 1 and 1,000,000.",
+        "adjustCreditsFailed": "Failed to adjust event QR credits."
       }
     },
     "events": {

@@ -8,6 +8,7 @@ import {
 	AdminEvent,
 	AdminTenant,
 	AdminUser,
+	adjustAdminEventCreditsApi,
 	archiveAdminEventApi,
 	createAdminUserApi,
 	createAdminEventApi,
@@ -67,6 +68,8 @@ export default function SuperAdminPage() {
 	const [createGuestName, setCreateGuestName] = useState('');
 	const [selectedEventId, setSelectedEventId] = useState('');
 	const [creatingGuest, setCreatingGuest] = useState(false);
+	const [creditQuantity, setCreditQuantity] = useState('');
+	const [adjustingCredits, setAdjustingCredits] = useState<'add' | 'remove' | null>(null);
 	const [showArchivedEvents, setShowArchivedEvents] = useState(false);
 	const [eventActionSaving, setEventActionSaving] = useState<Record<string, boolean>>({});
 	const [pendingEventAction, setPendingEventAction] = useState<PendingEventAction | null>(null);
@@ -125,6 +128,11 @@ export default function SuperAdminPage() {
 			.then(([userRes, eventRes]) => {
 				setUsers(userRes.data.data);
 				setEvents(eventRes.data.data);
+				setSelectedEventId(current =>
+					eventRes.data.data.some(event => event.id === current && !event.archivedAt)
+						? current
+						: (eventRes.data.data.find(event => !event.archivedAt)?.id ?? ''),
+				);
 			})
 			.catch(() => setError(t('superAdmin.page.errors.loadTenantDataFailed')))
 			.finally(() => setTenantDataLoading(false));
@@ -278,6 +286,37 @@ export default function SuperAdminPage() {
 			}
 		} finally {
 			setCreatingGuest(false);
+		}
+	}
+
+	async function handleAdjustCredits(action: 'add' | 'remove') {
+		setError('');
+		const quantity = Number(creditQuantity);
+		if (!selectedTenantId || !selectedEventId) {
+			setError(t('superAdmin.page.errors.selectEventBeforeAdjustCredits'));
+			return;
+		}
+		if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1_000_000) {
+			setError(t('superAdmin.page.errors.creditQuantityInvalid'));
+			return;
+		}
+
+		setAdjustingCredits(action);
+		try {
+			await adjustAdminEventCreditsApi(selectedTenantId, selectedEventId, action, quantity);
+			if (action === 'add') {
+				setTenants(current => current.map(tenant => (tenant.id === selectedTenantId ? { ...tenant, plan: 'personal' } : tenant)));
+			}
+			setCreditQuantity('');
+			await refreshEvents(selectedTenantId);
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				setError((err.response?.data as { error?: string } | undefined)?.error ?? t('superAdmin.page.errors.adjustCreditsFailed'));
+			} else {
+				setError(t('superAdmin.page.errors.adjustCreditsFailed'));
+			}
+		} finally {
+			setAdjustingCredits(null);
 		}
 	}
 
@@ -607,9 +646,62 @@ export default function SuperAdminPage() {
 							</CardContent>
 						</Card>
 
-						{/* Create Guest */}
-						{activeEvents.length > 0 && (
-							<Card>
+							{/* Adjust event credits */}
+							{activeEvents.length > 0 && (
+								<Card>
+									<CardHeader>
+										<CardTitle className="text-base">{t('superAdmin.page.cards.adjustEventCredits')}</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<div className="grid md:grid-cols-2 gap-3 items-end">
+											<div className="space-y-2">
+												<Label>{t('superAdmin.page.form.event')}</Label>
+												<Select value={selectedEventId} onValueChange={setSelectedEventId}>
+													<SelectTrigger>
+														<SelectValue placeholder={t('superAdmin.page.form.selectEvent')} />
+													</SelectTrigger>
+													<SelectContent>
+														{activeEvents.map(event => (
+															<SelectItem key={event.id} value={event.id}>
+																{event.name} ({event.paidCredits} {t('superAdmin.page.labels.creditsAvailable')})
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</div>
+											<div className="space-y-2">
+												<Label>{t('superAdmin.page.form.qrQuantity')}</Label>
+												<Input
+													type="number"
+													min={1}
+													max={1000000}
+													step={1}
+													value={creditQuantity}
+													onChange={event => setCreditQuantity(event.target.value)}
+													placeholder="100"
+												/>
+											</div>
+										</div>
+										<div className="mt-4 flex gap-2">
+											<Button
+												onClick={() => handleAdjustCredits('add')}
+												disabled={adjustingCredits !== null || !selectedEventId || !creditQuantity}>
+												{adjustingCredits === 'add' ? t('superAdmin.page.actions.adjustingCredits') : t('superAdmin.page.actions.addCredits')}
+											</Button>
+											<Button
+												variant="destructive"
+												onClick={() => handleAdjustCredits('remove')}
+												disabled={adjustingCredits !== null || !selectedEventId || !creditQuantity}>
+												{adjustingCredits === 'remove' ? t('superAdmin.page.actions.adjustingCredits') : t('superAdmin.page.actions.removeCredits')}
+											</Button>
+										</div>
+										<p className="mt-3 text-xs text-muted-foreground">{t('superAdmin.page.hints.creditAdjustment')}</p>
+									</CardContent>
+								</Card>
+							)}
+
+							{activeEvents.length > 0 && (
+								<Card>
 								<CardHeader>
 									<CardTitle className="text-base">Add Guest in {selectedTenant?.name}</CardTitle>
 								</CardHeader>
@@ -806,6 +898,7 @@ export default function SuperAdminPage() {
 										</div>
 										<div className="text-right text-xs text-muted-foreground shrink-0 ml-4">
 											<p>{event._count.tickets} tickets</p>
+											<p>{event.paidCredits} paid QR credits</p>
 											<p>{event._count.scans} scans</p>
 											<p>max {typeof event.maxGuests === 'number' ? event.maxGuests : 'Unlimited'}</p>
 											<div className="mt-2 flex justify-end gap-2">

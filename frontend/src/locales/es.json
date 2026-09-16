@@ -95,7 +95,8 @@
         "createTenantInviteAdmin": "Crear tenant e invitar admin",
         "selectedTenant": "Tenant seleccionado",
         "createUser": "Crear usuario",
-        "createUserForTenant": "Crear usuario para {{tenantName}}"
+        "createUserForTenant": "Crear usuario para {{tenantName}}",
+        "adjustEventCredits": "Agregar o quitar créditos QR del evento"
       },
       "form": {
         "tenantName": "Nombre del tenant",
@@ -106,15 +107,25 @@
         "selectTenant": "Selecciona tenant",
         "email": "Correo",
         "userEmailPlaceholder": "user@company.com",
-        "role": "Rol"
+        "role": "Rol",
+        "event": "Evento",
+        "selectEvent": "Selecciona un evento",
+        "qrQuantity": "Cantidad de QR"
       },
       "actions": {
         "creating": "Creando...",
         "createTenantSendInvitation": "Crear tenant y enviar invitacion",
-        "sendInvitation": "Enviar invitacion"
+        "sendInvitation": "Enviar invitacion",
+        "addCredits": "Agregar créditos QR",
+        "removeCredits": "Quitar créditos QR",
+        "adjustingCredits": "Guardando..."
       },
       "hints": {
-        "invitationLinkHint": "El correo de invitacion incluye un enlace donde el admin define su contrasena en el primer acceso."
+        "invitationLinkHint": "El correo de invitacion incluye un enlace donde el admin define su contrasena en el primer acceso.",
+        "creditAdjustment": "Los créditos agregados funcionan como créditos comprados para el evento. Solo se pueden quitar créditos pagos sin usar."
+      },
+      "labels": {
+        "creditsAvailable": "créditos pagos disponibles"
       },
       "errors": {
         "loadSuperAdminDataFailed": "No se pudieron cargar los datos de super admin.",
@@ -132,7 +143,10 @@
         "selectTenantBeforeCreateGuest": "Selecciona un tenant antes de crear un invitado.",
         "selectEventBeforeCreateGuest": "Selecciona un evento antes de crear un invitado.",
         "guestNameRequired": "El nombre del invitado es obligatorio.",
-        "createGuestFailed": "No se pudo crear el invitado."
+        "createGuestFailed": "No se pudo crear el invitado.",
+        "selectEventBeforeAdjustCredits": "Selecciona un evento antes de modificar los créditos.",
+        "creditQuantityInvalid": "La cantidad de QR debe ser un número entero entre 1 y 1.000.000.",
+        "adjustCreditsFailed": "No se pudieron modificar los créditos QR del evento."
       }
     },
     "events": {
