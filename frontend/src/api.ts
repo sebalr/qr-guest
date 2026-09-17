@@ -355,8 +355,8 @@ export const getTicketQRApi = (ticketId: string, options?: TenantScopedRequestOp
 	api.get<{ data: { qrToken: string } }>(`/tickets/${ticketId}/qr`, { params: tenantScopedParams(options) });
 
 // Stats
-export const getEventStatsApi = (eventId: string, interval?: string) =>
-	api.get<{ data: EventStats }>(`/events/${eventId}/stats`, interval ? { params: { interval } } : {});
+export const getEventStatsApi = (eventId: string, interval?: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: EventStats }>(`/events/${eventId}/stats`, { params: { ...tenantScopedParams(options), ...(interval ? { interval } : {}) } });
 
 // Scan
 export const postScanApi = (
@@ -382,11 +382,11 @@ export const postScanApi = (
 export const uploadDeviceEventDebugDataApi = (payload: DeviceEventDebugUploadPayload, options?: TenantScopedRequestOptions) =>
 	api.post<{ data: DeviceEventDebugUploadResponse }>('/scan/device-event-debug', payload, { params: tenantScopedParams(options) });
 
-export const getEventDeviceDebugDataApi = (eventId: string) =>
-	api.get<{ data: EventDeviceDebugDataItem[] }>(`/events/${eventId}/device-debug-data`);
+export const getEventDeviceDebugDataApi = (eventId: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: EventDeviceDebugDataItem[] }>(`/events/${eventId}/device-debug-data`, { params: tenantScopedParams(options) });
 
-export const getEventDeviceDebugDataItemApi = (eventId: string, dumpId: string) =>
-	api.get<{ data: EventDeviceDebugDataDetail }>(`/events/${eventId}/device-debug-data/${dumpId}`);
+export const getEventDeviceDebugDataItemApi = (eventId: string, dumpId: string, options?: TenantScopedRequestOptions) =>
+	api.get<{ data: EventDeviceDebugDataDetail }>(`/events/${eventId}/device-debug-data/${dumpId}`, { params: tenantScopedParams(options) });
 
 // Sync
 export const syncApi = (payload: SyncPayload, options?: TenantScopedRequestOptions) => api.post<{ data: SyncResponse }>('/sync', payload, { params: tenantScopedParams(options) });

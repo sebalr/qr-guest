@@ -1,6 +1,7 @@
+import { PageHeading, WorkspaceState } from '../components/WorkspaceLayout';
 import BillingPanel from '../components/BillingPanel';
 import { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -40,24 +41,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateQrPdf, sharePdfOrDownload } from '@/lib/generateQrPdf';
 import { eventQueryKeys } from '@/lib/queryKeys';
-import {
-	ArrowLeft,
-	QrCode,
-	Camera,
-	Plus,
-	X,
-	AlertCircle,
-	Users,
-	CheckCircle2,
-	XCircle,
-	BarChart2,
-	Settings,
-	Download,
-	Share2,
-	UserPlus,
-	Eye,
-	EyeOff,
-} from 'lucide-react';
+import { QrCode, Plus, X, AlertCircle, Users, CheckCircle2, XCircle, Download, Share2, UserPlus, Eye, EyeOff } from 'lucide-react';
 
 type ScanHistoryItem = TicketScanDetail & {
 	pendingSync?: boolean;
@@ -71,7 +55,6 @@ const EVENT_TICKETS_PAGE_SIZE = 100;
 export default function EventDetailPage() {
 	const { t } = useTranslation();
 	const { id } = useParams<{ id: string }>();
-	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const { user } = useAuth();
 	const tenantId = (searchParams.get('tenantId') ?? '').trim() || undefined;
@@ -564,8 +547,8 @@ export default function EventDetailPage() {
 			const guests = await buildGuestPdfData(activeTicketIds);
 			const blob = await generateQrPdf(guests, event.name, {
 				eventId: event.id,
-        tenantId,
-        description: event.description,
+				tenantId,
+				description: event.description,
 				imageUrl: event.imageUrl,
 				includeDescriptionInPdf: event.includeDescriptionInPdf,
 				includeImageInPdf: event.includeImageInPdf,
@@ -690,7 +673,7 @@ export default function EventDetailPage() {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
 				<div className="text-center space-y-2">
-					<div className="mx-auto h-6 w-6 rounded-full border-2 border-slate-300 border-t-slate-700 animate-spin" />
+					<div className="mx-auto h-6 w-6 rounded-full border-2 border-input border-t-slate-700 animate-spin" />
 					<p className="text-muted-foreground">{t('eventDetailPage.loading')}</p>
 					<p className="text-xs text-muted-foreground">
 						{t('eventDetailPage.loadingProgress', {
@@ -703,59 +686,29 @@ export default function EventDetailPage() {
 		);
 	}
 
+	if (eventQuery.isError || ticketsQuery.isError || ticketTypesQuery.isError)
+		return (
+			<WorkspaceState
+				title={t('workspace.loadFailed')}
+				description={t('workspace.tryAgain')}
+				action={
+					<Button
+						onClick={() => {
+							void eventQuery.refetch();
+							void ticketsQuery.refetch();
+							void ticketTypesQuery.refetch();
+						}}>
+						{t('workspace.retry')}
+					</Button>
+				}
+			/>
+		);
+
 	return (
-		<div className="min-h-screen bg-slate-50">
-			<header className="bg-background border-b sticky top-0 z-10">
-				<div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigate(tenantId && user?.isSuperAdmin ? '/super-admin' : '/events')}>
-						<ArrowLeft className="h-4 w-4" />
-					</Button>
-					<div className="flex-1 min-w-0 flex items-center gap-3">
-						{event?.imageUrl && (
-							<img
-								src={event.imageUrl}
-								alt={event.name}
-								className="h-8 w-8 rounded-md object-cover shrink-0"
-								onError={e => ((e.target as HTMLImageElement).style.display = 'none')}
-							/>
-						)}
-						<h1 className="font-bold text-lg flex-1 truncate">{event?.name ?? t('eventDetailPage.fallbackEventName')}</h1>
-					</div>
-					{canManageTickets && (
-						<Button
-							variant="outline"
-							size="sm"
-							className="gap-1.5"
-							onClick={() => navigate(`/events/${id}/dashboard${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
-							<BarChart2 className="h-4 w-4" />
-							<span className="hidden sm:inline">{t('eventDetailPage.actions.dashboard')}</span>
-						</Button>
-					)}
-					{canManageTickets && (
-						<Button
-							variant="outline"
-							size="sm"
-							className="gap-1.5"
-							onClick={() => navigate(`/events/${id}/settings${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
-							<Settings className="h-4 w-4" />
-							<span className="hidden sm:inline">{t('eventDetailPage.actions.settings')}</span>
-						</Button>
-					)}
-					<Button
-						size="sm"
-						className="gap-1.5"
-						onClick={() => navigate(`/events/${id}/scan${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
-						<Camera className="h-4 w-4" />
-						<span className="hidden sm:inline">{t('eventDetailPage.actions.scanner')}</span>
-					</Button>
-				</div>
-			</header>
+		<div className="min-h-screen bg-background">
+			<PageHeading title={event?.name ?? t('eventDetailPage.fallbackEventName')} description={t('workspace.guestsDescription')} />
 
 			<main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        {canManageTickets && id && <BillingPanel eventId={id} tenantId={tenantId} issued={tickets.length} />}
 				{event && (
 					<Card>
 						<CardContent className="pt-6">
@@ -773,11 +726,11 @@ export default function EventDetailPage() {
 									aria-pressed={selectedFilters.has('total')}
 									className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
 										selectedFilters.has('total')
-											? 'bg-slate-200 border-slate-900 ring-2 ring-slate-900/25'
-											: 'bg-slate-50 border-slate-300 hover:border-slate-500'
+											? 'bg-secondary border-primary ring-2 ring-ring/25'
+											: 'bg-background border-input hover:border-slate-500'
 									}`}>
 									<span
-										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('total') ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'}`}>
+										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('total') ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground'}`}>
 										{selectedFilters.has('total') ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
 									</span>
 									<Users className="h-5 w-5 text-muted-foreground mb-1" />
@@ -789,15 +742,15 @@ export default function EventDetailPage() {
 									aria-pressed={selectedFilters.has('scanned')}
 									className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
 										selectedFilters.has('scanned')
-											? 'bg-green-200 border-green-900 ring-2 ring-green-900/25'
+											? 'bg-[#e6efd5] border-green-900 ring-2 ring-green-900/25'
 											: 'bg-green-50 border-green-300 hover:border-green-500'
 									}`}>
 									<span
-										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('scanned') ? 'bg-green-900 text-white' : 'bg-green-200 text-green-700'}`}>
+										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('scanned') ? 'bg-green-900 text-white' : 'bg-[#e6efd5] text-green-700'}`}>
 										{selectedFilters.has('scanned') ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
 									</span>
-									<CheckCircle2 className="h-5 w-5 text-green-600 mb-1" />
-									<p className="text-2xl font-bold text-green-600">{totalScanned}</p>
+									<CheckCircle2 className="h-5 w-5 text-primary mb-1" />
+									<p className="text-2xl font-bold text-primary">{totalScanned}</p>
 									<p className="text-xs text-muted-foreground">{t('eventDetailPage.stats.scanned')}</p>
 								</button>
 								<button
@@ -805,27 +758,25 @@ export default function EventDetailPage() {
 									aria-pressed={selectedFilters.has('cancelled')}
 									className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
 										selectedFilters.has('cancelled')
-											? 'bg-red-200 border-red-900 ring-2 ring-red-900/25'
+											? 'bg-[#fae9e5] border-red-900 ring-2 ring-red-900/25'
 											: 'bg-red-50 border-red-300 hover:border-red-500'
 									}`}>
 									<span
-										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('cancelled') ? 'bg-red-900 text-white' : 'bg-red-200 text-red-700'}`}>
+										className={`absolute right-2 top-2 rounded-full p-1 ${selectedFilters.has('cancelled') ? 'bg-red-900 text-white' : 'bg-[#fae9e5] text-red-700'}`}>
 										{selectedFilters.has('cancelled') ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
 									</span>
-									<XCircle className="h-5 w-5 text-red-500 mb-1" />
-									<p className="text-2xl font-bold text-red-500">{cancelledCount}</p>
+									<XCircle className="h-5 w-5 text-destructive mb-1" />
+									<p className="text-2xl font-bold text-destructive">{cancelledCount}</p>
 									<p className="text-xs text-muted-foreground">{t('eventDetailPage.stats.cancelled')}</p>
 								</button>
-								<div className="flex flex-col items-center p-3 rounded-lg bg-blue-50 border-2 border-blue-300">
-									<Users className="h-5 w-5 text-blue-600 mb-1" />
-									<p className="text-2xl font-bold text-blue-600">{hasGuestLimit ? event.maxGuests : '∞'}</p>
+								<div className="flex flex-col items-center p-3 rounded-lg bg-secondary border-2 border-input">
+									<Users className="h-5 w-5 text-primary mb-1" />
+									<p className="text-2xl font-bold text-primary">{hasGuestLimit ? event.maxGuests : '∞'}</p>
 									<p className="text-xs text-muted-foreground">{t('eventDetailPage.stats.maxGuests')}</p>
 								</div>
 							</div>
 							{canEditGuestLimit && (
-								<form
-									onSubmit={handleSaveMaxGuests}
-									className="mt-4 p-3 rounded-lg border bg-slate-50 space-y-2">
+								<form onSubmit={handleSaveMaxGuests} className="mt-4 p-3 rounded-lg border bg-background space-y-2">
 									<div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
 										<div className="space-y-1">
 											<Label htmlFor="event-max-guests">{t('eventDetailPage.stats.maxGuests')}</Label>
@@ -840,9 +791,7 @@ export default function EventDetailPage() {
 												placeholder={t('eventDetailPage.maxGuests.placeholder')}
 											/>
 										</div>
-										<Button
-											type="submit"
-											disabled={savingMaxGuests}>
+										<Button type="submit" disabled={savingMaxGuests}>
 											{savingMaxGuests ? t('eventDetailPage.actions.saving') : t('eventDetailPage.maxGuests.save')}
 										</Button>
 									</div>
@@ -855,15 +804,12 @@ export default function EventDetailPage() {
 
 				{/* Single guest add with autocomplete */}
 				{canManageTickets && (
-					<form
-						onSubmit={handleAddSingle}
-						className="flex gap-2 items-start">
-						<div
-							className="flex-1 relative"
-							ref={suggestionRef}>
+					<form onSubmit={handleAddSingle} className="ws-guest-form flex gap-3 items-start">
+						<div className="flex-1 relative" ref={suggestionRef}>
 							<div className="flex gap-2 items-start">
-								<div className="relative flex-1">
+								<div className="relative flex-1 min-w-0">
 									<Input
+										aria-label={t('workspace.guestName')}
 										placeholder={t('eventDetailPage.singleAdd.namePlaceholder')}
 										value={singleName}
 										onChange={e => handleSingleNameChange(e.target.value)}
@@ -871,24 +817,20 @@ export default function EventDetailPage() {
 										autoComplete="off"
 									/>
 									{selectedGuest && (
-										<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium pointer-events-none">
+										<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-primary font-medium pointer-events-none">
 											{t('eventDetailPage.singleAdd.existingGuest')}
 										</span>
 									)}
 								</div>
 								<div className="w-44 shrink-0">
-									<Select
-										value={singleTicketTypeId}
-										onValueChange={setSingleTicketTypeId}>
+									<Select value={singleTicketTypeId} onValueChange={setSingleTicketTypeId}>
 										<SelectTrigger>
 											<SelectValue placeholder={t('eventDetailPage.ticketType.placeholder')} />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="none">{t('eventDetailPage.ticketType.none')}</SelectItem>
 											{ticketTypes.map(type => (
-												<SelectItem
-													key={type.id}
-													value={type.id}>
+												<SelectItem key={type.id} value={type.id}>
 													{type.name} (${type.price.toFixed(2)})
 												</SelectItem>
 											))}
@@ -901,7 +843,7 @@ export default function EventDetailPage() {
 							{/* Suggestions dropdown */}
 							{showSuggestions && guestSuggestions.length > 0 && (
 								<div className="absolute z-30 top-full mt-1 w-full bg-background border rounded-lg shadow-lg overflow-hidden">
-									<p className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b bg-slate-50">
+									<p className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b bg-background">
 										{t('eventDetailPage.singleAdd.existingGuestsInOrg')}
 									</p>
 									<ul className="max-h-56 overflow-y-auto divide-y">
@@ -910,10 +852,7 @@ export default function EventDetailPage() {
 												<button
 													type="button"
 													className="w-full text-left px-3 py-2 hover:bg-accent transition-colors"
-													onMouseDown={e => {
-														e.preventDefault();
-														handleSelectGuest(g);
-													}}>
+													onClick={() => handleSelectGuest(g)}>
 													<p className="text-sm font-medium">{g.name}</p>
 													{g.events.length > 0 && (
 														<p className="text-xs text-muted-foreground truncate">{g.events.map(ev => ev.eventName).join(', ')}</p>
@@ -922,16 +861,10 @@ export default function EventDetailPage() {
 											</li>
 										))}
 									</ul>
-									<div className="border-t px-3 py-2 bg-slate-50">
+									<div className="border-t px-3 py-2 bg-background">
 										<p className="text-xs text-muted-foreground">
 											{t('eventDetailPage.singleAdd.notListed')}{' '}
-											<button
-												type="button"
-												className="underline hover:text-foreground"
-												onMouseDown={e => {
-													e.preventDefault();
-													setShowSuggestions(false);
-												}}>
+											<button type="button" className="underline hover:text-foreground" onClick={() => setShowSuggestions(false)}>
 												{t('eventDetailPage.singleAdd.createNewGuest', { name: singleName })}
 											</button>
 										</p>
@@ -939,11 +872,7 @@ export default function EventDetailPage() {
 								</div>
 							)}
 						</div>
-						<Button
-							type="submit"
-							size="sm"
-							disabled={addingSingle || !singleName.trim() || guestLimitReached}
-							className="gap-1.5 shrink-0">
+						<Button type="submit" size="sm" disabled={addingSingle || !singleName.trim() || guestLimitReached} className="gap-1.5 shrink-0">
 							<UserPlus className="h-3.5 w-3.5" />
 							{addingSingle ? t('eventDetailPage.actions.adding') : t('eventDetailPage.actions.add')}
 						</Button>
@@ -957,8 +886,8 @@ export default function EventDetailPage() {
 					</Alert>
 				)}
 
-				<div className="flex justify-between items-center">
-					<div className="flex items-center gap-2">
+				<div className="flex flex-wrap gap-3 justify-between items-center">
+					<div className="flex flex-wrap items-center gap-2">
 						<h2 className="text-lg font-semibold">{t('eventDetailPage.guests.title')}</h2>
 						<div className="inline-flex items-center rounded-md border bg-background p-0.5">
 							<Button
@@ -979,16 +908,13 @@ export default function EventDetailPage() {
 							</Button>
 						</div>
 						{canManageTickets && tickets.length > 0 && (
-							<button
-								type="button"
-								className="text-xs text-muted-foreground hover:text-foreground underline"
-								onClick={toggleSelectAll}>
+							<button type="button" className="text-xs text-muted-foreground hover:text-foreground underline" onClick={toggleSelectAll}>
 								{selected.size === tickets.length ? t('eventDetailPage.guests.deselectAll') : t('eventDetailPage.guests.selectAll')}
 							</button>
 						)}
 					</div>
 					{canManageTickets && (
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Button
 								variant={showBulk ? 'outline' : 'default'}
 								size="sm"
@@ -1008,9 +934,7 @@ export default function EventDetailPage() {
 							<CardTitle className="text-base">{t('eventDetailPage.bulk.title')}</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<form
-								onSubmit={handleAddTickets}
-								className="space-y-3">
+							<form onSubmit={handleAddTickets} className="space-y-3">
 								<div className="space-y-2">
 									<Label>{t('eventDetailPage.bulk.guestNamesLabel')}</Label>
 									<Textarea
@@ -1022,18 +946,14 @@ export default function EventDetailPage() {
 								</div>
 								<div className="space-y-2">
 									<Label>{t('eventDetailPage.bulk.ticketTypeLabel')}</Label>
-									<Select
-										value={bulkTicketTypeId}
-										onValueChange={setBulkTicketTypeId}>
+									<Select value={bulkTicketTypeId} onValueChange={setBulkTicketTypeId}>
 										<SelectTrigger>
 											<SelectValue placeholder={t('eventDetailPage.ticketType.selectPlaceholder')} />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="none">{t('eventDetailPage.ticketType.none')}</SelectItem>
 											{ticketTypes.map(type => (
-												<SelectItem
-													key={type.id}
-													value={type.id}>
+												<SelectItem key={type.id} value={type.id}>
 													{type.name} (${type.price.toFixed(2)})
 												</SelectItem>
 											))}
@@ -1046,9 +966,7 @@ export default function EventDetailPage() {
 										<AlertDescription>{bulkError}</AlertDescription>
 									</Alert>
 								)}
-								<Button
-									type="submit"
-									disabled={adding || guestLimitReached}>
+								<Button type="submit" disabled={adding || guestLimitReached}>
 									{adding ? t('eventDetailPage.actions.adding') : t('eventDetailPage.actions.addGuests')}
 								</Button>
 							</form>
@@ -1064,9 +982,7 @@ export default function EventDetailPage() {
 							</CardContent>
 						</Card>
 					) : guestListView === 'compact' ? (
-						<div
-							ref={compactListRef}
-							className="h-[560px] overflow-y-auto border rounded-lg bg-background">
+						<div ref={compactListRef} className="h-[560px] overflow-y-auto border rounded-lg bg-background">
 							<div
 								style={{
 									height: `${compactRowVirtualizer.getTotalSize()}px`,
@@ -1092,9 +1008,7 @@ export default function EventDetailPage() {
 											className="px-3 py-3 border-b last:border-b-0">
 											<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 												{rowTickets.map(ticket => (
-													<div
-														key={ticket.id}
-														className="aspect-square rounded-lg border bg-background p-3 flex flex-col gap-2">
+													<div key={ticket.id} className="aspect-square rounded-lg border bg-background p-3 flex flex-col gap-2">
 														<div className="flex items-start justify-between gap-2 min-w-0">
 															<p className="text-sm font-medium leading-tight break-words">{ticket.name}</p>
 															{canManageTickets && (
@@ -1119,29 +1033,16 @@ export default function EventDetailPage() {
 														</div>
 														{canManageTickets && ticket.status === 'active' && (
 															<div className="mt-auto pt-1 flex gap-1.5 flex-wrap">
-																<Button
-																	variant="outline"
-																	size="sm"
-																	onClick={() => openEditTicketDialog(ticket)}>
+																<Button variant="outline" size="sm" onClick={() => openEditTicketDialog(ticket)}>
 																	{t('eventDetailPage.actions.type')}
 																</Button>
-																<Button
-																	variant="outline"
-																	size="sm"
-																	onClick={() => handleShowQR(ticket.id)}>
+																<Button variant="outline" size="sm" onClick={() => handleShowQR(ticket.id)}>
 																	<QrCode className="h-3.5 w-3.5" />
 																</Button>
-																<Button
-																	variant="outline"
-																	size="sm"
-																	disabled={generatingPdf}
-																	onClick={() => handleGeneratePdf([ticket.id])}>
+																<Button variant="outline" size="sm" disabled={generatingPdf} onClick={() => handleGeneratePdf([ticket.id])}>
 																	<Share2 className="h-3.5 w-3.5" />
 																</Button>
-																<Button
-																	variant="destructive"
-																	size="sm"
-																	onClick={() => setCancelTargetTicketId(ticket.id)}>
+																<Button variant="destructive" size="sm" onClick={() => setCancelTargetTicketId(ticket.id)}>
 																	{t('eventDetailPage.actions.cancel')}
 																</Button>
 															</div>
@@ -1200,36 +1101,23 @@ export default function EventDetailPage() {
 										</div>
 										<div className="flex w-full gap-2 flex-wrap justify-start md:w-auto md:shrink-0 md:justify-end">
 											{canManageTickets && ticket.status === 'active' && (
-												<Button
-													variant="outline"
-													size="sm"
-													onClick={() => openEditTicketDialog(ticket)}>
+												<Button variant="outline" size="sm" onClick={() => openEditTicketDialog(ticket)}>
 													{t('eventDetailPage.actions.type')}
 												</Button>
 											)}
 											{canManageTickets && ticket.status === 'active' && (
-												<Button
-													variant="outline"
-													size="sm"
-													onClick={() => handleShowQR(ticket.id)}>
+												<Button variant="outline" size="sm" onClick={() => handleShowQR(ticket.id)}>
 													<QrCode className="h-3.5 w-3.5 mr-1" />
 													{qrMap[ticket.id] ? t('eventDetailPage.actions.hide') : t('eventDetailPage.actions.qr')}
 												</Button>
 											)}
 											{canManageTickets && ticket.status === 'active' && (
-												<Button
-													variant="outline"
-													size="sm"
-													disabled={generatingPdf}
-													onClick={() => handleGeneratePdf([ticket.id])}>
+												<Button variant="outline" size="sm" disabled={generatingPdf} onClick={() => handleGeneratePdf([ticket.id])}>
 													<Share2 className="h-3.5 w-3.5" />
 												</Button>
 											)}
 											{canManageTickets && ticket.status === 'active' && (
-												<Button
-													variant="destructive"
-													size="sm"
-													onClick={() => setCancelTargetTicketId(ticket.id)}>
+												<Button variant="destructive" size="sm" onClick={() => setCancelTargetTicketId(ticket.id)}>
 													{t('eventDetailPage.actions.cancel')}
 												</Button>
 											)}
@@ -1257,15 +1145,19 @@ export default function EventDetailPage() {
 						))
 					)}
 				</div>
+				{canManageTickets && id && (
+					<details className="ws-details" open={new URLSearchParams(location.search).has('order') || undefined}>
+						<summary>{t('billing.title')}</summary>
+						<BillingPanel eventId={id} tenantId={tenantId} issued={tickets.length} />
+					</details>
+				)}
 			</main>
 
 			{/* Toast */}
 			{pdfToast && (
 				<div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-foreground text-background text-sm px-4 py-2 rounded-lg shadow-lg max-w-xs text-center z-50">
 					{pdfToast}
-					<button
-						className="ml-2 opacity-70 hover:opacity-100"
-						onClick={() => setPdfToast('')}>
+					<button aria-label={t('common.close')} className="ml-2 opacity-70 hover:opacity-100" onClick={() => setPdfToast('')}>
 						×
 					</button>
 				</div>
@@ -1273,7 +1165,7 @@ export default function EventDetailPage() {
 
 			{/* Floating action bar */}
 			{canManageTickets && selected.size > 0 && (
-				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-background border shadow-xl rounded-2xl px-5 py-3 z-50">
+				<div className="ws-selection-bar">
 					<span className="text-sm font-medium">{t('eventDetailPage.selection.selectedCount', { count: selected.size })}</span>
 					<Button
 						size="sm"
@@ -1284,18 +1176,11 @@ export default function EventDetailPage() {
 						<Download className="h-3.5 w-3.5" />
 						{t('eventDetailPage.actions.pdf')}
 					</Button>
-					<Button
-						size="sm"
-						disabled={generatingPdf}
-						className="gap-1.5"
-						onClick={() => handleGeneratePdf(Array.from(selected))}>
+					<Button size="sm" disabled={generatingPdf} className="gap-1.5" onClick={() => handleGeneratePdf(Array.from(selected))}>
 						<Share2 className="h-3.5 w-3.5" />
 						{generatingPdf ? t('eventDetailPage.actions.sharing') : t('eventDetailPage.actions.share')}
 					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						onClick={() => setSelected(new Set())}>
+					<Button size="sm" variant="ghost" aria-label={t('workspace.clearSelection')} onClick={() => setSelected(new Set())}>
 						<X className="h-4 w-4" />
 					</Button>
 				</div>
@@ -1316,16 +1201,10 @@ export default function EventDetailPage() {
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button
-							variant="outline"
-							disabled={cancelingTicket}
-							onClick={() => setCancelTargetTicketId(null)}>
+						<Button variant="outline" disabled={cancelingTicket} onClick={() => setCancelTargetTicketId(null)}>
 							{t('eventDetailPage.cancelDialog.keepActive')}
 						</Button>
-						<Button
-							variant="destructive"
-							disabled={cancelingTicket}
-							onClick={handleCancelConfirmed}>
+						<Button variant="destructive" disabled={cancelingTicket} onClick={handleCancelConfirmed}>
 							{cancelingTicket ? t('eventDetailPage.cancelDialog.cancelling') : t('eventDetailPage.cancelDialog.confirm')}
 						</Button>
 					</DialogFooter>
@@ -1346,18 +1225,14 @@ export default function EventDetailPage() {
 					</DialogHeader>
 					<div className="space-y-2">
 						<Label>{t('eventDetailPage.ticketType.label')}</Label>
-						<Select
-							value={editingTicketTypeSelection}
-							onValueChange={setEditingTicketTypeSelection}>
+						<Select value={editingTicketTypeSelection} onValueChange={setEditingTicketTypeSelection}>
 							<SelectTrigger>
 								<SelectValue placeholder={t('eventDetailPage.ticketType.selectPlaceholder')} />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="none">{t('eventDetailPage.ticketType.none')}</SelectItem>
 								{ticketTypes.map(type => (
-									<SelectItem
-										key={type.id}
-										value={type.id}>
+									<SelectItem key={type.id} value={type.id}>
 										{type.name} (${type.price.toFixed(2)})
 									</SelectItem>
 								))}
@@ -1365,15 +1240,10 @@ export default function EventDetailPage() {
 						</Select>
 					</div>
 					<DialogFooter>
-						<Button
-							variant="outline"
-							disabled={updatingTicket}
-							onClick={() => setEditingTicket(null)}>
+						<Button variant="outline" disabled={updatingTicket} onClick={() => setEditingTicket(null)}>
 							{t('common.cancel')}
 						</Button>
-						<Button
-							disabled={updatingTicket}
-							onClick={handleSaveTicketTypeForTicket}>
+						<Button disabled={updatingTicket} onClick={handleSaveTicketTypeForTicket}>
 							{updatingTicket ? t('eventDetailPage.actions.saving') : t('eventDetailPage.actions.save')}
 						</Button>
 					</DialogFooter>
@@ -1396,9 +1266,7 @@ export default function EventDetailPage() {
 				</DialogContent>
 			</Dialog>
 
-			<Dialog
-				open={scanHistoryOpen}
-				onOpenChange={setScanHistoryOpen}>
+			<Dialog open={scanHistoryOpen} onOpenChange={setScanHistoryOpen}>
 				<DialogContent className="sm:max-w-lg">
 					<DialogHeader>
 						<DialogTitle>{t('eventDetailPage.scanHistory.title')}</DialogTitle>
@@ -1418,15 +1286,11 @@ export default function EventDetailPage() {
 						) : (
 							<ul className="divide-y">
 								{scanHistoryItems.map((scan, index) => (
-									<li
-										key={scan.id}
-										className="p-3">
-										<div className="flex items-center gap-2">
+									<li key={scan.id} className="p-3">
+										<div className="flex flex-wrap items-center gap-2">
 											<p className="text-sm font-medium">{scan.scannedBy}</p>
 											{scan.pendingSync ? (
-												<Badge
-													variant="warning"
-													className="text-[10px] px-1.5 py-0">
+												<Badge variant="warning" className="text-[10px] px-1.5 py-0">
 													{t('eventDetailPage.scanHistory.pendingSync')}
 												</Badge>
 											) : null}

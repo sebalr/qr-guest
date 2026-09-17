@@ -28,7 +28,7 @@ export function PricingCards() {
       {["free", "personal", "custom"].map((plan) => (
         <section key={plan} className="rounded-xl border bg-white p-4">
           <h3 className="font-semibold">{t(`billing.${plan}`)}</h3>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-muted-foreground">
             {t(`billing.${plan}Description`)}
           </p>
         </section>
@@ -105,10 +105,10 @@ export default function BillingPanel({
     }
   }
   return (
-    <section className="space-y-4 rounded-xl border bg-white p-4">
+    <section className="ws-billing space-y-5 rounded-xl border bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">{t("billing.title")}</h2>
-        <span className="rounded bg-slate-100 px-3 py-1 text-sm">
+        <span className="rounded bg-secondary px-3 py-1 text-sm">
           {t(`billing.${summary.data?.plan ?? "free"}`)}
         </span>
       </div>
@@ -131,20 +131,35 @@ export default function BillingPanel({
             ["available", "available"],
             ["issued", "issued"],
           ].map(([key, label]) => (
-            <div key={key} className="rounded bg-slate-50 p-3">
+            <div key={key} className="ws-billing-balance">
               <div className="text-2xl font-bold">
                 {summary.data![key as keyof Summary]}
               </div>
-              <div className="text-xs text-slate-600">
+              <div className="text-xs text-muted-foreground">
                 {t(`billing.${label}`)}
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <p>{summary.isError ? t("billing.failed") : t("billing.loading")}</p>
+        <p role="status">
+          {summary.isError ? t("billing.failed") : t("billing.loading")}
+          {summary.isError && (
+            <Button variant="outline" onClick={() => void summary.refetch()}>
+              {t("workspace.retry")}
+            </Button>
+          )}
+        </p>
       )}
-      <p className="text-sm text-slate-600">{t("billing.rules")}</p>
+      {methods.isError && (
+        <p role="alert">
+          {t("billing.failed")}{" "}
+          <Button variant="outline" onClick={() => void methods.refetch()}>
+            {t("workspace.retry")}
+          </Button>
+        </p>
+      )}
+      <p className="text-sm text-muted-foreground">{t("billing.rules")}</p>
       <div className="flex flex-wrap items-end gap-2">
         <label className="space-y-1 text-sm">
           {t("billing.quantity")}
@@ -206,7 +221,7 @@ export default function BillingPanel({
         </Button>
       </div>
       {quote && (
-        <div className="space-y-2 rounded border border-blue-200 bg-blue-50 p-3">
+        <div className="space-y-2 rounded border border-input bg-secondary p-3">
           <strong>
             {new Intl.NumberFormat(undefined, {
               style: "currency",

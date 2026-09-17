@@ -1,3 +1,5 @@
+import { WorkspaceState } from "./WorkspaceLayout";
+import { Button } from "./ui/button";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -20,9 +22,20 @@ export default function ContactRequests({ tenantId }: { tenantId: string }) {
         .then((r) => r.data.data),
   });
   return (
-    <section className="rounded border bg-white p-4">
+    <section className="rounded-2xl border bg-white p-6 space-y-4">
       <h2 className="font-bold">{t("billing.contactRequests")}</h2>
-      {(query.isError || failed) && <p role="alert">{t("billing.failed")}</p>}
+      {(query.isError || failed) && (
+        <p role="alert">
+          {t("billing.failed")}{" "}
+          <Button variant="outline" onClick={() => void query.refetch()}>
+            {t("workspace.retry")}
+          </Button>
+        </p>
+      )}
+      {query.isPending && <p role="status">{t("billing.loading")}</p>}
+      {query.isSuccess && query.data.length === 0 && (
+        <WorkspaceState title={t("workspace.noRequests")} />
+      )}
       {query.data?.map((item) => (
         <article key={item.id} className="mt-3 border-t pt-3">
           <a href={`mailto:${item.email}`} className="underline">

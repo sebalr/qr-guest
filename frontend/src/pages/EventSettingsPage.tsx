@@ -1,6 +1,7 @@
+import { PageHeading, WorkspaceState } from '../components/WorkspaceLayout';
 import InvitationEditor from '../components/InvitationEditor';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -27,7 +28,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, AlertCircle, Share2 } from 'lucide-react';
+import { AlertCircle, Share2 } from 'lucide-react';
 import QRCodeDisplay from '../components/QRCodeDisplay';
 import { eventQueryKeys } from '@/lib/queryKeys';
 
@@ -36,7 +37,6 @@ type SettingsTab = 'ticket-types' | 'temporal-scanners' | 'pdf';
 export default function EventSettingsPage() {
 	const { t } = useTranslation();
 	const { id } = useParams<{ id: string }>();
-	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const { user } = useAuth();
 	const tenantId = (searchParams.get('tenantId') ?? '').trim() || undefined;
@@ -378,31 +378,35 @@ export default function EventSettingsPage() {
 
 	if (eventQuery.isLoading || temporaryScannersQuery.isLoading || ticketTypesQuery.isLoading) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-slate-50">
+			<div className="min-h-screen flex items-center justify-center bg-background">
 				<p className="text-muted-foreground">{t('eventSettingsPage.loading')}</p>
 			</div>
 		);
 	}
 
-	return (
-		<div className="min-h-screen bg-slate-50">
-			<header className="bg-background border-b sticky top-0 z-10">
-				<div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+	if (eventQuery.isError || temporaryScannersQuery.isError || ticketTypesQuery.isError)
+		return (
+			<WorkspaceState
+				title={t('workspace.loadFailed')}
+				description={t('workspace.tryAgain')}
+				action={
 					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigate(`/events/${id}${tenantId && user?.isSuperAdmin ? `?tenantId=${encodeURIComponent(tenantId)}` : ''}`)}>
-						<ArrowLeft className="h-4 w-4" />
+						onClick={() => {
+							void eventQuery.refetch();
+							void temporaryScannersQuery.refetch();
+							void ticketTypesQuery.refetch();
+						}}>
+						{t('workspace.retry')}
 					</Button>
-					<div className="min-w-0">
-						<h1 className="font-bold text-lg truncate">{t('eventSettingsPage.title')}</h1>
-						<p className="text-xs text-muted-foreground truncate">{eventName}</p>
-					</div>
-				</div>
-			</header>
+				}
+			/>
+		);
+
+	return (
+		<div className="min-h-screen bg-background">
+			<PageHeading title={t('eventSettingsPage.title')} description={eventName} />
 
 			<main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-
 				{feedbackToast.visible && (
 					<div
 						className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-md px-3 py-2 text-sm font-medium text-white shadow-lg ${
@@ -412,11 +416,12 @@ export default function EventSettingsPage() {
 					</div>
 				)}
 
-				<div className="inline-flex rounded-lg border bg-background p-1">
+				<div className="ws-segments">
 					<Button
 						type="button"
 						variant={activeTab === 'ticket-types' ? 'default' : 'ghost'}
 						size="sm"
+						aria-pressed={activeTab === 'ticket-types'}
 						onClick={() => setActiveTab('ticket-types')}>
 						{t('eventSettingsPage.tabs.ticketTypes')}
 					</Button>
@@ -424,6 +429,7 @@ export default function EventSettingsPage() {
 						type="button"
 						variant={activeTab === 'temporal-scanners' ? 'default' : 'ghost'}
 						size="sm"
+						aria-pressed={activeTab === 'temporal-scanners'}
 						onClick={() => setActiveTab('temporal-scanners')}>
 						{t('eventSettingsPage.tabs.temporalScanners')}
 					</Button>
@@ -431,6 +437,7 @@ export default function EventSettingsPage() {
 						type="button"
 						variant={activeTab === 'pdf' ? 'default' : 'ghost'}
 						size="sm"
+						aria-pressed={activeTab === 'pdf'}
 						onClick={() => setActiveTab('pdf')}>
 						{t('eventSettingsPage.tabs.pdf')}
 					</Button>
@@ -443,9 +450,7 @@ export default function EventSettingsPage() {
 							<CardDescription>{t('eventSettingsPage.ticketTypes.description')}</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							<form
-								onSubmit={handleCreateTicketType}
-								className="grid gap-3 md:grid-cols-[1fr_160px_auto] items-end">
+							<form onSubmit={handleCreateTicketType} className="grid gap-3 md:grid-cols-[1fr_160px_auto] items-end">
 								<div className="space-y-1">
 									<Label htmlFor="new-ticket-type-name">{t('eventSettingsPage.ticketTypes.fields.name')}</Label>
 									<Input
@@ -468,9 +473,7 @@ export default function EventSettingsPage() {
 										onChange={e => setNewTicketTypePrice(e.target.value)}
 									/>
 								</div>
-								<Button
-									type="submit"
-									disabled={savingTicketType}>
+								<Button type="submit" disabled={savingTicketType}>
 									{savingTicketType ? t('eventSettingsPage.actions.saving') : t('eventSettingsPage.ticketTypes.actions.addType')}
 								</Button>
 							</form>
@@ -487,24 +490,16 @@ export default function EventSettingsPage() {
 							) : (
 								<div className="space-y-2">
 									{ticketTypes.map(type => (
-										<div
-											key={type.id}
-											className="rounded-lg border p-3 flex items-center justify-between gap-3">
+										<div key={type.id} className="rounded-lg border p-3 flex items-center justify-between gap-3">
 											<div>
 												<p className="font-medium">{type.name}</p>
 												<p className="text-xs text-muted-foreground">${type.price.toFixed(2)}</p>
 											</div>
 											<div className="flex gap-2">
-												<Button
-													variant="outline"
-													size="sm"
-													onClick={() => startEditTicketType(type)}>
+												<Button variant="outline" size="sm" onClick={() => startEditTicketType(type)}>
 													{t('eventSettingsPage.ticketTypes.actions.edit')}
 												</Button>
-												<Button
-													variant="destructive"
-													size="sm"
-													onClick={() => handleDeleteTicketType(type.id)}>
+												<Button variant="destructive" size="sm" onClick={() => handleDeleteTicketType(type.id)}>
 													{t('eventSettingsPage.ticketTypes.actions.delete')}
 												</Button>
 											</div>
@@ -529,17 +524,13 @@ export default function EventSettingsPage() {
 								<CardDescription>{t('eventSettingsPage.scanners.description')}</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
-								<form
-									onSubmit={handleCreateTemporalScanner}
-									className="flex gap-2">
+								<form onSubmit={handleCreateTemporalScanner} className="flex gap-2">
 									<Input
 										value={newScannerName}
 										onChange={e => setNewScannerName(e.target.value)}
 										placeholder={t('eventSettingsPage.scanners.fields.namePlaceholder')}
 									/>
-									<Button
-										type="submit"
-										disabled={creatingScanner}>
+									<Button type="submit" disabled={creatingScanner}>
 										{creatingScanner ? t('eventSettingsPage.scanners.actions.creating') : t('eventSettingsPage.scanners.actions.create')}
 									</Button>
 								</form>
@@ -583,10 +574,7 @@ export default function EventSettingsPage() {
 													</Button>
 													<Popover>
 														<PopoverTrigger asChild>
-															<Button
-																variant="outline"
-																size="sm"
-																className="gap-1.5">
+															<Button variant="outline" size="sm" className="gap-1.5">
 																<Share2 className="h-3.5 w-3.5" />
 																{t('eventSettingsPage.scanners.actions.share')}
 															</Button>
@@ -637,10 +625,8 @@ export default function EventSettingsPage() {
 							<CardDescription>{t('eventSettingsPage.pdf.description')}</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
-              {id && <InvitationEditor eventId={id} tenantId={tenantId} />}
-							<form
-								onSubmit={handleSavePdfSettings}
-								className="space-y-4">
+							{id && <InvitationEditor eventId={id} tenantId={tenantId} />}
+							<form onSubmit={handleSavePdfSettings} className="space-y-4">
 								<div className="space-y-1">
 									<Label htmlFor="event-pdf-description">{t('eventSettingsPage.pdf.fields.description')}</Label>
 									<Textarea
@@ -682,9 +668,7 @@ export default function EventSettingsPage() {
 									</Alert>
 								)}
 
-								<Button
-									type="submit"
-									disabled={savingPdfSettings}>
+								<Button type="submit" disabled={savingPdfSettings}>
 									{savingPdfSettings ? t('eventSettingsPage.actions.saving') : t('eventSettingsPage.actions.save')}
 								</Button>
 							</form>
@@ -710,11 +694,7 @@ export default function EventSettingsPage() {
 					<div className="space-y-3">
 						<div className="space-y-1">
 							<Label htmlFor="edit-ticket-type-name">{t('eventSettingsPage.ticketTypes.fields.name')}</Label>
-							<Input
-								id="edit-ticket-type-name"
-								value={editingTicketTypeName}
-								onChange={e => setEditingTicketTypeName(e.target.value)}
-							/>
+							<Input id="edit-ticket-type-name" value={editingTicketTypeName} onChange={e => setEditingTicketTypeName(e.target.value)} />
 						</div>
 						<div className="space-y-1">
 							<Label htmlFor="edit-ticket-type-price">{t('eventSettingsPage.ticketTypes.fields.price')}</Label>
@@ -730,15 +710,10 @@ export default function EventSettingsPage() {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button
-							variant="outline"
-							disabled={updatingTicketType}
-							onClick={() => setEditingTicketTypeId(null)}>
+						<Button variant="outline" disabled={updatingTicketType} onClick={() => setEditingTicketTypeId(null)}>
 							{t('common.cancel')}
 						</Button>
-						<Button
-							disabled={updatingTicketType}
-							onClick={handleSaveEditedTicketType}>
+						<Button disabled={updatingTicketType} onClick={handleSaveEditedTicketType}>
 							{updatingTicketType ? t('eventSettingsPage.actions.saving') : t('eventSettingsPage.actions.save')}
 						</Button>
 					</DialogFooter>
@@ -800,9 +775,7 @@ export default function EventSettingsPage() {
 								: t('eventSettingsPage.emailDialog.description')}
 						</DialogDescription>
 					</DialogHeader>
-					<form
-						onSubmit={handleSendScannerEmail}
-						className="space-y-3">
+					<form onSubmit={handleSendScannerEmail} className="space-y-3">
 						<div className="space-y-1">
 							<Label htmlFor="scanner-email-recipient">{t('eventSettingsPage.emailDialog.recipientLabel')}</Label>
 							<Input
@@ -815,16 +788,10 @@ export default function EventSettingsPage() {
 							/>
 						</div>
 						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								disabled={sendingScannerEmail}
-								onClick={() => setEmailDialogOpen(false)}>
+							<Button type="button" variant="outline" disabled={sendingScannerEmail} onClick={() => setEmailDialogOpen(false)}>
 								{t('common.cancel')}
 							</Button>
-							<Button
-								type="submit"
-								disabled={sendingScannerEmail}>
+							<Button type="submit" disabled={sendingScannerEmail}>
 								{sendingScannerEmail ? t('eventSettingsPage.emailDialog.sending') : t('eventSettingsPage.scanners.actions.sendEmail')}
 							</Button>
 						</DialogFooter>

@@ -448,9 +448,9 @@ export default function ScannerPage() {
     }
   }
   return (
-    <main className="mx-auto max-w-3xl space-y-4 p-4">
+    <main className="ws-scanner mx-auto max-w-3xl space-y-5 p-5">
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => navigate(`/events/${id}`)}>
+        <Button variant="outline" onClick={() => navigate(`/events/${id}${location.search}`)}>
           ← {t("scannerV2.event")}
         </Button>
         <h1 className="text-xl font-bold">{t("scanner.title")}</h1>

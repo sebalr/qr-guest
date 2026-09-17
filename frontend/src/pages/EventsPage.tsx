@@ -1,18 +1,20 @@
-import { useState, useEffect, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
 import { archiveAdminEventApi, createEventApi, deleteAdminEventApi, getEventsApi, Event, unarchiveAdminEventApi } from '../api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { QrCode, Plus, X, Calendar, ChevronRight, AlertCircle, LogOut, Shield, Image } from 'lucide-react';
+import { Plus, Calendar, AlertCircle } from 'lucide-react';
+
+import { PageHeading, WorkspaceState, FormSection } from '../components/WorkspaceLayout';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Search, CalendarDays, ArrowUpRight, ArrowRight, MoreHorizontal, Archive, Trash2 } from 'lucide-react';
 
 type EventActionType = 'archive' | 'unarchive' | 'delete';
 
@@ -23,9 +25,13 @@ interface PendingEventAction {
 
 export default function EventsPage() {
 	const { t } = useTranslation();
-	const { logout, user } = useAuth();
+	const { user } = useAuth();
 	const navigate = useNavigate();
+	const createButton = useRef<HTMLButtonElement>(null);
 	const canManageEvents = user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin';
+	const [search, setSearch] = useState('');
+	const [loadError, setLoadError] = useState(false);
+	const [reload, setReload] = useState(0);
 	const [events, setEvents] = useState<Event[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [showArchivedEvents, setShowArchivedEvents] = useState(false);
@@ -41,11 +47,23 @@ export default function EventsPage() {
 	const [eventActionSaving, setEventActionSaving] = useState<Record<string, boolean>>({});
 
 	useEffect(() => {
+		let cancelled = false;
+		setLoading(true);
+		setLoadError(false);
 		getEventsApi(showArchivedEvents)
-			.then(r => setEvents(r.data.data))
-			.catch(() => setEvents([]))
-			.finally(() => setLoading(false));
-	}, [showArchivedEvents]);
+			.then(r => {
+				if (!cancelled) setEvents(r.data.data);
+			})
+			.catch(() => {
+				if (!cancelled) setLoadError(true);
+			})
+			.finally(() => {
+				if (!cancelled) setLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [showArchivedEvents, reload]);
 
 	async function refreshEvents(includeArchived = showArchivedEvents) {
 		const response = await getEventsApi(includeArchived);
@@ -55,10 +73,18 @@ export default function EventsPage() {
 	async function handleCreate(e: FormEvent) {
 		e.preventDefault();
 		setFormError('');
+		if (!name.trim()) {
+			setFormError(t('superAdmin.page.errors.eventNameRequired'));
+			return;
+		}
+		if (startsAt && endsAt && endsAt <= startsAt) {
+			setFormError(t('workspace.invalidDates'));
+			return;
+		}
 		setCreating(true);
 		try {
 			const res = await createEventApi({
-				name,
+				name: name.trim(),
 				startsAt: startsAt?.toISOString(),
 				endsAt: endsAt?.toISOString(),
 				description: description || undefined,
@@ -71,7 +97,7 @@ export default function EventsPage() {
 			setEndsAt(undefined);
 			setDescription('');
 			setImageUrl('');
-			await refreshEvents();
+			navigate(`/events/${res.data.data.id}`);
 		} catch (error: unknown) {
 			const errorMsg =
 				(error as { response?: { data?: { error?: string } } })?.response?.data?.error || t('eventsPage.errors.createFailed');
@@ -92,6 +118,7 @@ export default function EventsPage() {
 	}
 
 	function requestEventAction(eventId: string, action: EventActionType) {
+		setFormError('');
 		setPendingEventAction({ eventId, action });
 	}
 
@@ -151,261 +178,259 @@ export default function EventsPage() {
 
 	const pendingActionCopy = getPendingActionCopy(pendingEventAction?.action);
 
+	const visibleEvents = events.filter(
+		ev => Boolean(ev.archivedAt) === showArchivedEvents && ev.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+	);
 	return (
-		<div className="min-h-screen bg-slate-50">
-			<header className="bg-background border-b sticky top-0 z-10">
-				<div className="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
-					<div className="flex items-center gap-2">
-						<div className="bg-primary rounded-lg p-1.5">
-							<QrCode className="h-5 w-5 text-primary-foreground" />
-						</div>
-						<span className="font-bold text-lg tracking-tight">Tiqra</span>
-					</div>
-					<div className="flex items-center gap-2">
-						<span className="text-sm text-muted-foreground hidden sm:block">{user?.email}</span>
-						{(user?.isSuperAdmin || user?.role === 'owner' || user?.role === 'admin') && (
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => navigate('/super-admin')}
-								className="gap-1.5">
-								<Shield className="h-3.5 w-3.5" />
-								<span className="hidden sm:inline">{t('eventsPage.actions.users')}</span>
-							</Button>
-						)}
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={logout}
-							className="gap-1.5">
-							<LogOut className="h-3.5 w-3.5" />
-							<span className="hidden sm:inline">{t('eventsPage.actions.logout')}</span>
-						</Button>
-					</div>
-				</div>
-			</header>
-
-			<main className="max-w-3xl mx-auto px-4 py-8">
-				<div className="flex justify-between items-center mb-6">
-					<div>
-						<h1 className="text-2xl font-bold tracking-tight">{t('eventsPage.title')}</h1>
-						<p className="text-muted-foreground text-sm">
-							{canManageEvents ? t('eventsPage.subtitle.manage') : t('eventsPage.subtitle.browse')}
-						</p>
+		<div>
+			<PageHeading
+				title={t('eventsPage.title')}
+				description={t(canManageEvents ? 'eventsPage.subtitle.manage' : 'eventsPage.subtitle.browse')}>
+				{canManageEvents && (
+					<Button
+						ref={createButton}
+						onClick={() => {
+							setFormError('');
+							setShowForm(true);
+						}}>
+						<Plus size={17} />
+						{t('eventsPage.actions.newEvent')}
+					</Button>
+				)}
+			</PageHeading>
+			<main>
+				<div className="ws-toolbar">
+					<div className="ws-search">
+						<Search size={17} />
+						<Input
+							aria-label={t('workspace.searchEvents')}
+							placeholder={t('workspace.searchEvents')}
+							value={search}
+							onChange={e => setSearch(e.target.value)}
+						/>
 					</div>
 					{canManageEvents && (
-						<div className="flex items-center gap-2">
-							<Button
-								variant={showArchivedEvents ? 'default' : 'outline'}
-								onClick={() => setShowArchivedEvents(prev => !prev)}>
-								{showArchivedEvents ? t('superAdmin.events.actions.hideArchived') : t('superAdmin.events.actions.showArchived')}
-							</Button>
-							<Button
-								onClick={() => setShowForm(v => !v)}
-								className="gap-2">
-								{showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-								{showForm ? t('common.cancel') : t('eventsPage.actions.newEvent')}
-							</Button>
+						<div className="ws-segments" aria-label={t('workspace.eventStatus')}>
+							<button aria-pressed={!showArchivedEvents} onClick={() => setShowArchivedEvents(false)}>
+								{t('workspace.active')}
+							</button>
+							<button aria-pressed={showArchivedEvents} onClick={() => setShowArchivedEvents(true)}>
+								{t('workspace.archived')}
+							</button>
 						</div>
 					)}
 				</div>
-
-				{canManageEvents && showForm && (
-					<Card className="mb-6">
-						<CardHeader>
-							<CardTitle className="text-lg">{t('eventsPage.form.title')}</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<form
-								onSubmit={handleCreate}
-								className="space-y-4">
-								<div className="space-y-2">
-									<Label htmlFor="event-name">
-										{t('eventsPage.form.eventName')} <span className="text-destructive">*</span>
-									</Label>
+				{loading ? (
+					<WorkspaceState loading title={t('eventsPage.loading')} />
+				) : loadError ? (
+					<WorkspaceState
+						title={t('workspace.loadFailed')}
+						description={t('workspace.tryAgain')}
+						action={
+							<Button variant="outline" onClick={() => setReload(n => n + 1)}>
+								{t('workspace.retry')}
+							</Button>
+						}
+					/>
+				) : visibleEvents.length === 0 ? (
+					<WorkspaceState
+						title={t(search ? 'workspace.noMatches' : showArchivedEvents ? 'workspace.noArchived' : 'eventsPage.empty')}
+						description={t(search ? 'workspace.adjustSearch' : 'workspace.firstEvent')}
+						action={
+							canManageEvents && !search && !showArchivedEvents ? (
+								<Button onClick={() => setShowForm(true)}>
+									<Plus size={17} />
+									{t('eventsPage.actions.newEvent')}
+								</Button>
+							) : undefined
+						}
+					/>
+				) : (
+					<div className="ws-event-grid">
+						{visibleEvents.map(ev => (
+							<article className="ws-event-card" key={ev.id}>
+								<div className="ws-event-art">
+									<CalendarDays aria-hidden="true" />
+									{ev.imageUrl && (
+										<img
+											src={ev.imageUrl}
+											alt=""
+											onError={e => {
+												e.currentTarget.hidden = true;
+											}}
+										/>
+									)}
+									<span className="ws-status">{t(ev.archivedAt ? 'workspace.archived' : 'workspace.active')}</span>
+								</div>
+								<div className="ws-event-card-body">
+									<h2>{ev.archivedAt ? ev.name : <Link to={`/events/${ev.id}`}>{ev.name}</Link>}</h2>
+									<p className="ws-event-description">{ev.description || t('workspace.eventReady')}</p>
+									<p className="ws-event-date">
+										<Calendar size={15} />
+										{formatDateRange(ev) || t('workspace.noSchedule')}
+									</p>
+									<div className="ws-event-card-footer">
+										{!ev.archivedAt ? (
+											<Button variant="ghost" asChild>
+												<Link to={`/events/${ev.id}${canManageEvents ? '' : '/scan'}`}>
+													{t(canManageEvents ? 'workspace.manageEvent' : 'eventsPage.actions.scan')}
+													<ArrowUpRight size={16} />
+												</Link>
+											</Button>
+										) : (
+											<span className="text-xs text-muted-foreground">{t('workspace.archived')}</span>
+										)}
+										{canManageEvents && (
+											<Popover>
+												<PopoverTrigger asChild>
+													<Button size="icon" variant="ghost" aria-label={t('workspace.eventActions', { name: ev.name })}>
+														<MoreHorizontal size={20} />
+													</Button>
+												</PopoverTrigger>
+												<PopoverContent align="end" className="w-48 p-2">
+													<div className="ws-action-list">
+														<Button
+															variant="ghost"
+															disabled={eventActionSaving[ev.id]}
+															onClick={() => requestEventAction(ev.id, ev.archivedAt ? 'unarchive' : 'archive')}>
+															<Archive size={16} />
+															{t(ev.archivedAt ? 'superAdmin.events.actions.unarchive' : 'superAdmin.events.actions.archive')}
+														</Button>
+														<Button
+															variant="ghost"
+															className="text-destructive"
+															disabled={eventActionSaving[ev.id]}
+															onClick={() => requestEventAction(ev.id, 'delete')}>
+															<Trash2 size={16} />
+															{t('superAdmin.events.actions.delete')}
+														</Button>
+													</div>
+												</PopoverContent>
+											</Popover>
+										)}
+									</div>
+								</div>
+							</article>
+						))}
+					</div>
+				)}
+				<Dialog
+					open={showForm && canManageEvents}
+					onOpenChange={open => {
+						if (!creating) setShowForm(open);
+					}}>
+					<DialogContent
+						className="ws-create-dialog"
+						onCloseAutoFocus={event => {
+							event.preventDefault();
+							createButton.current?.focus();
+						}}>
+						<DialogHeader>
+							<DialogTitle className="text-2xl tracking-tight">{t('eventsPage.form.title')}</DialogTitle>
+							<DialogDescription>{t('workspace.createHint')}</DialogDescription>
+						</DialogHeader>
+						<form onSubmit={handleCreate}>
+							<FormSection title={t('workspace.details')}>
+								<div>
+									<Label htmlFor="event-name">{t('eventsPage.form.eventName')} *</Label>
 									<Input
 										id="event-name"
-										type="text"
-										placeholder={t('eventsPage.form.eventNamePlaceholder')}
 										required
 										value={name}
+										placeholder={t('eventsPage.form.eventNamePlaceholder')}
 										onChange={e => setName(e.target.value)}
 									/>
 								</div>
-								<div className="space-y-2">
+								<div>
 									<Label htmlFor="event-description">{t('eventsPage.form.description')}</Label>
 									<Textarea
 										id="event-description"
 										rows={3}
-										placeholder={t('eventsPage.form.descriptionPlaceholder')}
 										value={description}
+										placeholder={t('eventsPage.form.descriptionPlaceholder')}
 										onChange={e => setDescription(e.target.value)}
 									/>
 								</div>
-								<div className="grid gap-4">
+							</FormSection>
+							<FormSection title={t('workspace.schedule')}>
+								<div className="grid sm:grid-cols-2 gap-4">
 									<div className="space-y-2">
-										<Label>{t('eventsPage.form.startDateTime')}</Label>
+										<Label htmlFor="event-start">{t('eventsPage.form.startDateTime')}</Label>
 										<DateTimePicker
+											id="event-start"
 											value={startsAt}
 											onChange={setStartsAt}
 											placeholder={t('eventsPage.form.startDateTimePlaceholder')}
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label>{t('eventsPage.form.endDateTime')}</Label>
+										<Label htmlFor="event-end">{t('eventsPage.form.endDateTime')}</Label>
 										<DateTimePicker
+											id="event-end"
 											value={endsAt}
 											onChange={setEndsAt}
 											placeholder={t('eventsPage.form.endDateTimePlaceholder')}
 										/>
 									</div>
 								</div>
-								<div className="space-y-2">
-									<Label htmlFor="image-url">
-										<Image className="inline h-3.5 w-3.5 mr-1" />
-										{t('eventsPage.form.imageUrl')}
-									</Label>
-									<Input
-										id="image-url"
-										type="url"
-										placeholder={t('eventsPage.form.imageUrlPlaceholder')}
-										value={imageUrl}
-										onChange={e => setImageUrl(e.target.value)}
-									/>
-								</div>
-								{formError && (
-									<Alert variant="destructive">
-										<AlertCircle className="h-4 w-4" />
-										<AlertDescription>{formError}</AlertDescription>
-									</Alert>
-								)}
-								<Button
-									type="submit"
-									disabled={creating}>
-									{creating ? t('eventsPage.form.creating') : t('eventsPage.form.create')}
+							</FormSection>
+							<details className="ws-details">
+								<summary>{t('workspace.appearance')}</summary>
+								<Label htmlFor="image-url">{t('eventsPage.form.imageUrl')}</Label>
+								<Input
+									className="mt-2"
+									id="image-url"
+									type="url"
+									value={imageUrl}
+									placeholder={t('eventsPage.form.imageUrlPlaceholder')}
+									onChange={e => setImageUrl(e.target.value)}
+								/>
+							</details>
+							{formError && (
+								<Alert variant="destructive" className="my-4">
+									<AlertCircle size={16} />
+									<AlertDescription>{formError}</AlertDescription>
+								</Alert>
+							)}
+							<div className="ws-form-actions mt-6">
+								<Button type="button" variant="outline" disabled={creating} onClick={() => setShowForm(false)}>
+									{t('common.cancel')}
 								</Button>
-							</form>
-						</CardContent>
-					</Card>
-				)}
-
-				{loading ? (
-					<div className="text-center py-16 text-muted-foreground">{t('eventsPage.loading')}</div>
-				) : events.length === 0 ? (
-					<Card className="py-16 text-center">
-						<CardContent>
-							<Calendar className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-							<p className="text-muted-foreground">{t('eventsPage.empty')}</p>
-						</CardContent>
-					</Card>
-				) : (
-					<div className="space-y-3">
-						{events.map(ev => (
-							<Card
-								key={ev.id}
-								className="cursor-pointer hover:shadow-md transition-shadow"
-								onClick={() => {
-									if (!ev.archivedAt) {
-										navigate(`/events/${ev.id}`);
-									}
-								}}>
-								<CardContent className="p-5 flex justify-between items-center gap-4">
-									<div className="flex items-center gap-4 min-w-0">
-										{ev.imageUrl && (
-											<img
-												src={ev.imageUrl}
-												alt={ev.name}
-												className="h-12 w-12 rounded-lg object-cover shrink-0"
-												onError={e => ((e.target as HTMLImageElement).style.display = 'none')}
-											/>
-										)}
-										<div className="min-w-0">
-											<p className="font-semibold truncate">{ev.name}</p>
-											{ev.archivedAt ? (
-												<p className="text-xs text-muted-foreground mt-0.5">{t('superAdmin.events.labels.archived')}</p>
-											) : null}
-											{ev.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{ev.description}</p>}
-											{formatDateRange(ev) && <p className="text-sm text-muted-foreground mt-0.5">{formatDateRange(ev)}</p>}
-										</div>
-									</div>
-									{canManageEvents ? (
-										<div className="flex items-center gap-2 shrink-0">
-											{ev.archivedAt ? (
-												<Button
-													size="sm"
-													variant="secondary"
-													disabled={eventActionSaving[ev.id]}
-													onClick={e => {
-														e.stopPropagation();
-														requestEventAction(ev.id, 'unarchive');
-													}}>
-													{eventActionSaving[ev.id] ? t('superAdmin.events.actions.saving') : t('superAdmin.events.actions.unarchive')}
-												</Button>
-											) : (
-												<Button
-													size="sm"
-													variant="secondary"
-													disabled={eventActionSaving[ev.id]}
-													onClick={e => {
-														e.stopPropagation();
-														requestEventAction(ev.id, 'archive');
-													}}>
-													{eventActionSaving[ev.id] ? t('superAdmin.events.actions.saving') : t('superAdmin.events.actions.archive')}
-												</Button>
-											)}
-											<Button
-												size="sm"
-												variant="destructive"
-												disabled={eventActionSaving[ev.id]}
-												onClick={e => {
-													e.stopPropagation();
-													requestEventAction(ev.id, 'delete');
-												}}>
-												{eventActionSaving[ev.id] ? t('superAdmin.events.actions.saving') : t('superAdmin.events.actions.delete')}
-											</Button>
-											{!ev.archivedAt ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : null}
-										</div>
-									) : (
-										<div className="flex gap-2 shrink-0">
-											<Button
-												size="sm"
-												onClick={e => {
-													e.stopPropagation();
-													navigate(`/events/${ev.id}/scan`);
-												}}>
-												{t('eventsPage.actions.scan')}
-											</Button>
-										</div>
-									)}
-								</CardContent>
-							</Card>
-						))}
-					</div>
-				)}
-
+								<Button type="submit" disabled={creating}>
+									{creating ? t('eventsPage.form.creating') : t('eventsPage.form.create')}
+									<ArrowRight size={16} />
+								</Button>
+							</div>
+						</form>
+					</DialogContent>
+				</Dialog>
 				<Dialog
 					open={pendingEventAction !== null}
 					onOpenChange={open => {
-						if (!open) {
-							setPendingEventAction(null);
-						}
+						if (!open && !eventActionSaving[pendingEventAction?.eventId ?? '']) setPendingEventAction(null);
 					}}>
 					<DialogContent>
 						<DialogHeader>
 							<DialogTitle>{pendingActionCopy.title}</DialogTitle>
 							<DialogDescription>{pendingActionCopy.description}</DialogDescription>
 						</DialogHeader>
+						{formError && (
+							<Alert variant="destructive">
+								<AlertDescription>{formError}</AlertDescription>
+							</Alert>
+						)}
 						<DialogFooter>
 							<Button
 								variant="outline"
+								disabled={!!eventActionSaving[pendingEventAction?.eventId ?? '']}
 								onClick={() => setPendingEventAction(null)}>
 								{t('common.cancel')}
 							</Button>
 							<Button
 								variant={pendingEventAction?.action === 'delete' ? 'destructive' : 'default'}
 								onClick={confirmPendingEventAction}
-								disabled={pendingEventAction ? eventActionSaving[pendingEventAction.eventId] : false}>
-								{pendingEventAction && eventActionSaving[pendingEventAction.eventId]
+								disabled={!!eventActionSaving[pendingEventAction?.eventId ?? '']}>
+								{eventActionSaving[pendingEventAction?.eventId ?? '']
 									? t('superAdmin.events.actions.saving')
 									: pendingActionCopy.confirmLabel}
 							</Button>
@@ -413,8 +438,6 @@ export default function EventsPage() {
 					</DialogContent>
 				</Dialog>
 			</main>
-
-			<Separator className="hidden" />
 		</div>
 	);
 }
